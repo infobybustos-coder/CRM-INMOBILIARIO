@@ -34,14 +34,23 @@ export async function signUp(
     return { error: "Rellena nombre, email y contraseña." };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
-
-  if (error || !data.user) {
-    return { error: error?.message ?? "No se pudo crear la cuenta." };
-  }
-
   const admin = createAdminClient();
+
+  const { data: created, error: createError } =
+    await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+  if (createError || !created.user) {
+    return {
+      error:
+        createError?.message === "User already registered"
+          ? "Ya existe una cuenta con ese email."
+          : createError?.message ?? "No se pudo crear la cuenta.",
+    };
+  }
 
   const { data: tenant, error: tenantError } = await admin
     .from("tenants")
@@ -60,7 +69,7 @@ export async function signUp(
   }
 
   const { error: usuarioError } = await admin.from("usuarios").insert({
-    id: data.user.id,
+    id: created.user.id,
     tenant_id: tenant.id,
     nombre_completo: nombre,
     email,
@@ -88,6 +97,11 @@ export async function signIn(
   });
 
   if (error) {
+    if (error.message === "Email not confirmed") {
+      return {
+        error: "Tu email aún no está confirmado. Revisa tu correo.",
+      };
+    }
     return { error: "Email o contraseña incorrectos." };
   }
 
