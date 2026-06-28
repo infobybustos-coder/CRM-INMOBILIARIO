@@ -11,13 +11,7 @@ export default async function AsesorLayout({
   const usuario = await getUsuarioConTenant();
 
   if (!usuario) redirect("/login");
-  if (usuario.tenant?.tipo_plan !== "asesor") {
-    return (
-      <pre className="p-6 text-xs whitespace-pre-wrap">
-        DEBUG (quitar luego): {JSON.stringify(usuario, null, 2)}
-      </pre>
-    );
-  }
+  if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
 
   return (
     <div className="min-h-screen">
