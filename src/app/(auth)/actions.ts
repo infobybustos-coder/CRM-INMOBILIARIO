@@ -29,6 +29,7 @@ export async function signUp(
   const tipoPlan = String(formData.get("tipo_plan") ?? "asesor") as
     | "asesor"
     | "inmobiliaria";
+  const pais = String(formData.get("pais") ?? "ES");
 
   if (!nombre || !email || !password) {
     return { error: "Rellena nombre, email y contraseña." };
@@ -58,7 +59,7 @@ export async function signUp(
       nombre,
       slug: slugify(nombre),
       tipo_plan: tipoPlan,
-      pais: "ES",
+      pais,
       moneda: "EUR",
     })
     .select()

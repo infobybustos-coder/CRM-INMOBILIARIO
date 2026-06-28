@@ -56,6 +56,24 @@ export default function SignupPage() {
           />
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="pais" className="text-sm font-medium">
+            País
+          </label>
+          <select
+            id="pais"
+            defaultValue="ES"
+            disabled
+            className="w-full rounded-md border bg-muted px-3 py-2 text-sm"
+          >
+            <option value="ES">España</option>
+          </select>
+          <input type="hidden" name="pais" value="ES" />
+          <p className="text-xs text-muted-foreground">
+            Por ahora solo disponible para España. Pronto añadiremos más países.
+          </p>
+        </div>
+
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium">Tipo de cuenta</legend>
           <label className="flex items-center gap-2 text-sm">

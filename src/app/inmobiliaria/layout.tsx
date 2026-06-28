@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { signOut } from "../(auth)/actions";
@@ -16,7 +17,17 @@ export default async function InmobiliariaLayout({
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b px-6 py-3">
-        <span className="font-semibold">{usuario.tenant?.nombre}</span>
+        <div className="flex items-center gap-6">
+          <span className="font-semibold">{usuario.tenant?.nombre}</span>
+          {usuario.rol === "administrador" && (
+            <Link
+              href="/inmobiliaria/equipo"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Equipo
+            </Link>
+          )}
+        </div>
         <form action={signOut}>
           <Button variant="ghost" size="sm" type="submit">
             Cerrar sesión
