@@ -1,0 +1,44 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getUsuarioConTenant } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+export type CrearClienteState = { error: string } | { ok: true } | null;
+
+export async function crearClienteRapido(
+  _prevState: CrearClienteState,
+  formData: FormData
+): Promise<CrearClienteState> {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) return { error: "Sesión expirada, vuelve a iniciar sesión." };
+
+  const tipo = String(formData.get("tipo") ?? "propietario");
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const telefono = String(formData.get("telefono") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim() || null;
+
+  if (!nombre || !telefono) {
+    return { error: "Pon al menos el nombre y el teléfono." };
+  }
+
+  const supabase = await createClient();
+  const tabla = tipo === "comprador" ? "compradores" : "propietarios";
+
+  const { error } = await supabase.from(tabla).insert({
+    tenant_id: usuario.tenant_id,
+    agente_id: usuario.id,
+    nombre,
+    telefono,
+    email,
+  });
+
+  if (error) {
+    return { error: "No se pudo guardar el cliente." };
+  }
+
+  revalidatePath("/asesor");
+  revalidatePath(`/asesor/${tabla}`);
+
+  return { ok: true };
+}
