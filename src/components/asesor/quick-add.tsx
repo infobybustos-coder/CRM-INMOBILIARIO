@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 export function QuickAdd() {
   const [abierto, setAbierto] = useState(false);
   const [mostrarMas, setMostrarMas] = useState(false);
+  const [tipo, setTipo] = useState<"propietario" | "comprador" | "inmueble">("propietario");
   const [state, formAction, pending] = useActionState(crearClienteRapido, null);
   const [stateProcesado, setStateProcesado] = useState(state);
 
@@ -17,6 +18,7 @@ export function QuickAdd() {
     if (state && "ok" in state) {
       setAbierto(false);
       setMostrarMas(false);
+      setTipo("propietario");
     }
   }
 
@@ -39,7 +41,9 @@ export function QuickAdd() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:items-center">
           <div className="w-full max-w-sm space-y-4 rounded-t-2xl bg-card p-6 md:rounded-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Añadir cliente</h2>
+              <h2 className="text-lg font-semibold">
+                {tipo === "inmueble" ? "Añadir inmueble" : "Añadir cliente"}
+              </h2>
               <button
                 type="button"
                 onClick={() => setAbierto(false)}
@@ -56,7 +60,8 @@ export function QuickAdd() {
                     type="radio"
                     name="tipo"
                     value="propietario"
-                    defaultChecked
+                    checked={tipo === "propietario"}
+                    onChange={() => setTipo("propietario")}
                     className="accent-primary"
                   />
                   Propietario
@@ -66,51 +71,96 @@ export function QuickAdd() {
                     type="radio"
                     name="tipo"
                     value="comprador"
+                    checked={tipo === "comprador"}
+                    onChange={() => setTipo("comprador")}
                     className="accent-primary"
                   />
                   Comprador
                 </label>
+                <label className="flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm">
+                  <input
+                    type="radio"
+                    name="tipo"
+                    value="inmueble"
+                    checked={tipo === "inmueble"}
+                    onChange={() => setTipo("inmueble")}
+                    className="accent-primary"
+                  />
+                  Inmueble
+                </label>
               </fieldset>
 
-              <div className="space-y-2">
-                <label htmlFor="nombre" className="text-sm font-medium">
-                  Nombre
-                </label>
-                <input
-                  id="nombre"
-                  name="nombre"
-                  type="text"
-                  required
-                  autoFocus
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="telefono" className="text-sm font-medium">
-                  Teléfono
-                </label>
-                <input
-                  id="telefono"
-                  name="telefono"
-                  type="tel"
-                  required
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-
-              {mostrarMas ? (
+              {tipo === "inmueble" ? (
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email (opcional)
+                  <label htmlFor="direccion" className="text-sm font-medium">
+                    Dirección
                   </label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id="direccion"
+                    name="direccion"
+                    type="text"
+                    required
+                    autoFocus
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   />
                 </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="nombre" className="text-sm font-medium">
+                      Nombre
+                    </label>
+                    <input
+                      id="nombre"
+                      name="nombre"
+                      type="text"
+                      required
+                      autoFocus
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="telefono" className="text-sm font-medium">
+                      Teléfono
+                    </label>
+                    <input
+                      id="telefono"
+                      name="telefono"
+                      type="tel"
+                      required
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {mostrarMas ? (
+                tipo === "inmueble" ? (
+                  <div className="space-y-2">
+                    <label htmlFor="precio" className="text-sm font-medium">
+                      Precio (opcional)
+                    </label>
+                    <input
+                      id="precio"
+                      name="precio"
+                      type="number"
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email (opcional)
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                )
               ) : (
                 <button
                   type="button"

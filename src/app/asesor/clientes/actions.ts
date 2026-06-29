@@ -14,6 +14,27 @@ export async function crearClienteRapido(
   if (!usuario) return { error: "Sesión expirada, vuelve a iniciar sesión." };
 
   const tipo = String(formData.get("tipo") ?? "propietario");
+  const supabase = await createClient();
+
+  if (tipo === "inmueble") {
+    const direccion = String(formData.get("direccion") ?? "").trim();
+    const precio = formData.get("precio");
+    if (!direccion) return { error: "Pon al menos la dirección." };
+
+    const { error } = await supabase.from("inmuebles").insert({
+      tenant_id: usuario.tenant_id,
+      agente_id: usuario.id,
+      direccion,
+      precio: precio ? Number(precio) : null,
+    });
+
+    if (error) return { error: "No se pudo guardar el inmueble." };
+
+    revalidatePath("/asesor");
+    revalidatePath("/asesor/inmuebles");
+    return { ok: true };
+  }
+
   const nombre = String(formData.get("nombre") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim() || null;
@@ -22,7 +43,6 @@ export async function crearClienteRapido(
     return { error: "Pon al menos el nombre y el teléfono." };
   }
 
-  const supabase = await createClient();
   const tabla = tipo === "comprador" ? "compradores" : "propietarios";
 
   const { error } = await supabase.from(tabla).insert({
