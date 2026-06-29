@@ -10,24 +10,6 @@ async function requireUsuario() {
   return usuario;
 }
 
-export async function actualizarEstadoInmueble(id: string, estado: string) {
-  const usuario = await requireUsuario();
-  const supabase = await createClient();
-
-  await supabase.from("inmuebles").update({ estado }).eq("id", id).eq("agente_id", usuario.id);
-
-  await supabase.from("actividades").insert({
-    tenant_id: usuario.tenant_id,
-    entidad_tipo: "inmueble",
-    entidad_id: id,
-    usuario_id: usuario.id,
-    tipo: "cambio_estado",
-    contenido: `Cambió el estado a "${estado}"`,
-  });
-
-  revalidatePath("/asesor/inmuebles");
-}
-
 export type GuardarInmuebleState = { error: string } | { ok: true } | null;
 
 export async function actualizarInmueble(
@@ -42,6 +24,7 @@ export async function actualizarInmueble(
   if (!direccion) return { error: "La dirección es obligatoria." };
 
   const referencia = String(formData.get("referencia") ?? "").trim();
+  const estado = String(formData.get("estado") ?? "").trim();
   const precio = formData.get("precio");
   const metrosCuadrados = formData.get("metros_cuadrados");
   const habitaciones = formData.get("habitaciones");
@@ -50,11 +33,19 @@ export async function actualizarInmueble(
   const zonaId = String(formData.get("zona_id") ?? "");
   const propietarioId = String(formData.get("propietario_id") ?? "");
 
+  const { data: actual } = await supabase
+    .from("inmuebles")
+    .select("estado")
+    .eq("id", id)
+    .eq("agente_id", usuario.id)
+    .single();
+
   const { error } = await supabase
     .from("inmuebles")
     .update({
       direccion,
       referencia: referencia || null,
+      estado: estado || undefined,
       zona_id: zonaId || null,
       propietario_id: propietarioId || null,
       precio: precio ? Number(precio) : null,
@@ -73,6 +64,17 @@ export async function actualizarInmueble(
     return error.code === "23505"
       ? { error: "Esa referencia ya existe." }
       : { error: "No se pudo guardar." };
+  }
+
+  if (estado && actual && actual.estado !== estado) {
+    await supabase.from("actividades").insert({
+      tenant_id: usuario.tenant_id,
+      entidad_tipo: "inmueble",
+      entidad_id: id,
+      usuario_id: usuario.id,
+      tipo: "cambio_estado",
+      contenido: `Cambió el estado a "${estado}"`,
+    });
   }
 
   revalidatePath(`/asesor/inmuebles/${id}`);

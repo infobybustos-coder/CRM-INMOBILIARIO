@@ -86,8 +86,7 @@ export function FormularioInmueble({
             id="estado"
             name="estado"
             defaultValue={inmueble.estado}
-            disabled
-            className="w-full rounded-md border bg-muted px-3 py-2 text-sm"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
           >
             {ESTADOS_INMUEBLE.map((e) => (
               <option key={e} value={e}>
@@ -95,9 +94,6 @@ export function FormularioInmueble({
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground">
-            Cambia el estado desde la vista Kanban.
-          </p>
         </div>
 
         <div className="space-y-2">
