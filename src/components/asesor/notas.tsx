@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { crearNota } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
 
 type Actividad = {
@@ -10,6 +9,8 @@ type Actividad = {
   contenido: string | null;
   creado_en: string;
 };
+
+type NotaState = { error: string } | null;
 
 const ETIQUETAS_TIPO_ACTIVIDAD: Record<string, string> = {
   nota: "Nota",
@@ -25,14 +26,13 @@ const ETIQUETAS_TIPO_ACTIVIDAD: Record<string, string> = {
 };
 
 export function Notas({
-  propietarioId,
   actividades,
+  crearNotaAction,
 }: {
-  propietarioId: string;
   actividades: Actividad[];
+  crearNotaAction: (prevState: NotaState, formData: FormData) => Promise<NotaState>;
 }) {
-  const accion = crearNota.bind(null, propietarioId);
-  const [state, formAction, pending] = useActionState(accion, null);
+  const [state, formAction, pending] = useActionState(crearNotaAction, null);
 
   return (
     <div className="space-y-4 rounded-lg border p-4">

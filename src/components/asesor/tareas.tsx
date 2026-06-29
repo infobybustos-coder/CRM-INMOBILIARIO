@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { crearTarea, alternarTarea } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +12,9 @@ type Tarea = {
   estado: string;
 };
 
-const TAREAS_SUGERIDAS = [
+type TareaState = { error: string } | null;
+
+const TAREAS_SUGERIDAS_PROPIETARIO = [
   "Llamar para concertar tasación",
   "Realizar visita de tasación",
   "Enviar valoración al propietario",
@@ -26,16 +27,35 @@ const TAREAS_SUGERIDAS = [
   "Publicar inmueble en portales",
 ];
 
+const TAREAS_SUGERIDAS_COMPRADOR = [
+  "Llamar para cualificar necesidades",
+  "Enviar selección de inmuebles",
+  "Programar visita a inmueble",
+  "Hacer seguimiento tras la visita",
+  "Preguntar por situación de financiación",
+  "Preparar oferta de compra",
+  "Hacer seguimiento de la oferta",
+  "Confirmar firma de reserva",
+  "Coordinar firma con notaría",
+];
+
 export function Tareas({
-  propietarioId,
+  entidadId,
   tareas,
+  crearTareaAction,
+  alternarTareaAction,
+  sugeridas = "propietario",
 }: {
-  propietarioId: string;
+  entidadId: string;
   tareas: Tarea[];
+  crearTareaAction: (prevState: TareaState, formData: FormData) => Promise<TareaState>;
+  alternarTareaAction: (tareaId: string, entidadId: string, completada: boolean) => Promise<void>;
+  sugeridas?: "propietario" | "comprador";
 }) {
-  const accion = crearTarea.bind(null, propietarioId);
-  const [state, formAction, pending] = useActionState(accion, null);
+  const [state, formAction, pending] = useActionState(crearTareaAction, null);
   const tituloRef = useRef<HTMLInputElement>(null);
+  const lista =
+    sugeridas === "comprador" ? TAREAS_SUGERIDAS_COMPRADOR : TAREAS_SUGERIDAS_PROPIETARIO;
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
@@ -54,7 +74,7 @@ export function Tareas({
           className="rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground"
         >
           <option value="">Tareas sugeridas...</option>
-          {TAREAS_SUGERIDAS.map((t) => (
+          {lista.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -84,16 +104,11 @@ export function Tareas({
           tareas.map((t) => {
             const completada = t.estado === "completada";
             return (
-              <label
-                key={t.id}
-                className="flex items-center gap-2 text-sm"
-              >
+              <label key={t.id} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   defaultChecked={completada}
-                  onChange={(e) =>
-                    alternarTarea(t.id, propietarioId, e.target.checked)
-                  }
+                  onChange={(e) => alternarTareaAction(t.id, entidadId, e.target.checked)}
                   className="accent-primary"
                 />
                 <span className={cn(completada && "text-muted-foreground line-through")}>
