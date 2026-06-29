@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ETIQUETAS_ESTADO_INMUEBLE, type Inmueble } from "@/app/asesor/inmuebles/constantes";
+import { useRouter } from "next/navigation";
+import {
+  ETIQUETAS_ESTADO_INMUEBLE,
+  ETIQUETAS_TIPO_INMUEBLE,
+  type Inmueble,
+} from "@/app/asesor/inmuebles/constantes";
 import { FotoMiniatura } from "@/components/asesor/inmuebles/foto-miniatura";
 
 const COLOR_ESTADO: Record<string, string> = {
@@ -15,9 +19,10 @@ const COLOR_ESTADO: Record<string, string> = {
   vendido: "bg-emerald-500/15 text-emerald-600",
 };
 
-type Columna = "direccion" | "estado" | "precio" | "metros_cuadrados";
+type Columna = "direccion" | "estado" | "precio" | "metros_cuadrados" | "visitas";
 
 export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
+  const router = useRouter();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
     columna: "direccion",
     asc: true,
@@ -65,23 +70,35 @@ export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
             <th className="px-4 py-2 text-left font-medium">Foto</th>
             <th className="px-4 py-2 text-left font-medium">Ref.</th>
             {encabezado("direccion", "Dirección")}
-            {encabezado("estado", "Estado")}
+            <th className="px-4 py-2 text-left font-medium">Familia</th>
+            <th className="px-4 py-2 text-left font-medium">Población</th>
             {encabezado("precio", "Precio")}
+            {encabezado("visitas", "Visitas")}
             {encabezado("metros_cuadrados", "m²")}
+            {encabezado("estado", "Estado")}
           </tr>
         </thead>
         <tbody>
           {ordenados.map((i) => (
-            <tr key={i.id} className="border-b last:border-0 hover:bg-accent/50">
+            <tr
+              key={i.id}
+              onClick={() => router.push(`/asesor/inmuebles/${i.id}`)}
+              className="cursor-pointer border-b last:border-0 hover:bg-accent/50"
+            >
               <td className="px-4 py-2">
-                <FotoMiniatura rutaStorage={i.foto} className="size-10" />
+                <FotoMiniatura rutaStorage={i.foto} className="size-20" />
               </td>
               <td className="px-4 py-2 text-muted-foreground">{i.referencia ?? "—"}</td>
+              <td className="px-4 py-2 font-medium">{i.direccion}</td>
               <td className="px-4 py-2">
-                <Link href={`/asesor/inmuebles/${i.id}`} className="font-medium underline">
-                  {i.direccion}
-                </Link>
+                {i.tipo ? ETIQUETAS_TIPO_INMUEBLE[i.tipo] ?? i.tipo : "—"}
               </td>
+              <td className="px-4 py-2">{i.poblacion ?? "—"}</td>
+              <td className="px-4 py-2">
+                {i.precio ? `${Number(i.precio).toLocaleString("es-ES")} €` : "—"}
+              </td>
+              <td className="px-4 py-2">{i.visitas}</td>
+              <td className="px-4 py-2">{i.metros_cuadrados ? `${i.metros_cuadrados} m²` : "—"}</td>
               <td className="px-4 py-2">
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLOR_ESTADO[i.estado] ?? "bg-muted text-muted-foreground"}`}
@@ -89,10 +106,6 @@ export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
                   {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
                 </span>
               </td>
-              <td className="px-4 py-2">
-                {i.precio ? `${Number(i.precio).toLocaleString("es-ES")} €` : "—"}
-              </td>
-              <td className="px-4 py-2">{i.metros_cuadrados ? `${i.metros_cuadrados} m²` : "—"}</td>
             </tr>
           ))}
         </tbody>
