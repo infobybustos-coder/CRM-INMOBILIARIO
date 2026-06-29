@@ -39,6 +39,18 @@ const TAREAS_SUGERIDAS_COMPRADOR = [
   "Coordinar firma con notaría",
 ];
 
+const TAREAS_SUGERIDAS_INMUEBLE = [
+  "Hacer reportaje fotográfico",
+  "Redactar anuncio para portales",
+  "Publicar en portales",
+  "Programar visitas",
+  "Hacer seguimiento de visitas",
+  "Revisar y ajustar el precio",
+  "Solicitar certificado energético",
+  "Preparar documentación para la venta",
+  "Coordinar firma con notaría",
+];
+
 export function Tareas({
   entidadId,
   tareas,
@@ -50,12 +62,16 @@ export function Tareas({
   tareas: Tarea[];
   crearTareaAction: (prevState: TareaState, formData: FormData) => Promise<TareaState>;
   alternarTareaAction: (tareaId: string, entidadId: string, completada: boolean) => Promise<void>;
-  sugeridas?: "propietario" | "comprador";
+  sugeridas?: "propietario" | "comprador" | "inmueble";
 }) {
   const [state, formAction, pending] = useActionState(crearTareaAction, null);
   const tituloRef = useRef<HTMLInputElement>(null);
   const lista =
-    sugeridas === "comprador" ? TAREAS_SUGERIDAS_COMPRADOR : TAREAS_SUGERIDAS_PROPIETARIO;
+    sugeridas === "comprador"
+      ? TAREAS_SUGERIDAS_COMPRADOR
+      : sugeridas === "inmueble"
+        ? TAREAS_SUGERIDAS_INMUEBLE
+        : TAREAS_SUGERIDAS_PROPIETARIO;
 
   return (
     <div className="space-y-4 rounded-lg border p-4">

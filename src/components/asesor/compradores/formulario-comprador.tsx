@@ -13,9 +13,9 @@ import {
   type Comprador,
   type Zona,
 } from "@/app/asesor/compradores/constantes";
-import { actualizarComprador } from "@/app/asesor/compradores/actions";
+import { actualizarComprador, crearZona } from "@/app/asesor/compradores/actions";
 import { Button } from "@/components/ui/button";
-import { ZonaSelector } from "./zona-selector";
+import { ZonaSelector } from "@/components/asesor/zona-selector";
 
 function aFechaInput(fecha: string | null) {
   if (!fecha) return "";
@@ -178,7 +178,13 @@ export function FormularioComprador({
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <ZonaSelector zonas={zonas} zonaSeleccionada={comprador.zona_buscada_id} />
+          <ZonaSelector
+            zonas={zonas}
+            zonaSeleccionada={comprador.zona_buscada_id}
+            crearZonaAction={crearZona}
+            name="zona_buscada_id"
+            label="Zona buscada"
+          />
         </div>
 
         <div className="space-y-2">

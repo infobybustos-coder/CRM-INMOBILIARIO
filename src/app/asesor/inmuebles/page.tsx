@@ -1,57 +1,56 @@
 import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { Filtros } from "@/components/asesor/inmuebles/filtros";
+import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
+import { Kanban } from "@/components/asesor/inmuebles/kanban";
+import { Tabla } from "@/components/asesor/inmuebles/tabla";
+import type { Inmueble } from "./constantes";
 
-const ETIQUETAS_ESTADO: Record<string, string> = {
-  captacion: "Captación",
-  preparacion: "Preparación",
-  publicado: "Publicado",
-  visitas: "Visitas",
-  oferta: "Oferta",
-  reservado: "Reservado",
-  vendido: "Vendido",
-};
-
-export default async function InmueblesPage() {
+export default async function InmueblesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
+  const params = await searchParams;
+  const vista = params.vista === "tabla" ? "tabla" : "kanban";
+
   const supabase = await createClient();
-  const { data: inmuebles } = await supabase
+  let query = supabase
     .from("inmuebles")
-    .select("id, direccion, precio, estado")
-    .eq("agente_id", usuario.id)
-    .order("creado_en", { ascending: false });
+    .select(
+      "id, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
+    )
+    .eq("agente_id", usuario.id);
+
+  if (params.estado) query = query.eq("estado", params.estado);
+  if (params.tipo) query = query.eq("tipo", params.tipo);
+  if (params.precio_min) query = query.gte("precio", Number(params.precio_min));
+  if (params.precio_max) query = query.lte("precio", Number(params.precio_max));
+
+  const { data } = await query.order("creado_en", { ascending: false });
+  const inmuebles = (data ?? []) as Inmueble[];
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inmuebles</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Inmuebles</h1>
+        <VistaSwitcher vista={vista} />
+      </div>
 
-      {!inmuebles || inmuebles.length === 0 ? (
+      <Filtros />
+
+      {inmuebles.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Todavía no tienes inmuebles registrados.
+          Todavía no tienes inmuebles registrados. Usa el botón + para añadir uno.
         </p>
+      ) : vista === "tabla" ? (
+        <Tabla inmuebles={inmuebles} />
       ) : (
-        <ul className="space-y-2">
-          {inmuebles.map((i) => (
-            <li
-              key={i.id}
-              className="flex items-center justify-between rounded-lg border px-4 py-3"
-            >
-              <div>
-                <p className="font-medium">{i.direccion}</p>
-                {i.precio && (
-                  <p className="text-sm text-muted-foreground">
-                    {Number(i.precio).toLocaleString("es-ES")} €
-                  </p>
-                )}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {ETIQUETAS_ESTADO[i.estado] ?? i.estado}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <Kanban inmuebles={inmuebles} />
       )}
     </div>
   );
