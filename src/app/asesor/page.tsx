@@ -30,6 +30,9 @@ export default async function AsesorDashboard() {
     exclusivas,
     inmueblesCaptados,
     tareasPendientes,
+    totalPropietarios,
+    captados,
+    perdidos,
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -73,7 +76,27 @@ export default async function AsesorDashboard() {
       .select("id", { count: "exact", head: true })
       .eq("asignado_a", usuario.id)
       .eq("estado", "pendiente"),
+    supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("agente_id", usuario.id),
+    supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("agente_id", usuario.id)
+      .eq("estado", "captado"),
+    supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("agente_id", usuario.id)
+      .eq("estado", "perdido"),
   ]);
+
+  const totalCaptaciones = totalPropietarios.count ?? 0;
+  const conversion =
+    totalCaptaciones > 0
+      ? Math.round(((captados.count ?? 0) / totalCaptaciones) * 100)
+      : 0;
 
   const stats = [
     {
@@ -191,6 +214,28 @@ export default async function AsesorDashboard() {
             })}
           </ul>
         )}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-medium">Estadísticas</h2>
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-lg border p-4">
+            <p className="text-2xl font-semibold">{totalCaptaciones}</p>
+            <p className="text-sm text-muted-foreground">Captaciones</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-2xl font-semibold">{exclusivas.count ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Exclusivas</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-2xl font-semibold">{perdidos.count ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Perdidos</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-2xl font-semibold">{conversion}%</p>
+            <p className="text-sm text-muted-foreground">Conversión</p>
+          </div>
+        </div>
       </div>
     </div>
   );
