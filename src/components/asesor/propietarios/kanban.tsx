@@ -22,6 +22,17 @@ import {
 import { actualizarEstadoPropietario } from "@/app/asesor/propietarios/actions";
 import { cn } from "@/lib/utils";
 
+const COLOR_ESTADO: Record<string, string> = {
+  nuevo_lead: "bg-sky-500",
+  contactado: "bg-cyan-500",
+  tasacion_programada: "bg-amber-500",
+  tasacion_realizada: "bg-orange-500",
+  negociacion: "bg-violet-500",
+  exclusiva_firmada: "bg-indigo-500",
+  captado: "bg-emerald-500",
+  perdido: "bg-rose-500",
+};
+
 function esVencida(fecha: string | null) {
   if (!fecha) return false;
   return new Date(fecha) < new Date(new Date().toDateString());
@@ -45,31 +56,39 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
           : undefined
       }
       className={cn(
-        "cursor-grab touch-none rounded-md border bg-card p-3 text-sm shadow-sm active:cursor-grabbing",
-        vencida && "border-red-500",
-        isDragging && "z-10 opacity-70"
+        "cursor-grab touch-none rounded-lg border bg-card p-3 text-sm shadow-sm transition-shadow",
+        "hover:shadow-md active:cursor-grabbing",
+        vencida ? "border-red-500/60 ring-1 ring-red-500/20" : "border-border",
+        isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
       <Link
         href={`/asesor/propietarios/${propietario.id}`}
         onClick={(e) => isDragging && e.preventDefault()}
-        className="font-medium underline"
+        className="font-medium text-foreground hover:text-primary"
       >
         {propietario.nombre}
       </Link>
       <p className="text-muted-foreground">{propietario.telefono}</p>
       {propietario.tipo_inmueble && (
-        <p className="text-muted-foreground">
+        <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {ETIQUETAS_TIPO_INMUEBLE[propietario.tipo_inmueble] ?? propietario.tipo_inmueble}
         </p>
       )}
       {propietario.valor_estimado ? (
-        <p>{Number(propietario.valor_estimado).toLocaleString("es-ES")} €</p>
+        <p className="mt-1 font-medium">
+          {Number(propietario.valor_estimado).toLocaleString("es-ES")} €
+        </p>
       ) : null}
       {propietario.fecha_proxima_accion && (
-        <p className={cn(vencida && "font-medium text-red-500")}>
-          Próxima acción: {new Date(propietario.fecha_proxima_accion).toLocaleDateString("es-ES")}
-          {vencida && " ⚠"}
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            vencida ? "font-semibold text-red-500" : "text-muted-foreground"
+          )}
+        >
+          {new Date(propietario.fecha_proxima_accion).toLocaleDateString("es-ES")}
+          {vencida && " ⚠ vencida"}
         </p>
       )}
     </div>
@@ -89,14 +108,18 @@ function Columna({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-72 shrink-0 flex-col gap-2 rounded-lg border bg-muted/30 p-2",
-        isOver && "bg-accent/50"
+        "flex w-72 shrink-0 flex-col gap-2 rounded-xl border bg-muted/30 p-2 transition-colors",
+        isOver && "bg-primary/10 ring-2 ring-primary/30"
       )}
     >
-      <h2 className="px-1 text-sm font-semibold">
-        {ETIQUETAS_ESTADO[estado]} <span className="text-muted-foreground">({propietarios.length})</span>
-      </h2>
-      <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2 px-1 pt-1">
+        <span className={cn("size-2.5 rounded-full", COLOR_ESTADO[estado])} />
+        <h2 className="text-sm font-semibold">{ETIQUETAS_ESTADO[estado]}</h2>
+        <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          {propietarios.length}
+        </span>
+      </div>
+      <div className="flex min-h-12 flex-col gap-2">
         {propietarios.map((p) => (
           <Tarjeta key={p.id} propietario={p} />
         ))}

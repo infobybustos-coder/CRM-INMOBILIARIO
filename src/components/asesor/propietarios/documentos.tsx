@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   registrarDocumento,
@@ -12,6 +12,7 @@ import {
   ETIQUETAS_TIPO_DOCUMENTO,
 } from "@/app/asesor/propietarios/constantes";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Documento = {
   id: string;
@@ -33,13 +34,11 @@ export function Documentos({
   const [lista, setLista] = useState(documentos);
   const [tipo, setTipo] = useState("");
   const [subiendo, setSubiendo] = useState(false);
+  const [arrastrando, setArrastrando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function subirArchivo(file: File) {
-    setSubiendo(true);
-    setError(null);
-
     const supabase = createClient();
     const ruta = `${tenantId}/propietario/${propietarioId}/${Date.now()}_${file.name}`;
 
@@ -48,8 +47,7 @@ export function Documentos({
       .upload(ruta, file);
 
     if (uploadError) {
-      setError("No se pudo subir el archivo.");
-      setSubiendo(false);
+      setError(`No se pudo subir "${file.name}".`);
       return;
     }
 
@@ -66,7 +64,16 @@ export function Documentos({
         ...prev,
       ]);
     } catch {
-      setError("No se pudo registrar el documento.");
+      setError(`No se pudo registrar "${file.name}".`);
+    }
+  }
+
+  async function subirArchivos(files: FileList | File[]) {
+    setSubiendo(true);
+    setError(null);
+
+    for (const file of Array.from(files)) {
+      await subirArchivo(file);
     }
 
     setSubiendo(false);
@@ -91,28 +98,50 @@ export function Documentos({
     <div className="space-y-4 rounded-lg border p-4">
       <h2 className="font-semibold">Documentos</h2>
 
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Tipo de documento</option>
-          {TIPOS_DOCUMENTO.map((t) => (
-            <option key={t} value={t}>
-              {ETIQUETAS_TIPO_DOCUMENTO[t]}
-            </option>
-          ))}
-        </select>
+      <select
+        value={tipo}
+        onChange={(e) => setTipo(e.target.value)}
+        className="rounded-md border bg-background px-3 py-2 text-sm"
+      >
+        <option value="">Tipo de documento (opcional)</option>
+        {TIPOS_DOCUMENTO.map((t) => (
+          <option key={t} value={t}>
+            {ETIQUETAS_TIPO_DOCUMENTO[t]}
+          </option>
+        ))}
+      </select>
+
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setArrastrando(true);
+        }}
+        onDragLeave={() => setArrastrando(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setArrastrando(false);
+          if (e.dataTransfer.files.length) subirArchivos(e.dataTransfer.files);
+        }}
+        className={cn(
+          "flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+          arrastrando ? "border-primary bg-primary/10" : "border-border hover:bg-muted/30"
+        )}
+      >
+        <UploadCloud className="size-6 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          Arrastra archivos aquí o haz clic para seleccionarlos
+        </p>
         <input
           ref={inputRef}
           type="file"
+          multiple
           disabled={subiendo}
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) subirArchivo(file);
+            if (e.target.files?.length) subirArchivos(e.target.files);
           }}
-          className="text-sm"
+          onClick={(e) => e.stopPropagation()}
+          className="hidden"
         />
       </div>
       {subiendo && <p className="text-sm text-muted-foreground">Subiendo...</p>}

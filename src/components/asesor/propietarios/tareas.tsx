@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { crearTarea, alternarTarea } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,19 @@ type Tarea = {
   estado: string;
 };
 
+const TAREAS_SUGERIDAS = [
+  "Llamar para concertar tasación",
+  "Realizar visita de tasación",
+  "Enviar valoración al propietario",
+  "Solicitar nota simple",
+  "Solicitar certificado energético",
+  "Preparar reportaje fotográfico",
+  "Enviar borrador de contrato de exclusiva",
+  "Hacer seguimiento tras la visita",
+  "Confirmar firma de exclusiva",
+  "Publicar inmueble en portales",
+];
+
 export function Tareas({
   propietarioId,
   tareas,
@@ -22,13 +35,33 @@ export function Tareas({
 }) {
   const accion = crearTarea.bind(null, propietarioId);
   const [state, formAction, pending] = useActionState(accion, null);
+  const tituloRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <h2 className="font-semibold">Tareas</h2>
 
       <form action={formAction} className="flex flex-wrap gap-2">
+        <select
+          defaultValue=""
+          onChange={(e) => {
+            if (e.target.value && tituloRef.current) {
+              tituloRef.current.value = e.target.value;
+              tituloRef.current.focus();
+            }
+            e.target.value = "";
+          }}
+          className="rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground"
+        >
+          <option value="">Tareas sugeridas...</option>
+          {TAREAS_SUGERIDAS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
         <input
+          ref={tituloRef}
           name="titulo"
           placeholder="Nueva tarea..."
           className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"

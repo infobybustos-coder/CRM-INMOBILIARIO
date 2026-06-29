@@ -16,7 +16,7 @@ export default async function AsesorLayout({
   if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground md:pl-56">
+    <div className="tema-asesor min-h-screen bg-background text-foreground md:pl-56">
       <header className="flex items-center justify-between border-b px-4 py-3">
         <span className="font-semibold">{usuario.tenant?.nombre}</span>
         <form action={signOut}>
