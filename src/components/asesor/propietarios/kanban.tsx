@@ -33,6 +33,17 @@ const COLOR_ESTADO: Record<string, string> = {
   perdido: "bg-rose-500",
 };
 
+const FONDO_ESTADO: Record<string, string> = {
+  nuevo_lead: "bg-sky-500/10",
+  contactado: "bg-cyan-500/10",
+  tasacion_programada: "bg-amber-500/10",
+  tasacion_realizada: "bg-orange-500/10",
+  negociacion: "bg-violet-500/10",
+  exclusiva_firmada: "bg-indigo-500/10",
+  captado: "bg-emerald-500/10",
+  perdido: "bg-rose-500/10",
+};
+
 function esVencida(fecha: string | null) {
   if (!fecha) return false;
   return new Date(fecha) < new Date(new Date().toDateString());
@@ -56,8 +67,9 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
           : undefined
       }
       className={cn(
-        "cursor-grab touch-none rounded-lg border bg-card p-3 text-sm shadow-sm transition-shadow",
+        "cursor-grab touch-none rounded-lg border p-3 text-sm shadow-sm transition-shadow",
         "hover:shadow-md active:cursor-grabbing",
+        FONDO_ESTADO[propietario.estado] ?? "bg-card",
         vencida ? "border-red-500/60 ring-1 ring-red-500/20" : "border-border",
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
