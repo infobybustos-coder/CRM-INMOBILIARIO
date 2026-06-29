@@ -132,6 +132,20 @@ export function QuickAdd() {
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     />
                   </div>
+
+                  {tipo === "propietario" && (
+                    <div className="space-y-2">
+                      <label htmlFor="direccion_propietario" className="text-sm font-medium">
+                        Dirección
+                      </label>
+                      <input
+                        id="direccion_propietario"
+                        name="direccion"
+                        type="text"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  )}
                 </>
               )}
 

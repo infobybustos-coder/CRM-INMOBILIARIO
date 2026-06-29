@@ -38,6 +38,7 @@ export async function crearClienteRapido(
   const nombre = String(formData.get("nombre") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim() || null;
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
 
   if (!nombre || !telefono) {
     return { error: "Pon al menos el nombre y el teléfono." };
@@ -51,6 +52,7 @@ export async function crearClienteRapido(
     nombre,
     telefono,
     email,
+    ...(tabla === "propietarios" ? { direccion } : {}),
   });
 
   if (error) {
