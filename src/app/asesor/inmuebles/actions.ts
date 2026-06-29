@@ -41,6 +41,7 @@ export async function actualizarInmueble(
   const direccion = String(formData.get("direccion") ?? "").trim();
   if (!direccion) return { error: "La dirección es obligatoria." };
 
+  const referencia = String(formData.get("referencia") ?? "").trim();
   const precio = formData.get("precio");
   const metrosCuadrados = formData.get("metros_cuadrados");
   const habitaciones = formData.get("habitaciones");
@@ -53,6 +54,7 @@ export async function actualizarInmueble(
     .from("inmuebles")
     .update({
       direccion,
+      referencia: referencia || null,
       zona_id: zonaId || null,
       propietario_id: propietarioId || null,
       precio: precio ? Number(precio) : null,
@@ -67,7 +69,11 @@ export async function actualizarInmueble(
     .eq("id", id)
     .eq("agente_id", usuario.id);
 
-  if (error) return { error: "No se pudo guardar." };
+  if (error) {
+    return error.code === "23505"
+      ? { error: "Esa referencia ya existe." }
+      : { error: "No se pudo guardar." };
+  }
 
   revalidatePath(`/asesor/inmuebles/${id}`);
   revalidatePath("/asesor/inmuebles");

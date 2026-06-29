@@ -24,7 +24,7 @@ export default async function InmueblePage({
   const { data: inmueble } = await supabase
     .from("inmuebles")
     .select(
-      "id, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
+      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
     )
     .eq("id", id)
     .eq("agente_id", usuario.id)
@@ -74,7 +74,14 @@ export default async function InmueblePage({
         Volver a Inmuebles
       </Link>
 
-      <h1 className="text-2xl font-semibold">{inmueble.direccion}</h1>
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-semibold">{inmueble.direccion}</h1>
+        {inmueble.referencia && (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            Ref. {inmueble.referencia}
+          </span>
+        )}
+      </div>
 
       <FormularioInmueble
         inmueble={inmueble as Inmueble}

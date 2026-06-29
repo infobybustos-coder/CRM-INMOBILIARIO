@@ -17,18 +17,26 @@ export async function crearClienteRapido(
   const supabase = await createClient();
 
   if (tipo === "inmueble") {
+    const referencia = String(formData.get("referencia") ?? "").trim();
     const direccion = String(formData.get("direccion") ?? "").trim();
     const precio = formData.get("precio");
-    if (!direccion) return { error: "Pon al menos la dirección." };
+    if (!referencia || !direccion) {
+      return { error: "Pon al menos la referencia y la dirección." };
+    }
 
     const { error } = await supabase.from("inmuebles").insert({
       tenant_id: usuario.tenant_id,
       agente_id: usuario.id,
+      referencia,
       direccion,
       precio: precio ? Number(precio) : null,
     });
 
-    if (error) return { error: "No se pudo guardar el inmueble." };
+    if (error) {
+      return error.code === "23505"
+        ? { error: "Esa referencia ya existe." }
+        : { error: "No se pudo guardar el inmueble." };
+    }
 
     revalidatePath("/asesor");
     revalidatePath("/asesor/inmuebles");

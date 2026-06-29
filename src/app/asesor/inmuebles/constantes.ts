@@ -40,6 +40,8 @@ export type Foto = {
 
 export type Inmueble = {
   id: string;
+  referencia: string | null;
+  foto: string | null;
   direccion: string;
   zona_id: string | null;
   propietario_id: string | null;

@@ -22,7 +22,7 @@ export default async function InmueblesPage({
   let query = supabase
     .from("inmuebles")
     .select(
-      "id, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
+      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
     )
     .eq("agente_id", usuario.id);
 
@@ -32,7 +32,27 @@ export default async function InmueblesPage({
   if (params.precio_max) query = query.lte("precio", Number(params.precio_max));
 
   const { data } = await query.order("creado_en", { ascending: false });
-  const inmuebles = (data ?? []) as Inmueble[];
+  const base = data ?? [];
+
+  const { data: fotos } = base.length
+    ? await supabase
+        .from("documentos")
+        .select("entidad_id, url_storage, creado_en")
+        .eq("entidad_tipo", "inmueble")
+        .eq("tipo_documento", "foto")
+        .in("entidad_id", base.map((i) => i.id))
+        .order("creado_en", { ascending: false })
+    : { data: [] };
+
+  const fotoPorInmueble = new Map<string, string>();
+  for (const f of fotos ?? []) {
+    if (!fotoPorInmueble.has(f.entidad_id)) fotoPorInmueble.set(f.entidad_id, f.url_storage);
+  }
+
+  const inmuebles = base.map((i) => ({
+    ...i,
+    foto: fotoPorInmueble.get(i.id) ?? null,
+  })) as Inmueble[];
 
   return (
     <div className="space-y-4">

@@ -20,6 +20,7 @@ import {
   type Inmueble,
 } from "@/app/asesor/inmuebles/constantes";
 import { actualizarEstadoInmueble } from "@/app/asesor/inmuebles/actions";
+import { FotoMiniatura } from "@/components/asesor/inmuebles/foto-miniatura";
 import { cn } from "@/lib/utils";
 
 const COLOR_ESTADO: Record<string, string> = {
@@ -65,13 +66,21 @@ function Tarjeta({ inmueble }: { inmueble: Inmueble }) {
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <Link
-        href={`/asesor/inmuebles/${inmueble.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="font-medium text-foreground hover:text-primary"
-      >
-        {inmueble.direccion}
-      </Link>
+      <div className="flex items-start gap-2">
+        <FotoMiniatura rutaStorage={inmueble.foto} className="size-12" />
+        <div className="min-w-0">
+          <Link
+            href={`/asesor/inmuebles/${inmueble.id}`}
+            onClick={(e) => isDragging && e.preventDefault()}
+            className="font-medium text-foreground hover:text-primary"
+          >
+            {inmueble.direccion}
+          </Link>
+          {inmueble.referencia && (
+            <p className="text-xs text-muted-foreground">Ref. {inmueble.referencia}</p>
+          )}
+        </div>
+      </div>
       {inmueble.tipo && (
         <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {ETIQUETAS_TIPO_INMUEBLE[inmueble.tipo] ?? inmueble.tipo}

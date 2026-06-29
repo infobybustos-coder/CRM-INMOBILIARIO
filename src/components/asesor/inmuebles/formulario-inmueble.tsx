@@ -34,7 +34,19 @@ export function FormularioInmueble({
   return (
     <form action={formAction} className="space-y-4 rounded-lg border p-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
+        <div className="space-y-2">
+          <label htmlFor="referencia" className="text-sm font-medium">
+            Referencia
+          </label>
+          <input
+            id="referencia"
+            name="referencia"
+            defaultValue={inmueble.referencia ?? ""}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="direccion" className="text-sm font-medium">
             Dirección
           </label>

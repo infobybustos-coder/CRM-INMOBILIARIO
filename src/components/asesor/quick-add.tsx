@@ -91,19 +91,35 @@ export function QuickAdd() {
               </fieldset>
 
               {tipo === "inmueble" ? (
-                <div className="space-y-2">
-                  <label htmlFor="direccion" className="text-sm font-medium">
-                    Dirección
-                  </label>
-                  <input
-                    id="direccion"
-                    name="direccion"
-                    type="text"
-                    required
-                    autoFocus
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="referencia" className="text-sm font-medium">
+                      Referencia
+                    </label>
+                    <input
+                      id="referencia"
+                      name="referencia"
+                      type="text"
+                      required
+                      autoFocus
+                      placeholder="Ej. CV57588"
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="direccion" className="text-sm font-medium">
+                      Dirección
+                    </label>
+                    <input
+                      id="direccion"
+                      name="direccion"
+                      type="text"
+                      required
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </>
               ) : (
                 <>
                   <div className="space-y-2">
