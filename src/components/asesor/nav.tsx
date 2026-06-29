@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserSearch, Home } from "lucide-react";
+import { LayoutDashboard, Users, UserSearch, Home, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ENLACES = [
@@ -10,6 +10,7 @@ const ENLACES = [
   { href: "/asesor/propietarios", label: "Propietarios", icon: Users },
   { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
   { href: "/asesor/inmuebles", label: "Inmuebles", icon: Home },
+  { href: "/asesor/agenda", label: "Agenda", icon: CalendarDays },
 ];
 
 export function AsesorNav() {
