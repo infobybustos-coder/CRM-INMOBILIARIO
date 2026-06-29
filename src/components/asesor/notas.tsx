@@ -51,17 +51,25 @@ export function Notas({
         </Button>
       </form>
 
-      <div className="space-y-3 border-t pt-3">
+      <div className="space-y-0 border-t pt-3">
         {actividades.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin actividad todavía.</p>
         ) : (
-          actividades.map((a) => (
-            <div key={a.id} className="text-sm">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>{ETIQUETAS_TIPO_ACTIVIDAD[a.tipo] ?? a.tipo}</span>
-                <span>{new Date(a.creado_en).toLocaleString("es-ES")}</span>
+          actividades.map((a, i) => (
+            <div key={a.id} className="relative flex gap-3 pb-4 text-sm last:pb-0">
+              <div className="flex flex-col items-center">
+                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                {i < actividades.length - 1 && (
+                  <span className="w-px flex-1 bg-border" aria-hidden />
+                )}
               </div>
-              {a.contenido && <p>{a.contenido}</p>}
+              <div className="min-w-0 flex-1 pb-1">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="font-medium">{ETIQUETAS_TIPO_ACTIVIDAD[a.tipo] ?? a.tipo}</span>
+                  <span className="text-xs">{new Date(a.creado_en).toLocaleString("es-ES")}</span>
+                </div>
+                {a.contenido && <p className="mt-0.5">{a.contenido}</p>}
+              </div>
             </div>
           ))
         )}

@@ -176,6 +176,103 @@ export async function registrarDocumento(
   revalidatePath(`/asesor/propietarios/${propietarioId}`);
 }
 
+const SIGUIENTE_PASO: Record<
+  string,
+  { etiqueta: string; tipoEvento: string; diasOffset: number }
+> = {
+  llamar: { etiqueta: "Llamar a", tipoEvento: "llamada", diasOffset: 1 },
+  enviar_documentacion: {
+    etiqueta: "Enviar documentación a",
+    tipoEvento: "recordatorio",
+    diasOffset: 1,
+  },
+  programar_visita: { etiqueta: "Programar visita con", tipoEvento: "visita", diasOffset: 2 },
+  esperar_respuesta: {
+    etiqueta: "Hacer seguimiento de la respuesta de",
+    tipoEvento: "recordatorio",
+    diasOffset: 3,
+  },
+};
+
+export async function crearSiguientePaso(
+  propietarioId: string,
+  nombrePropietario: string,
+  paso: string
+) {
+  const usuario = await requireUsuario();
+  const config = SIGUIENTE_PASO[paso];
+  if (!config) throw new Error("Paso desconocido");
+
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() + config.diasOffset);
+  const titulo = `${config.etiqueta} ${nombrePropietario}`;
+
+  const supabase = await createClient();
+
+  await Promise.all([
+    supabase.from("tareas").insert({
+      tenant_id: usuario.tenant_id,
+      entidad_tipo: "propietario",
+      entidad_id: propietarioId,
+      asignado_a: usuario.id,
+      titulo,
+      fecha_vencimiento: fecha.toISOString(),
+    }),
+    supabase.from("eventos_agenda").insert({
+      tenant_id: usuario.tenant_id,
+      usuario_id: usuario.id,
+      entidad_tipo: "propietario",
+      entidad_id: propietarioId,
+      tipo: config.tipoEvento,
+      titulo,
+      fecha_hora: fecha.toISOString(),
+    }),
+    supabase.from("propietarios").update({ fecha_proxima_accion: fecha.toISOString() }).eq("id", propietarioId),
+    supabase.from("actividades").insert({
+      tenant_id: usuario.tenant_id,
+      entidad_tipo: "propietario",
+      entidad_id: propietarioId,
+      usuario_id: usuario.id,
+      tipo: "sistema",
+      contenido: `Siguiente paso: ${titulo}`,
+    }),
+  ]);
+
+  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidatePath("/asesor/agenda");
+  revalidatePath("/asesor");
+}
+
+export type GuionState = { error: string } | { ok: true } | null;
+
+export async function actualizarGuionCaptacion(
+  propietarioId: string,
+  _prevState: GuionState,
+  formData: FormData
+): Promise<GuionState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const respuestas = {
+    motivo_venta: String(formData.get("motivo_venta") ?? "").trim(),
+    plazo: String(formData.get("plazo") ?? "").trim(),
+    otras_agencias: String(formData.get("otras_agencias") ?? "").trim(),
+    precio_esperado: String(formData.get("precio_esperado") ?? "").trim(),
+    acepta_exclusiva: String(formData.get("acepta_exclusiva") ?? "").trim(),
+  };
+
+  const { error } = await supabase
+    .from("propietarios")
+    .update({ guion_captacion: respuestas })
+    .eq("id", propietarioId)
+    .eq("agente_id", usuario.id);
+
+  if (error) return { error: "No se pudo guardar el guion." };
+
+  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  return { ok: true };
+}
+
 export async function eliminarDocumento(documentoId: string, propietarioId: string, urlStorage: string) {
   const usuario = await requireUsuario();
   const supabase = await createClient();

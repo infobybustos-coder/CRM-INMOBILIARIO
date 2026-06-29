@@ -7,7 +7,15 @@ import { FormularioPropietario } from "@/components/asesor/propietarios/formular
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { Documentos } from "@/components/asesor/propietarios/documentos";
-import { crearNota, crearTarea, alternarTarea } from "../actions";
+import { SiguientePaso } from "@/components/asesor/propietarios/siguiente-paso";
+import { GuionCaptacion } from "@/components/asesor/propietarios/guion-captacion";
+import {
+  crearNota,
+  crearTarea,
+  alternarTarea,
+  crearSiguientePaso,
+  actualizarGuionCaptacion,
+} from "../actions";
 import type { Propietario } from "../constantes";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
@@ -91,7 +99,18 @@ export default async function PropietarioPage({
         </span>
       </div>
 
+      <SiguientePaso
+        propietarioId={id}
+        nombrePropietario={propietario.nombre}
+        crearSiguientePasoAction={crearSiguientePaso}
+      />
+
       <FormularioPropietario propietario={propietario as Propietario} />
+
+      <GuionCaptacion
+        respuestas={(propietario as Propietario).guion_captacion}
+        actualizarGuionAction={actualizarGuionCaptacion.bind(null, id)}
+      />
 
       <Tareas
         entidadId={id}
