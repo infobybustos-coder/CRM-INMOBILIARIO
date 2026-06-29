@@ -61,6 +61,7 @@ export async function actualizarPropietario(
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
       direccion: String(formData.get("direccion") ?? "").trim() || null,
       tipo_inmueble: String(formData.get("tipo_inmueble") ?? "") || null,
+      fuente_lead: String(formData.get("fuente_lead") ?? "") || null,
       valor_estimado: valorEstimado ? Number(valorEstimado) : null,
       fecha_proxima_accion: fechaProximaAccion ? String(fechaProximaAccion) : null,
       fecha_ultimo_contacto: fechaUltimoContacto ? String(fechaUltimoContacto) : null,

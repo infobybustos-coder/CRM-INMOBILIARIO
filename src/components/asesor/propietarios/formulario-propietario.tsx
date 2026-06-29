@@ -6,6 +6,8 @@ import {
   ETIQUETAS_ESTADO,
   TIPOS_INMUEBLE,
   ETIQUETAS_TIPO_INMUEBLE,
+  FUENTES_LEAD,
+  ETIQUETAS_FUENTE_LEAD,
   type Propietario,
 } from "@/app/asesor/propietarios/constantes";
 import { actualizarPropietario } from "@/app/asesor/propietarios/actions";
@@ -100,6 +102,25 @@ export function FormularioPropietario({ propietario }: { propietario: Propietari
             {TIPOS_INMUEBLE.map((t) => (
               <option key={t} value={t}>
                 {ETIQUETAS_TIPO_INMUEBLE[t]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="fuente_lead" className="text-sm font-medium">
+            Fuente del lead
+          </label>
+          <select
+            id="fuente_lead"
+            name="fuente_lead"
+            defaultValue={propietario.fuente_lead ?? ""}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">Sin especificar</option>
+            {FUENTES_LEAD.map((f) => (
+              <option key={f} value={f}>
+                {ETIQUETAS_FUENTE_LEAD[f]}
               </option>
             ))}
           </select>

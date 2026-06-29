@@ -9,6 +9,14 @@ import { Tareas } from "@/components/asesor/tareas";
 import { Documentos } from "@/components/asesor/propietarios/documentos";
 import { crearNota, crearTarea, alternarTarea } from "../actions";
 import type { Propietario } from "../constantes";
+import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
+import { cn } from "@/lib/utils";
+
+const COLOR_PRIORIDAD: Record<string, string> = {
+  alta: "bg-red-500 text-white",
+  media: "bg-amber-500 text-white",
+  baja: "bg-muted text-muted-foreground",
+};
 
 export default async function PropietarioPage({
   params,
@@ -24,7 +32,7 @@ export default async function PropietarioPage({
   const { data: propietario } = await supabase
     .from("propietarios")
     .select(
-      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en"
+      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en"
     )
     .eq("id", id)
     .eq("agente_id", usuario.id)
@@ -63,7 +71,25 @@ export default async function PropietarioPage({
         Volver a Propietarios
       </Link>
 
-      <h1 className="text-2xl font-semibold">{propietario.nombre}</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-semibold">{propietario.nombre}</h1>
+        {(() => {
+          const prioridad = calcularPrioridad(propietario);
+          return prioridad ? (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
+                COLOR_PRIORIDAD[prioridad]
+              )}
+            >
+              Prioridad {prioridad}
+            </span>
+          ) : null;
+        })()}
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          Score: {calcularCaptacionScore(propietario)}
+        </span>
+      </div>
 
       <FormularioPropietario propietario={propietario as Propietario} />
 

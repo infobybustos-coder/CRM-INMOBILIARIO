@@ -74,6 +74,34 @@ export const ETIQUETAS_TIPO_DOCUMENTO: Record<string, string> = {
   otro: "Otro",
 };
 
+export const FUENTES_LEAD = [
+  "referido",
+  "portal_inmobiliario",
+  "redes_sociales",
+  "puerta_fria",
+  "web",
+  "llamada_entrante",
+  "otro",
+] as const;
+
+export const ETIQUETAS_FUENTE_LEAD: Record<string, string> = {
+  referido: "Referido",
+  portal_inmobiliario: "Portal inmobiliario",
+  redes_sociales: "Redes sociales",
+  puerta_fria: "Puerta fría",
+  web: "Web",
+  llamada_entrante: "Llamada entrante",
+  otro: "Otro",
+};
+
+export type RespuestasCaptacion = {
+  motivo_venta?: string;
+  plazo?: string;
+  otras_agencias?: string;
+  precio_esperado?: string;
+  acepta_exclusiva?: string;
+};
+
 export type Propietario = {
   id: string;
   nombre: string;
@@ -86,6 +114,8 @@ export type Propietario = {
   valor_estimado: number | null;
   fecha_ultimo_contacto: string | null;
   fecha_proxima_accion: string | null;
+  fuente_lead: string | null;
+  guion_captacion: RespuestasCaptacion | null;
   notas: string | null;
   creado_en: string;
 };

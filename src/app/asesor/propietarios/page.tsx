@@ -22,7 +22,7 @@ export default async function PropietariosPage({
   let query = supabase
     .from("propietarios")
     .select(
-      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en"
+      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en"
     )
     .eq("agente_id", usuario.id);
 

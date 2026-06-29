@@ -20,7 +20,14 @@ import {
   type Propietario,
 } from "@/app/asesor/propietarios/constantes";
 import { actualizarEstadoPropietario } from "@/app/asesor/propietarios/actions";
+import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
+
+const COLOR_PRIORIDAD: Record<string, string> = {
+  alta: "bg-red-500 text-white",
+  media: "bg-amber-500 text-white",
+  baja: "bg-muted text-muted-foreground",
+};
 
 const COLOR_ESTADO: Record<string, string> = {
   nuevo_lead: "bg-sky-500",
@@ -55,6 +62,8 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
   });
 
   const vencida = esVencida(propietario.fecha_proxima_accion);
+  const prioridad = calcularPrioridad(propietario);
+  const score = calcularCaptacionScore(propietario);
 
   return (
     <div
@@ -74,14 +83,27 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <Link
-        href={`/asesor/propietarios/${propietario.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="font-medium text-foreground hover:text-primary"
-      >
-        {propietario.nombre}
-      </Link>
+      <div className="flex items-center justify-between gap-2">
+        <Link
+          href={`/asesor/propietarios/${propietario.id}`}
+          onClick={(e) => isDragging && e.preventDefault()}
+          className="font-medium text-foreground hover:text-primary"
+        >
+          {propietario.nombre}
+        </Link>
+        {prioridad && (
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+              COLOR_PRIORIDAD[prioridad]
+            )}
+          >
+            {prioridad}
+          </span>
+        )}
+      </div>
       <p className="text-muted-foreground">{propietario.telefono}</p>
+      <p className="mt-1 text-xs text-muted-foreground">Score: {score}</p>
       {propietario.tipo_inmueble && (
         <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {ETIQUETAS_TIPO_INMUEBLE[propietario.tipo_inmueble] ?? propietario.tipo_inmueble}
