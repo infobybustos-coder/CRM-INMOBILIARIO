@@ -112,7 +112,7 @@ function Columna({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-72 shrink-0 flex-col gap-2 rounded-xl border bg-muted/30 p-2 transition-colors",
+        "flex h-[calc(100vh-13rem)] w-72 shrink-0 flex-col gap-2 rounded-xl border bg-muted/30 p-2 transition-colors",
         isOver && "bg-primary/10 ring-2 ring-primary/30"
       )}
     >
@@ -123,7 +123,7 @@ function Columna({
           {compradores.length}
         </span>
       </div>
-      <div className="flex min-h-12 flex-col gap-2">
+      <div className="flex min-h-12 flex-1 flex-col gap-2 overflow-y-auto">
         {compradores.map((c) => (
           <Tarjeta key={c.id} comprador={c} />
         ))}
