@@ -25,13 +25,22 @@ export default async function AsesorLayout({
 
   const finHoy = new Date();
   finHoy.setHours(23, 59, 59, 999);
-  const { count: tareasNotificacion } = await supabase
-    .from("tareas")
-    .select("id", { count: "exact", head: true })
-    .eq("asignado_a", usuario.id)
-    .eq("estado", "pendiente")
-    .not("fecha_vencimiento", "is", null)
-    .lte("fecha_vencimiento", finHoy.toISOString());
+  const [{ count: tareasPendientes }, { count: eventosPendientes }] = await Promise.all([
+    supabase
+      .from("tareas")
+      .select("id", { count: "exact", head: true })
+      .eq("asignado_a", usuario.id)
+      .eq("estado", "pendiente")
+      .not("fecha_vencimiento", "is", null)
+      .lte("fecha_vencimiento", finHoy.toISOString()),
+    supabase
+      .from("eventos_agenda")
+      .select("id", { count: "exact", head: true })
+      .eq("usuario_id", usuario.id)
+      .eq("estado", "pendiente")
+      .lte("fecha_hora", finHoy.toISOString()),
+  ]);
+  const tareasNotificacion = (tareasPendientes ?? 0) + (eventosPendientes ?? 0);
 
   return (
     <PreferenciasProvider
@@ -53,7 +62,7 @@ export default async function AsesorLayout({
           </div>
         </header>
         <main className="p-4 pb-24 md:pb-6">{children}</main>
-        <AsesorNav tareasNotificacion={tareasNotificacion ?? 0} />
+        <AsesorNav tareasNotificacion={tareasNotificacion} />
         <QuickAdd />
       </div>
     </PreferenciasProvider>

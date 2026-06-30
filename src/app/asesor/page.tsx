@@ -45,6 +45,7 @@ export default async function AsesorDashboard() {
     exclusivas,
     inmueblesCaptados,
     tareasPendientes,
+    eventosPendientes,
     totalPropietarios,
     captados,
     perdidos,
@@ -93,6 +94,11 @@ export default async function AsesorDashboard() {
       .from("tareas")
       .select("id", { count: "exact", head: true })
       .eq("asignado_a", usuario.id)
+      .eq("estado", "pendiente"),
+    supabase
+      .from("eventos_agenda")
+      .select("id", { count: "exact", head: true })
+      .eq("usuario_id", usuario.id)
       .eq("estado", "pendiente"),
     supabase
       .from("propietarios")
@@ -192,7 +198,7 @@ export default async function AsesorDashboard() {
     },
     {
       label: "Tareas pendientes",
-      valor: tareasPendientes.count ?? 0,
+      valor: (tareasPendientes.count ?? 0) + (eventosPendientes.count ?? 0),
       icono: CheckSquare,
       href: "/asesor/tareas",
       color: "text-rose-500",

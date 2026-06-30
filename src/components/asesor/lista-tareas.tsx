@@ -5,15 +5,19 @@ import Link from "next/link";
 import { CheckCircle2, Pencil, Check, X, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Origen = "tarea" | "evento";
+
 type TareaItem = {
   id: string;
+  origen: Origen;
   titulo: string;
   descripcion: string | null;
   fecha_vencimiento: string | null;
   estado: string;
-  entidad_tipo: string;
+  entidad_tipo: string | null;
   entidad_nombre: string | null;
   entidad_href: string;
+  etiqueta_origen: string | null;
 };
 
 type EditarTareaState = { error: string } | { ok: true } | null;
@@ -34,17 +38,37 @@ function aFechaInput(fecha: string | null) {
   return fecha.slice(0, 10);
 }
 
+function combinarFecha(fechaOriginal: string | null, nuevaFecha: string): string | null {
+  if (!nuevaFecha) return null;
+  if (!fechaOriginal) return nuevaFecha;
+  const orig = new Date(fechaOriginal);
+  const [y, m, d] = nuevaFecha.split("-").map(Number);
+  const combinado = new Date(orig);
+  combinado.setFullYear(y, m - 1, d);
+  return combinado.toISOString();
+}
+
+function etiquetaRelacion(t: TareaItem): string {
+  if (t.entidad_nombre) {
+    return `${ETIQUETA_TIPO[t.entidad_tipo ?? ""] ?? t.entidad_tipo}: ${t.entidad_nombre}`;
+  }
+  if (t.etiqueta_origen) return t.etiqueta_origen;
+  if (t.entidad_tipo) return ETIQUETA_TIPO[t.entidad_tipo] ?? t.entidad_tipo;
+  return "Tarea";
+}
+
 export function ListaTareas({
   items,
   alternarTareaAction,
   editarTareaAction,
 }: {
   items: TareaItem[];
-  alternarTareaAction: (tareaId: string, completada: boolean) => Promise<void>;
+  alternarTareaAction: (id: string, completada: boolean, origen: Origen) => Promise<void>;
   editarTareaAction: (
-    tareaId: string,
+    id: string,
     titulo: string,
-    fechaVencimiento: string | null
+    fechaVencimiento: string | null,
+    origen: Origen
   ) => Promise<EditarTareaState>;
 }) {
   const [completadas, setCompletadas] = useState<Record<string, boolean>>(
@@ -56,15 +80,16 @@ export function ListaTareas({
   const [editando, setEditando] = useState<string | null>(null);
   const [filtroFecha, setFiltroFecha] = useState("");
 
-  function alternar(id: string, valor: boolean) {
-    setCompletadas((prev) => ({ ...prev, [id]: valor }));
-    alternarTareaAction(id, valor);
+  function alternar(t: TareaItem, valor: boolean) {
+    setCompletadas((prev) => ({ ...prev, [t.id]: valor }));
+    alternarTareaAction(t.id, valor, t.origen);
   }
 
-  async function guardarEdicion(id: string, titulo: string, fecha: string) {
-    const resultado = await editarTareaAction(id, titulo, fecha || null);
+  async function guardarEdicion(t: TareaItem, titulo: string, fecha: string) {
+    const fechaFinal = combinarFecha(datos[t.id].fecha, fecha);
+    const resultado = await editarTareaAction(t.id, titulo, fechaFinal, t.origen);
     if (resultado && "ok" in resultado) {
-      setDatos((prev) => ({ ...prev, [id]: { titulo, fecha: fecha || null } }));
+      setDatos((prev) => ({ ...prev, [t.id]: { titulo, fecha: fechaFinal } }));
       setEditando(null);
     }
     return resultado;
@@ -99,7 +124,7 @@ export function ListaTareas({
       return `<tr>
         <td>${completadas[t.id] ? "✔" : ""}</td>
         <td>${d.titulo}</td>
-        <td>${ETIQUETA_TIPO[t.entidad_tipo] ?? t.entidad_tipo}${t.entidad_nombre ? " · " + t.entidad_nombre : ""}</td>
+        <td>${etiquetaRelacion(t)}</td>
         <td style="${vencida ? "color:#dc2626;font-weight:600" : ""}">${
           d.fecha ? new Date(d.fecha).toLocaleDateString("es-ES") : "—"
         }${vencida ? " (urgente)" : ""}</td>
@@ -146,7 +171,7 @@ export function ListaTareas({
       return (
         <FormaEdicion
           key={t.id}
-          tareaId={t.id}
+          item={t}
           tituloInicial={d.titulo}
           fechaInicial={aFechaInput(d.fecha)}
           onCancelar={() => setEditando(null)}
@@ -166,7 +191,7 @@ export function ListaTareas({
       >
         <button
           type="button"
-          onClick={() => alternar(t.id, !completada)}
+          onClick={() => alternar(t, !completada)}
           aria-label={completada ? "Marcar como pendiente" : "Marcar como hecha"}
           className="shrink-0"
         >
@@ -182,10 +207,10 @@ export function ListaTareas({
           <p className="text-xs text-muted-foreground">
             {t.entidad_nombre ? (
               <Link href={t.entidad_href} className="underline">
-                {ETIQUETA_TIPO[t.entidad_tipo] ?? t.entidad_tipo}: {t.entidad_nombre}
+                {etiquetaRelacion(t)}
               </Link>
             ) : (
-              ETIQUETA_TIPO[t.entidad_tipo] ?? t.entidad_tipo
+              etiquetaRelacion(t)
             )}
             {d.fecha && (
               <>
@@ -219,7 +244,7 @@ export function ListaTareas({
   if (items.length === 0) {
     return (
       <p className="rounded-lg border p-4 text-sm text-muted-foreground">
-        No tienes tareas creadas. Añádelas desde la ficha de un propietario, comprador o inmueble.
+        No tienes tareas creadas. Añádelas desde la ficha de un propietario, comprador, inmueble, o desde la Agenda.
       </p>
     );
   }
@@ -306,17 +331,17 @@ export function ListaTareas({
 }
 
 function FormaEdicion({
-  tareaId,
+  item,
   tituloInicial,
   fechaInicial,
   onCancelar,
   onGuardar,
 }: {
-  tareaId: string;
+  item: TareaItem;
   tituloInicial: string;
   fechaInicial: string;
   onCancelar: () => void;
-  onGuardar: (id: string, titulo: string, fecha: string) => Promise<EditarTareaState>;
+  onGuardar: (item: TareaItem, titulo: string, fecha: string) => Promise<EditarTareaState>;
 }) {
   const [titulo, setTitulo] = useState(tituloInicial);
   const [fecha, setFecha] = useState(fechaInicial);
@@ -325,7 +350,7 @@ function FormaEdicion({
 
   async function guardar() {
     setGuardando(true);
-    const resultado = await onGuardar(tareaId, titulo, fecha);
+    const resultado = await onGuardar(item, titulo, fecha);
     setGuardando(false);
     if (resultado && "error" in resultado) setError(resultado.error);
   }
