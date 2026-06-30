@@ -12,6 +12,7 @@ import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarioMensual } from "@/components/asesor/calendario-mensual";
 import { ResumenTareas } from "@/components/asesor/resumen-tareas";
+import { GraficoLineas } from "@/components/asesor/grafico-lineas";
 import { agruparPorDia, type AgendaItem } from "@/lib/agenda";
 import { ESTADOS_PROPIETARIO, ETIQUETAS_ESTADO } from "./propietarios/constantes";
 
@@ -36,6 +37,9 @@ export default async function AsesorDashboard() {
   inicioHoy.setHours(0, 0, 0, 0);
   const finHoy = new Date();
   finHoy.setHours(23, 59, 59, 999);
+  const inicioHistorico = new Date();
+  inicioHistorico.setDate(inicioHistorico.getDate() - 7 * 8);
+  inicioHistorico.setHours(0, 0, 0, 0);
 
   const [
     propietariosProximos,
@@ -52,6 +56,8 @@ export default async function AsesorDashboard() {
     estadosPropietarios,
     eventosAgenda,
     tareasAgenda,
+    propietariosHistorico,
+    tareasCompletadasHistorico,
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -124,6 +130,17 @@ export default async function AsesorDashboard() {
       .select("id, titulo, fecha_vencimiento, estado")
       .eq("asignado_a", usuario.id)
       .not("fecha_vencimiento", "is", null),
+    supabase
+      .from("propietarios")
+      .select("creado_en, estado")
+      .eq("agente_id", usuario.id)
+      .gte("creado_en", inicioHistorico.toISOString()),
+    supabase
+      .from("tareas")
+      .select("completada_en")
+      .eq("asignado_a", usuario.id)
+      .not("completada_en", "is", null)
+      .gte("completada_en", inicioHistorico.toISOString()),
   ]);
 
   const totalCaptaciones = totalPropietarios.count ?? 0;
@@ -205,6 +222,47 @@ export default async function AsesorDashboard() {
     },
   ];
 
+  function inicioDeSemana(fecha: Date) {
+    const d = new Date(fecha);
+    d.setHours(0, 0, 0, 0);
+    const dia = d.getDay();
+    const diff = (dia + 6) % 7;
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+
+  const semanas: Date[] = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = inicioDeSemana(new Date());
+    d.setDate(d.getDate() - i * 7);
+    semanas.push(d);
+  }
+
+  function indiceSemana(fecha: string) {
+    const inicio = inicioDeSemana(new Date(fecha)).getTime();
+    return semanas.findIndex((s) => s.getTime() === inicio);
+  }
+
+  const captacionesPorSemana = new Array(semanas.length).fill(0);
+  const captadosPorSemana = new Array(semanas.length).fill(0);
+  for (const p of propietariosHistorico.data ?? []) {
+    const i = indiceSemana(p.creado_en);
+    if (i >= 0) {
+      captacionesPorSemana[i] += 1;
+      if (p.estado === "captado") captadosPorSemana[i] += 1;
+    }
+  }
+
+  const tareasPorSemana = new Array(semanas.length).fill(0);
+  for (const t of tareasCompletadasHistorico.data ?? []) {
+    const i = indiceSemana(t.completada_en as string);
+    if (i >= 0) tareasPorSemana[i] += 1;
+  }
+
+  const etiquetasSemanas = semanas.map((s) =>
+    s.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" })
+  );
+
   const acciones = [
     ...(propietariosProximos.data ?? []).map((p) => ({
       ...p,
@@ -285,6 +343,20 @@ export default async function AsesorDashboard() {
           <Link href="/asesor/agenda" className="block">
             <CalendarioMensual itemsPorDia={agendaPorDia} compacto />
           </Link>
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-3">
+        <h2 className="text-sm font-medium">Evolución (últimas 8 semanas)</h2>
+        <div className="mt-2">
+          <GraficoLineas
+            etiquetas={etiquetasSemanas}
+            series={[
+              { nombre: "Captaciones nuevas", color: "#0ea5e9", valores: captacionesPorSemana },
+              { nombre: "Captados", color: "#10b981", valores: captadosPorSemana },
+              { nombre: "Tareas completadas", color: "#a855f7", valores: tareasPorSemana },
+            ]}
+          />
         </div>
       </div>
 

@@ -43,6 +43,34 @@ export async function alternarTareaGeneral(
   revalidarTodo();
 }
 
+export type CrearTareaState = { error: string } | { ok: true } | null;
+
+export async function crearTareaGeneral(
+  _prevState: CrearTareaState,
+  formData: FormData
+): Promise<CrearTareaState> {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) return { error: "Sesión expirada, vuelve a iniciar sesión." };
+
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  const fechaVencimiento = String(formData.get("fecha_vencimiento") ?? "").trim();
+
+  if (!titulo) return { error: "Pon un título a la tarea." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("tareas").insert({
+    tenant_id: usuario.tenant_id,
+    asignado_a: usuario.id,
+    titulo,
+    fecha_vencimiento: fechaVencimiento || null,
+  });
+
+  if (error) return { error: "No se pudo crear la tarea." };
+
+  revalidarTodo();
+  return { ok: true };
+}
+
 export async function cancelarTareaGeneral(id: string, origen: OrigenItem = "tarea") {
   const usuario = await getUsuarioConTenant();
   if (!usuario) throw new Error("No autenticado");
