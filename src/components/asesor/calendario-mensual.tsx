@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useActionState, useState } from "react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { claveDia, type AgendaItem } from "@/lib/agenda";
+
+type EventoState = { error: string } | null;
 
 const DIAS_SEMANA = ["L", "M", "X", "J", "V", "S", "D"];
 const MESES = [
@@ -24,14 +26,20 @@ function obtenerDiasMes(year: number, month: number): (Date | null)[] {
 export function CalendarioMensual({
   itemsPorDia,
   compacto = false,
+  crearEventoAction,
 }: {
   itemsPorDia: Record<string, AgendaItem[]>;
   compacto?: boolean;
+  crearEventoAction?: (prevState: EventoState, formData: FormData) => Promise<EventoState>;
 }) {
   const hoy = new Date();
   const [cursor, setCursor] = useState({ year: hoy.getFullYear(), month: hoy.getMonth() });
   const [seleccionado, setSeleccionado] = useState<string | null>(
     compacto ? null : claveDia(hoy)
+  );
+  const [state, formAction, pending] = useActionState(
+    crearEventoAction ?? (async () => null),
+    null
   );
 
   const dias = obtenerDiasMes(cursor.year, cursor.month);
@@ -46,8 +54,8 @@ export function CalendarioMensual({
   }
 
   return (
-    <div className={cn("rounded-lg border p-3", compacto ? "text-xs" : "text-sm")}>
-      <div className="mb-2 flex items-center justify-between">
+    <div className={cn("rounded-lg border p-2", compacto ? "text-[10px]" : "max-w-sm text-xs")}>
+      <div className="mb-1.5 flex items-center justify-between">
         <span className="font-medium">
           {MESES[cursor.month]} {cursor.year}
         </span>
@@ -56,24 +64,24 @@ export function CalendarioMensual({
             <button
               type="button"
               onClick={() => cambiarMes(-1)}
-              className="rounded-md p-1 hover:bg-accent"
+              className="rounded-md p-0.5 hover:bg-accent"
               aria-label="Mes anterior"
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-3.5" />
             </button>
             <button
               type="button"
               onClick={() => cambiarMes(1)}
-              className="rounded-md p-1 hover:bg-accent"
+              className="rounded-md p-0.5 hover:bg-accent"
               aria-label="Mes siguiente"
             >
-              <ChevronRight className="size-4" />
+              <ChevronRight className="size-3.5" />
             </button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {DIAS_SEMANA.map((d) => (
           <div key={d} className="text-center text-muted-foreground">
             {d}
@@ -105,7 +113,7 @@ export function CalendarioMensual({
                     <span
                       key={i}
                       className={cn(
-                        "size-1.5 rounded-full",
+                        "size-1 rounded-full",
                         it.estado === "completado" || it.estado === "completada"
                           ? "bg-emerald-500"
                           : new Date(it.fecha) < hoy
@@ -122,7 +130,7 @@ export function CalendarioMensual({
       </div>
 
       {!compacto && (
-        <div className="mt-3 space-y-1 border-t pt-3">
+        <div className="mt-2 space-y-1 border-t pt-2">
           <p className="text-xs font-medium text-muted-foreground">
             {seleccionado
               ? new Date(`${seleccionado}T00:00:00`).toLocaleDateString("es-ES", {
@@ -149,6 +157,30 @@ export function CalendarioMensual({
                 </span>
               </div>
             ))
+          )}
+
+          {crearEventoAction && seleccionado && (
+            <form action={formAction} className="mt-1 flex items-center gap-1">
+              <input type="hidden" name="tipo" value="recordatorio" />
+              <input type="hidden" name="fecha_hora" value={`${seleccionado}T09:00`} />
+              <input
+                name="titulo"
+                placeholder="Añadir tarea rápida..."
+                required
+                className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-xs"
+              />
+              <button
+                type="submit"
+                disabled={pending}
+                aria-label="Añadir tarea"
+                className="flex shrink-0 items-center justify-center rounded-md bg-primary p-1.5 text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </form>
+          )}
+          {state && "error" in state && (
+            <p className="text-xs text-destructive">{state.error}</p>
           )}
         </div>
       )}

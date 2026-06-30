@@ -52,7 +52,7 @@ export default async function AgendaPage() {
 
       <ResumenTareas items={items} />
 
-      <CalendarioMensual itemsPorDia={itemsPorDia} />
+      <CalendarioMensual itemsPorDia={itemsPorDia} crearEventoAction={crearEvento} />
 
       <Agenda
         eventos={eventos ?? []}

@@ -215,7 +215,7 @@ export default async function AsesorDashboard() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold">Vista General</h1>
         <p className="mt-1 text-muted-foreground">
@@ -225,41 +225,41 @@ export default async function AsesorDashboard() {
 
       <ResumenTareas items={agendaItems} />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
         {stats.map(({ label, valor, icono: Icono, href, color }) => (
           <Link
             key={label}
             href={href}
-            className="flex flex-col gap-2 rounded-lg border p-4 transition-colors hover:bg-accent"
+            className="flex flex-col gap-1 rounded-lg border p-3 transition-colors hover:bg-accent"
           >
-            <Icono className={`size-5 ${color}`} />
-            <span className="text-2xl font-semibold">{valor}</span>
-            <span className="text-sm text-muted-foreground">{label}</span>
+            <Icono className={`size-4 ${color}`} />
+            <span className="text-xl font-semibold">{valor}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
           </Link>
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <h2 className="text-lg font-medium">Próximas acciones</h2>
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border p-3 md:col-span-2">
+          <h2 className="text-sm font-medium">Próximas acciones</h2>
           {acciones.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               No tienes acciones pendientes ni vencidas. ¡Vas al día!
             </p>
           ) : (
-            <ul className="mt-3 space-y-2">
-              {acciones.map((a) => {
+            <ul className="mt-2 space-y-1.5">
+              {acciones.slice(0, 6).map((a) => {
                 const vencida = new Date(a.fecha_proxima_accion!) < new Date();
                 return (
                   <li key={`${a.tipo}-${a.id}`}>
                     <Link
                       href={`/asesor/${a.tipo === "comprador" ? "compradores" : "propietarios"}`}
-                      className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm"
+                      className="flex items-center justify-between rounded-md border px-3 py-1.5 text-xs"
                     >
                       <span>
                         <span className="font-medium">{a.nombre}</span>
                         <span className="ml-2 text-muted-foreground">
-                          {a.tipo === "comprador" ? "Comprador" : "Propietario"}
+                          {a.tipo === "comprador" ? "Comprador" : "Captación"}
                         </span>
                       </span>
                       <span
@@ -276,56 +276,69 @@ export default async function AsesorDashboard() {
         </div>
 
         <div>
-          <h2 className="text-lg font-medium">Agenda</h2>
-          <div className="mt-3">
-            <Link href="/asesor/agenda">
-              <CalendarioMensual itemsPorDia={agendaPorDia} compacto />
-            </Link>
-          </div>
+          <Link href="/asesor/agenda" className="block">
+            <CalendarioMensual itemsPorDia={agendaPorDia} compacto />
+          </Link>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-medium">Captaciones por estado</h2>
-        <div className="mt-3 space-y-2 rounded-lg border p-4">
-          {ESTADOS_PROPIETARIO.map((estado) => (
-            <div key={estado} className="flex items-center gap-3">
-              <span className="w-36 shrink-0 text-xs text-muted-foreground">
-                {ETIQUETAS_ESTADO[estado]}
-              </span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={`h-full rounded-full ${COLOR_BARRA_ESTADO[estado]}`}
-                  style={{ width: `${(conteoPorEstado[estado] / maxEstado) * 100}%` }}
-                />
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border p-3 md:col-span-2">
+          <h2 className="text-sm font-medium">Captaciones por estado</h2>
+          <div className="mt-2 space-y-1.5">
+            {ESTADOS_PROPIETARIO.map((estado) => (
+              <div key={estado} className="flex items-center gap-2">
+                <span className="w-28 shrink-0 text-xs text-muted-foreground">
+                  {ETIQUETAS_ESTADO[estado]}
+                </span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full ${COLOR_BARRA_ESTADO[estado]}`}
+                    style={{ width: `${(conteoPorEstado[estado] / maxEstado) * 100}%` }}
+                  />
+                </div>
+                <span className="w-5 shrink-0 text-right text-xs font-medium">
+                  {conteoPorEstado[estado]}
+                </span>
               </div>
-              <span className="w-6 shrink-0 text-right text-xs font-medium">
-                {conteoPorEstado[estado]}
-              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border p-3">
+          <h2 className="self-start text-sm font-medium">Conversión</h2>
+          <div
+            className="flex size-24 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(#10b981 ${conversion * 3.6}deg, rgb(120 113 108 / 0.15) 0deg)`,
+            }}
+          >
+            <div className="flex size-16 items-center justify-center rounded-full bg-background text-sm font-semibold">
+              {conversion}%
             </div>
-          ))}
+          </div>
+          <p className="text-center text-xs text-muted-foreground">
+            {captados.count ?? 0} de {totalCaptaciones} captaciones cerradas
+          </p>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-medium">Estadísticas</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="rounded-lg border bg-sky-500/10 p-4">
-            <p className="text-2xl font-semibold text-sky-600">{totalCaptaciones}</p>
-            <p className="text-sm text-muted-foreground">Captaciones</p>
-          </div>
-          <div className="rounded-lg border bg-indigo-500/10 p-4">
-            <p className="text-2xl font-semibold text-indigo-600">{exclusivas.count ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Exclusivas</p>
-          </div>
-          <div className="rounded-lg border bg-rose-500/10 p-4">
-            <p className="text-2xl font-semibold text-rose-600">{perdidos.count ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Perdidos</p>
-          </div>
-          <div className="rounded-lg border bg-emerald-500/10 p-4">
-            <p className="text-2xl font-semibold text-emerald-600">{conversion}%</p>
-            <p className="text-sm text-muted-foreground">Conversión</p>
-          </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="rounded-lg border bg-sky-500/10 p-3">
+          <p className="text-xl font-semibold text-sky-600">{totalCaptaciones}</p>
+          <p className="text-xs text-muted-foreground">Captaciones</p>
+        </div>
+        <div className="rounded-lg border bg-indigo-500/10 p-3">
+          <p className="text-xl font-semibold text-indigo-600">{exclusivas.count ?? 0}</p>
+          <p className="text-xs text-muted-foreground">Exclusivas</p>
+        </div>
+        <div className="rounded-lg border bg-rose-500/10 p-3">
+          <p className="text-xl font-semibold text-rose-600">{perdidos.count ?? 0}</p>
+          <p className="text-xs text-muted-foreground">Perdidos</p>
+        </div>
+        <div className="rounded-lg border bg-emerald-500/10 p-3">
+          <p className="text-xl font-semibold text-emerald-600">{conversion}%</p>
+          <p className="text-xs text-muted-foreground">Conversión</p>
         </div>
       </div>
     </div>
