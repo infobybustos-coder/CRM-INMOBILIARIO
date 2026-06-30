@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ListaTareas } from "@/components/asesor/lista-tareas";
-import { alternarTareaGeneral, editarTareaGeneral } from "./actions";
+import { alternarTareaGeneral, editarTareaGeneral, cancelarTareaGeneral } from "./actions";
 
 const RUTA_ENTIDAD: Record<string, string> = {
   propietario: "/asesor/propietarios",
@@ -27,6 +27,7 @@ export default async function TareasPage() {
       .from("tareas")
       .select("id, titulo, descripcion, fecha_vencimiento, estado, entidad_tipo, entidad_id, creado_en")
       .eq("asignado_a", usuario.id)
+      .neq("estado", "cancelada")
       .order("estado", { ascending: true })
       .order("fecha_vencimiento", { ascending: true, nullsFirst: false }),
     supabase
@@ -107,6 +108,7 @@ export default async function TareasPage() {
         items={items}
         alternarTareaAction={alternarTareaGeneral}
         editarTareaAction={editarTareaGeneral}
+        cancelarTareaAction={cancelarTareaGeneral}
       />
     </div>
   );

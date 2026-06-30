@@ -12,13 +12,13 @@ function aplicarTema(tema: Tema) {
 }
 
 function temaInicial(): Tema {
-  if (typeof window === "undefined") return "oscuro";
+  if (typeof window === "undefined") return "claro";
   const guardado = localStorage.getItem("tema-asesor") as Tema | null;
   if (guardado === "claro" || guardado === "oscuro") {
     aplicarTema(guardado);
     return guardado;
   }
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "claro" : "oscuro";
+  return "claro";
 }
 
 export function ThemeToggle() {

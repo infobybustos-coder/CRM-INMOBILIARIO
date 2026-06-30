@@ -26,8 +26,8 @@ export function AjustesForm({
   const [moneda, setMoneda] = useState(monedaInicial);
   const [idioma, setIdioma] = useState(idiomaInicial);
   const [tema, setTema] = useState<Tema>(() => {
-    if (typeof window === "undefined") return "oscuro";
-    return (localStorage.getItem("tema-asesor") as Tema | null) ?? "oscuro";
+    if (typeof window === "undefined") return "claro";
+    return (localStorage.getItem("tema-asesor") as Tema | null) ?? "claro";
   });
 
   function elegirTema(nuevo: Tema) {

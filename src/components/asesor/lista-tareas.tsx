@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Pencil, Check, X, FileDown } from "lucide-react";
+import { CheckCircle2, Pencil, Check, X, FileDown, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Origen = "tarea" | "evento";
@@ -61,6 +61,7 @@ export function ListaTareas({
   items,
   alternarTareaAction,
   editarTareaAction,
+  cancelarTareaAction,
 }: {
   items: TareaItem[];
   alternarTareaAction: (id: string, completada: boolean, origen: Origen) => Promise<void>;
@@ -70,6 +71,7 @@ export function ListaTareas({
     fechaVencimiento: string | null,
     origen: Origen
   ) => Promise<EditarTareaState>;
+  cancelarTareaAction: (id: string, origen: Origen) => Promise<void>;
 }) {
   const [completadas, setCompletadas] = useState<Record<string, boolean>>(
     Object.fromEntries(items.map((t) => [t.id, t.estado === "completada"]))
@@ -77,12 +79,19 @@ export function ListaTareas({
   const [datos, setDatos] = useState<Record<string, { titulo: string; fecha: string | null }>>(
     Object.fromEntries(items.map((t) => [t.id, { titulo: t.titulo, fecha: t.fecha_vencimiento }]))
   );
+  const [canceladas, setCanceladas] = useState<Record<string, boolean>>({});
   const [editando, setEditando] = useState<string | null>(null);
   const [filtroFecha, setFiltroFecha] = useState("");
 
   function alternar(t: TareaItem, valor: boolean) {
     setCompletadas((prev) => ({ ...prev, [t.id]: valor }));
     alternarTareaAction(t.id, valor, t.origen);
+  }
+
+  function cancelar(t: TareaItem) {
+    if (!window.confirm(`¿Cancelar la tarea "${t.titulo}"?`)) return;
+    setCanceladas((prev) => ({ ...prev, [t.id]: true }));
+    cancelarTareaAction(t.id, t.origen);
   }
 
   async function guardarEdicion(t: TareaItem, titulo: string, fecha: string) {
@@ -96,9 +105,12 @@ export function ListaTareas({
   }
 
   const filtrados = useMemo(() => {
-    if (!filtroFecha) return items;
-    return items.filter((t) => t.fecha_vencimiento && aFechaInput(t.fecha_vencimiento) === filtroFecha);
-  }, [items, filtroFecha]);
+    const visibles = items.filter((t) => !canceladas[t.id]);
+    if (!filtroFecha) return visibles;
+    return visibles.filter(
+      (t) => t.fecha_vencimiento && aFechaInput(t.fecha_vencimiento) === filtroFecha
+    );
+  }, [items, filtroFecha, canceladas]);
 
   const claveHoy = claveDia(new Date());
   const ahora = new Date();
@@ -165,6 +177,7 @@ export function ListaTareas({
     const d = datos[t.id];
     const vencida =
       !completada && d.fecha && new Date(d.fecha) < ahora && claveDia(d.fecha) !== claveHoy;
+    const cercaVencimiento = !completada && !vencida && d.fecha && claveDia(d.fecha) === claveHoy;
     const enEdicion = editando === t.id;
 
     if (enEdicion) {
@@ -203,7 +216,16 @@ export function ListaTareas({
           />
         </button>
         <div className="min-w-0 flex-1">
-          <p className={cn("font-medium", completada && "line-through")}>{d.titulo}</p>
+          <p
+            className={cn(
+              "font-medium",
+              completada && "text-emerald-600 line-through",
+              vencida && "text-red-600",
+              cercaVencimiento && "text-amber-600"
+            )}
+          >
+            {d.titulo}
+          </p>
           <p className="text-xs text-muted-foreground">
             {t.entidad_nombre ? (
               <Link href={t.entidad_href} className="underline">
@@ -215,7 +237,14 @@ export function ListaTareas({
             {d.fecha && (
               <>
                 {" · "}
-                <span className={vencida ? "font-semibold text-destructive" : undefined}>
+                <span
+                  className={cn(
+                    "font-medium",
+                    vencida && "text-red-600",
+                    cercaVencimiento && "text-amber-600",
+                    completada && "text-emerald-600"
+                  )}
+                >
                   {new Date(d.fecha).toLocaleDateString("es-ES")}
                 </span>
               </>
@@ -228,14 +257,24 @@ export function ListaTareas({
           </span>
         )}
         {!completada && (
-          <button
-            type="button"
-            onClick={() => setEditando(t.id)}
-            aria-label="Editar tarea"
-            className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <Pencil className="size-4" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setEditando(t.id)}
+              aria-label="Editar tarea"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <Pencil className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => cancelar(t)}
+              aria-label="Cancelar tarea"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Ban className="size-4" />
+            </button>
+          </>
         )}
       </div>
     );

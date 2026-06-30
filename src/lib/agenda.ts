@@ -26,7 +26,12 @@ export function agruparPorDia(items: AgendaItem[]): Record<string, AgendaItem[]>
 }
 
 function estaPendiente(item: AgendaItem): boolean {
-  return item.estado !== "completado" && item.estado !== "completada" && item.estado !== "cancelado";
+  return (
+    item.estado !== "completado" &&
+    item.estado !== "completada" &&
+    item.estado !== "cancelado" &&
+    item.estado !== "cancelada"
+  );
 }
 
 export function itemsDeHoy(items: AgendaItem[]): AgendaItem[] {

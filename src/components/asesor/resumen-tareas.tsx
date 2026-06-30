@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { itemsDeHoy, itemsVencidos, type AgendaItem } from "@/lib/agenda";
 
 export function ResumenTareas({ items }: { items: AgendaItem[] }) {
   const hoy = itemsDeHoy(items);
   const vencidos = itemsVencidos(items);
+  const total = hoy.length + vencidos.length;
 
-  if (hoy.length === 0 && vencidos.length === 0) {
+  if (total === 0) {
     return (
       <Link
         href="/asesor/tareas"
@@ -18,31 +20,37 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
     );
   }
 
+  const lista = [
+    ...vencidos.map((i) => ({ ...i, vencida: true })),
+    ...hoy.map((i) => ({ ...i, vencida: false })),
+  ].slice(0, 3);
+  const restantes = total - lista.length;
+
   return (
     <Link
       href="/asesor/tareas"
       className="block space-y-2 rounded-lg border p-4 transition-colors hover:bg-accent/50"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Tareas pendientes
-      </p>
-      {hoy.length > 0 && (
-        <p className="text-sm">
-          <span className="font-semibold">Hoy: </span>
-          {hoy.map((i) => i.titulo).join(", ")}.
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Tareas pendientes
         </p>
-      )}
-      {vencidos.length > 0 && (
-        <p className="flex items-start gap-2 text-sm text-red-500">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>
-            <span className="font-semibold">
-              Tienes {vencidos.length} pendiente{vencidos.length > 1 ? "s" : ""} atrasado
-              {vencidos.length > 1 ? "s" : ""}:{" "}
-            </span>
-            {vencidos.map((i) => i.titulo).join(", ")}.
-          </span>
-        </p>
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold text-white">
+          {total}
+        </span>
+      </div>
+      <ul className="space-y-1">
+        {lista.map((item) => (
+          <li
+            key={`${item.origen}-${item.id}`}
+            className={cn("text-sm font-medium", item.vencida ? "text-red-600" : "text-amber-600")}
+          >
+            {item.titulo}
+          </li>
+        ))}
+      </ul>
+      {restantes > 0 && (
+        <p className="text-xs text-muted-foreground">+{restantes} más</p>
       )}
     </Link>
   );

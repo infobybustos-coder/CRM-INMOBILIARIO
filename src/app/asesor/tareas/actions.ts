@@ -43,6 +43,29 @@ export async function alternarTareaGeneral(
   revalidarTodo();
 }
 
+export async function cancelarTareaGeneral(id: string, origen: OrigenItem = "tarea") {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) throw new Error("No autenticado");
+
+  const supabase = await createClient();
+
+  if (origen === "evento") {
+    await supabase
+      .from("eventos_agenda")
+      .update({ estado: "cancelado" })
+      .eq("id", id)
+      .eq("usuario_id", usuario.id);
+  } else {
+    await supabase
+      .from("tareas")
+      .update({ estado: "cancelada" })
+      .eq("id", id)
+      .eq("asignado_a", usuario.id);
+  }
+
+  revalidarTodo();
+}
+
 export type EditarTareaState = { error: string } | { ok: true } | null;
 
 export async function editarTareaGeneral(
