@@ -61,11 +61,6 @@ export default function SignupPage() {
               </option>
             ))}
           </select>
-          {PAISES.length === 1 && (
-            <p className="text-xs text-muted-foreground">
-              Por ahora solo disponible para España. Pronto añadiremos más países.
-            </p>
-          )}
         </div>
 
         <div className="space-y-2">
