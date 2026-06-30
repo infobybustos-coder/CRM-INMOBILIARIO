@@ -135,6 +135,8 @@ export async function crearTarea(
   if (error) return { error: "No se pudo crear la tarea." };
 
   revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/tareas");
   return null;
 }
 
@@ -151,6 +153,9 @@ export async function alternarTarea(tareaId: string, inmuebleId: string, complet
     .eq("id", tareaId);
 
   revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
 }
 
 export type ZonaState = { error: string } | { ok: true; zona: { id: string; nombre: string; ciudad: string | null } } | null;

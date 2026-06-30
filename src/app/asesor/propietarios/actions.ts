@@ -130,6 +130,8 @@ export async function crearTarea(
   if (error) return { error: "No se pudo crear la tarea." };
 
   revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/tareas");
   return null;
 }
 
@@ -150,6 +152,9 @@ export async function alternarTarea(
     .eq("id", tareaId);
 
   revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
 }
 
 export async function registrarDocumento(

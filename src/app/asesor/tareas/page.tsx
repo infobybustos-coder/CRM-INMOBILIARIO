@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ListaTareas } from "@/components/asesor/lista-tareas";
-import { alternarTareaGeneral } from "./actions";
+import { alternarTareaGeneral, editarTareaGeneral } from "./actions";
 
 const RUTA_ENTIDAD: Record<string, string> = {
   propietario: "/asesor/propietarios",
@@ -64,7 +64,11 @@ export default async function TareasPage() {
         </p>
       </div>
 
-      <ListaTareas items={items} alternarTareaAction={alternarTareaGeneral} />
+      <ListaTareas
+        items={items}
+        alternarTareaAction={alternarTareaGeneral}
+        editarTareaAction={editarTareaGeneral}
+      />
     </div>
   );
 }

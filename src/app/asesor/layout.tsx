@@ -23,6 +23,16 @@ export default async function AsesorLayout({
     ? supabase.storage.from("avatares").getPublicUrl(usuario.avatar_url).data.publicUrl
     : null;
 
+  const finHoy = new Date();
+  finHoy.setHours(23, 59, 59, 999);
+  const { count: tareasNotificacion } = await supabase
+    .from("tareas")
+    .select("id", { count: "exact", head: true })
+    .eq("asignado_a", usuario.id)
+    .eq("estado", "pendiente")
+    .not("fecha_vencimiento", "is", null)
+    .lte("fecha_vencimiento", finHoy.toISOString());
+
   return (
     <PreferenciasProvider
       inicial={{
@@ -43,7 +53,7 @@ export default async function AsesorLayout({
           </div>
         </header>
         <main className="p-4 pb-24 md:pb-6">{children}</main>
-        <AsesorNav />
+        <AsesorNav tareasNotificacion={tareasNotificacion ?? 0} />
         <QuickAdd />
       </div>
     </PreferenciasProvider>
