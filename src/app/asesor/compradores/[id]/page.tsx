@@ -8,6 +8,14 @@ import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "../actions";
 import type { Comprador } from "../constantes";
+import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { cn } from "@/lib/utils";
+
+const COLOR_PRIORIDAD: Record<string, string> = {
+  alta: "bg-red-500 text-white",
+  media: "bg-amber-500 text-white",
+  baja: "bg-muted text-muted-foreground",
+};
 
 export default async function CompradorPage({
   params,
@@ -61,7 +69,25 @@ export default async function CompradorPage({
         Volver a Compradores
       </Link>
 
-      <h1 className="text-2xl font-semibold">{comprador.nombre}</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-semibold">{comprador.nombre}</h1>
+        {(() => {
+          const prioridad = calcularPrioridadComprador(comprador);
+          return prioridad ? (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
+                COLOR_PRIORIDAD[prioridad]
+              )}
+            >
+              Prioridad {prioridad}
+            </span>
+          ) : null;
+        })()}
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          Score: {calcularCompraScore(comprador)}
+        </span>
+      </div>
 
       <FormularioComprador comprador={comprador as Comprador} zonas={zonas ?? []} />
 

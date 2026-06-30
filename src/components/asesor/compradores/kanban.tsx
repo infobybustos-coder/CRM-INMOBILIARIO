@@ -20,7 +20,14 @@ import {
   type Comprador,
 } from "@/app/asesor/compradores/constantes";
 import { actualizarEstadoComprador } from "@/app/asesor/compradores/actions";
+import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
+
+const COLOR_PRIORIDAD: Record<string, string> = {
+  alta: "bg-red-500 text-white",
+  media: "bg-amber-500 text-white",
+  baja: "bg-muted text-muted-foreground",
+};
 
 const COLOR_ESTADO: Record<string, string> = {
   nuevo: "bg-sky-500",
@@ -59,6 +66,8 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
 
   const urgente = comprador.urgencia === "alta";
   const presupuesto = formatearPresupuesto(comprador.presupuesto_min, comprador.presupuesto_max);
+  const prioridad = calcularPrioridadComprador(comprador);
+  const score = calcularCompraScore(comprador);
 
   return (
     <div
@@ -78,14 +87,27 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <Link
-        href={`/asesor/compradores/${comprador.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="font-medium text-foreground hover:text-primary"
-      >
-        {comprador.nombre}
-      </Link>
+      <div className="flex items-center justify-between gap-2">
+        <Link
+          href={`/asesor/compradores/${comprador.id}`}
+          onClick={(e) => isDragging && e.preventDefault()}
+          className="font-medium text-foreground hover:text-primary"
+        >
+          {comprador.nombre}
+        </Link>
+        {prioridad && (
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+              COLOR_PRIORIDAD[prioridad]
+            )}
+          >
+            {prioridad}
+          </span>
+        )}
+      </div>
       <p className="text-muted-foreground">{comprador.telefono}</p>
+      <p className="mt-1 text-xs text-muted-foreground">Score: {score}</p>
       {comprador.tipo_inmueble && (
         <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {ETIQUETAS_TIPO_INMUEBLE[comprador.tipo_inmueble] ?? comprador.tipo_inmueble}
