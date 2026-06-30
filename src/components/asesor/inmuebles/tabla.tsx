@@ -8,6 +8,7 @@ import {
   type Inmueble,
 } from "@/app/asesor/inmuebles/constantes";
 import { FotoMiniatura } from "@/components/asesor/inmuebles/foto-miniatura";
+import { useMoneda } from "@/lib/preferencias";
 
 const COLOR_ESTADO: Record<string, string> = {
   captacion: "bg-sky-500/15 text-sky-600",
@@ -23,6 +24,7 @@ type Columna = "direccion" | "estado" | "precio" | "metros_cuadrados" | "visitas
 
 export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
   const router = useRouter();
+  const { formatear } = useMoneda();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
     columna: "direccion",
     asc: true,
@@ -94,9 +96,7 @@ export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
                 {i.tipo ? ETIQUETAS_TIPO_INMUEBLE[i.tipo] ?? i.tipo : "—"}
               </td>
               <td className="px-4 py-2">{i.poblacion ?? "—"}</td>
-              <td className="px-4 py-2">
-                {i.precio ? `${Number(i.precio).toLocaleString("es-ES")} €` : "—"}
-              </td>
+              <td className="px-4 py-2">{formatear(i.precio)}</td>
               <td className="px-4 py-2">{i.visitas}</td>
               <td className="px-4 py-2">{i.metros_cuadrados ? `${i.metros_cuadrados} m²` : "—"}</td>
               <td className="px-4 py-2">

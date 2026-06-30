@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ETIQUETAS_ESTADO_COMPRADOR, type Comprador } from "@/app/asesor/compradores/constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
 type Columna =
@@ -21,6 +22,7 @@ const COLOR_PRIORIDAD: Record<string, string> = {
 };
 
 export function Tabla({ compradores }: { compradores: Comprador[] }) {
+  const { formatear } = useMoneda();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
     columna: "nombre",
     asc: true,
@@ -87,12 +89,8 @@ export function Tabla({ compradores }: { compradores: Comprador[] }) {
                 </td>
                 <td className="px-4 py-2">{c.telefono}</td>
                 <td className="px-4 py-2">{ETIQUETAS_ESTADO_COMPRADOR[c.estado] ?? c.estado}</td>
-                <td className="px-4 py-2">
-                  {c.presupuesto_min ? `${Number(c.presupuesto_min).toLocaleString("es-ES")} €` : "—"}
-                </td>
-                <td className="px-4 py-2">
-                  {c.presupuesto_max ? `${Number(c.presupuesto_max).toLocaleString("es-ES")} €` : "—"}
-                </td>
+                <td className="px-4 py-2">{formatear(c.presupuesto_min)}</td>
+                <td className="px-4 py-2">{formatear(c.presupuesto_max)}</td>
                 <td className="px-4 py-2">
                   {c.fecha_ultimo_contacto
                     ? new Date(c.fecha_ultimo_contacto).toLocaleDateString("es-ES")

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ETIQUETAS_ESTADO, type Propietario } from "@/app/asesor/propietarios/constantes";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
+import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
 type Columna = "nombre" | "estado" | "fecha_ultimo_contacto" | "valor_estimado" | "score";
@@ -15,6 +16,7 @@ const COLOR_PRIORIDAD: Record<string, string> = {
 };
 
 export function Tabla({ propietarios }: { propietarios: Propietario[] }) {
+  const { formatear } = useMoneda();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
     columna: "nombre",
     asc: true,
@@ -85,11 +87,7 @@ export function Tabla({ propietarios }: { propietarios: Propietario[] }) {
                     ? new Date(p.fecha_ultimo_contacto).toLocaleDateString("es-ES")
                     : "—"}
                 </td>
-                <td className="px-4 py-2">
-                  {p.valor_estimado
-                    ? `${Number(p.valor_estimado).toLocaleString("es-ES")} €`
-                    : "—"}
-                </td>
+                <td className="px-4 py-2">{formatear(p.valor_estimado)}</td>
                 <td className="px-4 py-2">{calcularCaptacionScore(p)}</td>
                 <td className="px-4 py-2">
                   {prioridad && (

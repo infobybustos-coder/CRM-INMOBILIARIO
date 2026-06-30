@@ -12,6 +12,7 @@ import {
 } from "@/app/asesor/propietarios/constantes";
 import { actualizarPropietario } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
+import { useMoneda } from "@/lib/preferencias";
 
 function aFechaInput(fecha: string | null) {
   if (!fecha) return "";
@@ -21,6 +22,7 @@ function aFechaInput(fecha: string | null) {
 export function FormularioPropietario({ propietario }: { propietario: Propietario }) {
   const accion = actualizarPropietario.bind(null, propietario.id);
   const [state, formAction, pending] = useActionState(accion, null);
+  const { simbolo } = useMoneda();
 
   return (
     <form action={formAction} className="space-y-4 rounded-lg border p-4">
@@ -150,7 +152,7 @@ export function FormularioPropietario({ propietario }: { propietario: Propietari
 
         <div className="space-y-2">
           <label htmlFor="valor_estimado" className="text-sm font-medium">
-            Valor estimado (€)
+            Valor estimado ({simbolo})
           </label>
           <input
             id="valor_estimado"

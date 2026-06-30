@@ -21,6 +21,7 @@ import {
 } from "@/app/asesor/propietarios/constantes";
 import { actualizarEstadoPropietario } from "@/app/asesor/propietarios/actions";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
+import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
 const COLOR_PRIORIDAD: Record<string, string> = {
@@ -64,6 +65,7 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
   const vencida = esVencida(propietario.fecha_proxima_accion);
   const prioridad = calcularPrioridad(propietario);
   const score = calcularCaptacionScore(propietario);
+  const { formatear } = useMoneda();
 
   return (
     <Link
@@ -108,9 +110,7 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
         </p>
       )}
       {propietario.valor_estimado ? (
-        <p className="mt-1 font-medium">
-          {Number(propietario.valor_estimado).toLocaleString("es-ES")} €
-        </p>
+        <p className="mt-1 font-medium">{formatear(propietario.valor_estimado)}</p>
       ) : null}
       {propietario.fecha_proxima_accion && (
         <p

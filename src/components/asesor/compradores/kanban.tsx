@@ -21,6 +21,7 @@ import {
 } from "@/app/asesor/compradores/constantes";
 import { actualizarEstadoComprador } from "@/app/asesor/compradores/actions";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
 const COLOR_PRIORIDAD: Record<string, string> = {
@@ -51,21 +52,22 @@ const FONDO_ESTADO: Record<string, string> = {
   perdido: "bg-rose-500/10",
 };
 
-function formatearPresupuesto(min: number | null, max: number | null) {
-  if (!min && !max) return null;
-  const fmt = (n: number) => n.toLocaleString("es-ES");
-  if (min && max) return `${fmt(min)} € - ${fmt(max)} €`;
-  if (min) return `Desde ${fmt(min)} €`;
-  return `Hasta ${fmt(max!)} €`;
-}
-
 function Tarjeta({ comprador }: { comprador: Comprador }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: comprador.id,
   });
+  const { formatear } = useMoneda();
 
   const urgente = comprador.urgencia === "alta";
-  const presupuesto = formatearPresupuesto(comprador.presupuesto_min, comprador.presupuesto_max);
+  const { presupuesto_min: min, presupuesto_max: max } = comprador;
+  const presupuesto =
+    min && max
+      ? `${formatear(min)} - ${formatear(max)}`
+      : min
+        ? `Desde ${formatear(min)}`
+        : max
+          ? `Hasta ${formatear(max)}`
+          : null;
   const prioridad = calcularPrioridadComprador(comprador);
   const score = calcularCompraScore(comprador);
 

@@ -13,6 +13,7 @@ import {
 import { actualizarInmueble, crearZona } from "@/app/asesor/inmuebles/actions";
 import { Button } from "@/components/ui/button";
 import { ZonaSelector } from "@/components/asesor/zona-selector";
+import { useMoneda } from "@/lib/preferencias";
 
 function aFechaInput(fecha: string | null) {
   if (!fecha) return "";
@@ -30,6 +31,7 @@ export function FormularioInmueble({
 }) {
   const accion = actualizarInmueble.bind(null, inmueble.id);
   const [state, formAction, pending] = useActionState(accion, null);
+  const { simbolo } = useMoneda();
 
   return (
     <form action={formAction} className="space-y-4 rounded-lg border p-4">
@@ -117,7 +119,7 @@ export function FormularioInmueble({
 
         <div className="space-y-2">
           <label htmlFor="precio" className="text-sm font-medium">
-            Precio (€)
+            Precio ({simbolo})
           </label>
           <input
             id="precio"

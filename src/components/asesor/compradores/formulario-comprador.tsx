@@ -16,6 +16,7 @@ import {
 import { actualizarComprador, crearZona } from "@/app/asesor/compradores/actions";
 import { Button } from "@/components/ui/button";
 import { ZonaSelector } from "@/components/asesor/zona-selector";
+import { useMoneda } from "@/lib/preferencias";
 
 function aFechaInput(fecha: string | null) {
   if (!fecha) return "";
@@ -31,6 +32,7 @@ export function FormularioComprador({
 }) {
   const accion = actualizarComprador.bind(null, comprador.id);
   const [state, formAction, pending] = useActionState(accion, null);
+  const { simbolo } = useMoneda();
 
   return (
     <form action={formAction} className="space-y-4 rounded-lg border p-4">
@@ -97,7 +99,7 @@ export function FormularioComprador({
 
         <div className="space-y-2">
           <label htmlFor="presupuesto_min" className="text-sm font-medium">
-            Presupuesto mínimo (€)
+            Presupuesto mínimo ({simbolo})
           </label>
           <input
             id="presupuesto_min"
@@ -110,7 +112,7 @@ export function FormularioComprador({
 
         <div className="space-y-2">
           <label htmlFor="presupuesto_max" className="text-sm font-medium">
-            Presupuesto máximo (€)
+            Presupuesto máximo ({simbolo})
           </label>
           <input
             id="presupuesto_max"
