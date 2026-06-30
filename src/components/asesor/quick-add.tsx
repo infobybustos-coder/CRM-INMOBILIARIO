@@ -148,20 +148,6 @@ export function QuickAdd() {
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     />
                   </div>
-
-                  {tipo === "propietario" && (
-                    <div className="space-y-2">
-                      <label htmlFor="direccion_propietario" className="text-sm font-medium">
-                        Dirección
-                      </label>
-                      <input
-                        id="direccion_propietario"
-                        name="direccion"
-                        type="text"
-                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                  )}
                 </>
               )}
 
@@ -179,17 +165,32 @@ export function QuickAdd() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium">
-                      Email (opcional)
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    />
-                  </div>
+                  <>
+                    {tipo === "propietario" && (
+                      <div className="space-y-2">
+                        <label htmlFor="direccion_propietario" className="text-sm font-medium">
+                          Dirección (opcional)
+                        </label>
+                        <input
+                          id="direccion_propietario"
+                          name="direccion"
+                          type="text"
+                          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <label htmlFor="email" className="text-sm font-medium">
+                        Email (opcional)
+                      </label>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </>
                 )
               ) : (
                 <button

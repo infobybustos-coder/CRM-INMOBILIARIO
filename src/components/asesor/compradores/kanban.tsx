@@ -70,17 +70,19 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
   const score = calcularCompraScore(comprador);
 
   return (
-    <div
+    <Link
+      href={`/asesor/compradores/${comprador.id}`}
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={(e) => isDragging && e.preventDefault()}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
           : undefined
       }
       className={cn(
-        "cursor-grab touch-none rounded-lg border p-3 text-sm shadow-sm transition-shadow",
+        "block cursor-grab touch-none rounded-lg border p-3 text-sm shadow-sm transition-shadow",
         "hover:shadow-md active:cursor-grabbing",
         FONDO_ESTADO[comprador.estado] ?? "bg-card",
         urgente ? "border-red-500/60 ring-1 ring-red-500/20" : "border-border",
@@ -88,13 +90,9 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <Link
-          href={`/asesor/compradores/${comprador.id}`}
-          onClick={(e) => isDragging && e.preventDefault()}
-          className="font-medium text-foreground hover:text-primary"
-        >
+        <span className="font-medium text-foreground">
           {comprador.nombre}
-        </Link>
+        </span>
         {prioridad && (
           <span
             className={cn(
@@ -117,7 +115,7 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
       {urgente && (
         <p className="mt-1 text-xs font-semibold text-red-500">⚠ Urgencia alta</p>
       )}
-    </div>
+    </Link>
   );
 }
 

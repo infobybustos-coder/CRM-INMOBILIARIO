@@ -16,9 +16,12 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
 
   return (
     <div className="space-y-2 rounded-lg border p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Tareas pendientes
+      </p>
       {hoy.length > 0 && (
         <p className="text-sm">
-          <span className="font-semibold">Hoy tienes esto por hacer: </span>
+          <span className="font-semibold">Hoy: </span>
           {hoy.map((i) => i.titulo).join(", ")}.
         </p>
       )}

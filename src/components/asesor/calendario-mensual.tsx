@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, Home, ClipboardCheck, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { claveDia, type AgendaItem } from "@/lib/agenda";
 
@@ -12,6 +12,13 @@ const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
+
+const TIPOS_ACCION = [
+  { valor: "llamada", etiqueta: "Llamada", icono: Phone, ejemplo: "Llamar a Juan para seguimiento" },
+  { valor: "visita", etiqueta: "Visita", icono: Home, ejemplo: "Visita al piso de Calle Mayor" },
+  { valor: "tasacion", etiqueta: "Tasación", icono: ClipboardCheck, ejemplo: "Tasación con María" },
+  { valor: "recordatorio", etiqueta: "Otro", icono: Bell, ejemplo: "Enviar contrato por email" },
+] as const;
 
 function obtenerDiasMes(year: number, month: number): (Date | null)[] {
   const primerDia = new Date(year, month, 1);
@@ -41,6 +48,10 @@ export function CalendarioMensual({
     crearEventoAction ?? (async () => null),
     null
   );
+  const [tipoSeleccionado, setTipoSeleccionado] = useState<(typeof TIPOS_ACCION)[number]>(
+    TIPOS_ACCION[0]
+  );
+  const [hora, setHora] = useState("09:00");
 
   const dias = obtenerDiasMes(cursor.year, cursor.month);
   const claveHoy = claveDia(hoy);
@@ -160,23 +171,53 @@ export function CalendarioMensual({
           )}
 
           {crearEventoAction && seleccionado && (
-            <form action={formAction} className="mt-1 flex items-center gap-1">
-              <input type="hidden" name="tipo" value="recordatorio" />
-              <input type="hidden" name="fecha_hora" value={`${seleccionado}T09:00`} />
+            <form action={formAction} className="mt-2 space-y-1.5 rounded-md border bg-muted/30 p-2">
+              <input type="hidden" name="tipo" value={tipoSeleccionado.valor} />
+              <input type="hidden" name="fecha_hora" value={`${seleccionado}T${hora}`} />
+
+              <div className="flex gap-1">
+                {TIPOS_ACCION.map((t) => {
+                  const Icono = t.icono;
+                  const activo = t.valor === tipoSeleccionado.valor;
+                  return (
+                    <button
+                      key={t.valor}
+                      type="button"
+                      onClick={() => setTipoSeleccionado(t)}
+                      className={cn(
+                        "flex flex-1 flex-col items-center gap-0.5 rounded-md border px-1 py-1",
+                        activo ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <Icono className="size-3.5" />
+                      <span className="text-[9px]">{t.etiqueta}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <input
                 name="titulo"
-                placeholder="Añadir tarea rápida..."
+                placeholder={tipoSeleccionado.ejemplo}
                 required
-                className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-xs"
+                className="w-full rounded-md border bg-background px-2 py-1 text-xs"
               />
-              <button
-                type="submit"
-                disabled={pending}
-                aria-label="Añadir tarea"
-                className="flex shrink-0 items-center justify-center rounded-md bg-primary p-1.5 text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                <Plus className="size-3.5" />
-              </button>
+
+              <div className="flex items-center gap-1">
+                <input
+                  type="time"
+                  value={hora}
+                  onChange={(e) => setHora(e.target.value)}
+                  className="rounded-md border bg-background px-2 py-1 text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex-1 rounded-md bg-primary py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  {pending ? "Añadiendo..." : "Añadir a la agenda"}
+                </button>
+              </div>
             </form>
           )}
           {state && "error" in state && (

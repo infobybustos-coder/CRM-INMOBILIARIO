@@ -56,7 +56,6 @@ export default async function AgendaPage() {
 
       <Agenda
         eventos={eventos ?? []}
-        crearEventoAction={crearEvento}
         actualizarEstadoEventoAction={actualizarEstadoEvento}
       />
     </div>

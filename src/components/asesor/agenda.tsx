@@ -1,8 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
 import { Phone, Home, ClipboardCheck, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Evento = {
@@ -12,8 +10,6 @@ type Evento = {
   fecha_hora: string;
   estado: string;
 };
-
-type EventoState = { error: string } | null;
 
 const ICONO_TIPO: Record<string, typeof Phone> = {
   llamada: Phone,
@@ -31,49 +27,14 @@ const ETIQUETA_TIPO: Record<string, string> = {
 
 export function Agenda({
   eventos,
-  crearEventoAction,
   actualizarEstadoEventoAction,
 }: {
   eventos: Evento[];
-  crearEventoAction: (prevState: EventoState, formData: FormData) => Promise<EventoState>;
   actualizarEstadoEventoAction: (id: string, estado: string) => Promise<void>;
 }) {
-  const [state, formAction, pending] = useActionState(crearEventoAction, null);
-
   return (
     <div className="space-y-4">
-      <form
-        action={formAction}
-        className="flex flex-wrap items-end gap-2 rounded-lg border p-4"
-      >
-        <select
-          name="tipo"
-          defaultValue="llamada"
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-        >
-          <option value="llamada">Llamada</option>
-          <option value="visita">Visita</option>
-          <option value="tasacion">Tasación</option>
-          <option value="recordatorio">Recordatorio</option>
-        </select>
-        <input
-          name="titulo"
-          placeholder="¿Qué hay que hacer?"
-          required
-          className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-        />
-        <input
-          name="fecha_hora"
-          type="datetime-local"
-          required
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-        />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Añadiendo..." : "Añadir"}
-        </Button>
-      </form>
-      {state && "error" in state && <p className="text-sm text-destructive">{state.error}</p>}
-
+      <h2 className="text-sm font-medium text-muted-foreground">Próximos eventos</h2>
       <div className="space-y-2">
         {eventos.length === 0 ? (
           <p className="text-sm text-muted-foreground">No tienes eventos próximos.</p>
