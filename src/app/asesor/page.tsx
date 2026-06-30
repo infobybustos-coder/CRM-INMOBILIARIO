@@ -307,9 +307,23 @@ export default async function AsesorDashboard() {
         <div className="rounded-lg border p-3 md:col-span-2">
           <h2 className="text-sm font-medium">Próximas acciones</h2>
           {acciones.length === 0 ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              No tienes acciones pendientes ni vencidas. ¡Vas al día!
-            </p>
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground">
+                No tienes acciones pendientes ni vencidas. ¡Vas al día!
+              </p>
+              <div className="mt-3">
+                <GraficoLineas
+                  etiquetas={etiquetasSemanas}
+                  series={[
+                    { nombre: "Captaciones nuevas", color: "#0ea5e9", valores: captacionesPorSemana },
+                    { nombre: "Captados", color: "#10b981", valores: captadosPorSemana },
+                    { nombre: "Tareas completadas", color: "#a855f7", valores: tareasPorSemana },
+                  ]}
+                  alto={90}
+                  grosorLinea={1.25}
+                />
+              </div>
+            </div>
           ) : (
             <ul className="mt-2 space-y-1.5">
               {acciones.slice(0, 6).map((a) => {
@@ -343,20 +357,6 @@ export default async function AsesorDashboard() {
           <Link href="/asesor/agenda" className="block">
             <CalendarioMensual itemsPorDia={agendaPorDia} compacto />
           </Link>
-        </div>
-      </div>
-
-      <div className="rounded-lg border p-3">
-        <h2 className="text-sm font-medium">Evolución (últimas 8 semanas)</h2>
-        <div className="mt-2">
-          <GraficoLineas
-            etiquetas={etiquetasSemanas}
-            series={[
-              { nombre: "Captaciones nuevas", color: "#0ea5e9", valores: captacionesPorSemana },
-              { nombre: "Captados", color: "#10b981", valores: captadosPorSemana },
-              { nombre: "Tareas completadas", color: "#a855f7", valores: tareasPorSemana },
-            ]}
-          />
         </div>
       </div>
 

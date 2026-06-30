@@ -8,10 +8,12 @@ export function GraficoLineas({
   etiquetas,
   series,
   alto = 140,
+  grosorLinea = 2,
 }: {
   etiquetas: string[];
   series: SerieLinea[];
   alto?: number;
+  grosorLinea?: number;
 }) {
   const ancho = 320;
   const padding = 8;
@@ -48,7 +50,7 @@ export function GraficoLineas({
             points={puntos(s.valores)}
             fill="none"
             stroke={s.color}
-            strokeWidth={2}
+            strokeWidth={grosorLinea}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -57,19 +59,14 @@ export function GraficoLineas({
           s.valores.map((v, i) => {
             const x = padding + i * pasoX;
             const y = alto - padding - (v / maxValor) * (alto - padding * 2);
-            return <circle key={`${s.nombre}-${i}`} cx={x} cy={y} r={2.5} fill={s.color} />;
+            return <circle key={`${s.nombre}-${i}`} cx={x} cy={y} r={1.5} fill={s.color} />;
           })
         )}
       </svg>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-        {etiquetas.map((e) => (
-          <span key={e}>{e}</span>
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-3">
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
         {series.map((s) => (
-          <span key={s.nombre} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+          <span key={s.nombre} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
             {s.nombre}
           </span>
         ))}
