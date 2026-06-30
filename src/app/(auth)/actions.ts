@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizarTelefono, emailSinteticoDeTelefono, emailSinteticoDesdeIdentificador } from "@/lib/telefono";
 
 function slugify(texto: string) {
   return (
@@ -24,7 +25,8 @@ export async function signUp(
   formData: FormData
 ): Promise<AuthActionState> {
   const nombre = String(formData.get("nombre") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const telefonoInput = String(formData.get("telefono") ?? "").trim();
+  const emailInput = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const tipoPlan = String(formData.get("tipo_plan") ?? "asesor") as
     | "asesor"
@@ -34,9 +36,12 @@ export async function signUp(
     | "pago";
   const pais = String(formData.get("pais") ?? "ES");
 
-  if (!nombre || !email || !password) {
-    return { error: "Rellena nombre, email y contraseña." };
+  if (!nombre || !telefonoInput || !password) {
+    return { error: "Rellena nombre, WhatsApp y contraseña." };
   }
+
+  const telefono = normalizarTelefono(pais, telefonoInput);
+  const email = emailInput || emailSinteticoDeTelefono(telefono);
 
   const admin = createAdminClient();
 
@@ -78,6 +83,7 @@ export async function signUp(
     tenant_id: tenant.id,
     nombre_completo: nombre,
     email,
+    telefono,
     rol: tipoPlan === "inmobiliaria" ? "administrador" : "agente",
   });
 
@@ -92,8 +98,11 @@ export async function signIn(
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const identificador = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const email = identificador.includes("@")
+    ? identificador
+    : emailSinteticoDesdeIdentificador(identificador);
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({

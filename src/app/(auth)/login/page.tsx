@@ -17,12 +17,12 @@ export default function LoginPage() {
         <h1 className="text-xl font-semibold">Inicia sesión</h1>
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            Email o WhatsApp
           </label>
           <input
             id="email"
             name="email"
-            type="email"
+            type="text"
             required
             className="w-full rounded-md border px-3 py-2 text-sm"
           />

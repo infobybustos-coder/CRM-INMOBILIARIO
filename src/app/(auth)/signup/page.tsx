@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { signUp } from "../actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PAISES, prefijoPais } from "@/lib/paises";
 
 type TipoPlan = "asesor" | "inmobiliaria";
 
@@ -16,6 +17,7 @@ const PLANES_PAGO: Record<TipoPlan, { nombre: string; precio: string }> = {
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signUp, null);
+  const [pais, setPais] = useState("ES");
   const [tipoPlan, setTipoPlan] = useState<TipoPlan>("asesor");
   const [planTarifa, setPlanTarifa] = useState<"gratis" | "pago">("gratis");
 
@@ -43,14 +45,56 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="pais" className="text-sm font-medium">
+            País
+          </label>
+          <select
+            id="pais"
+            name="pais"
+            value={pais}
+            onChange={(e) => setPais(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          >
+            {PAISES.map((p) => (
+              <option key={p.codigo} value={p.codigo}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
+          {PAISES.length === 1 && (
+            <p className="text-xs text-muted-foreground">
+              Por ahora solo disponible para España. Pronto añadiremos más países.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="telefono" className="text-sm font-medium">
+            WhatsApp
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md border bg-muted px-3 py-2 text-sm">
+              {prefijoPais(pais)}
+            </span>
+            <input
+              id="telefono"
+              name="telefono"
+              type="tel"
+              required
+              placeholder="600 000 000"
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            Correo (opcional)
           </label>
           <input
             id="email"
             name="email"
             type="email"
-            required
             className="w-full rounded-md border px-3 py-2 text-sm"
           />
         </div>
@@ -67,24 +111,6 @@ export default function SignupPage() {
             minLength={6}
             className="w-full rounded-md border px-3 py-2 text-sm"
           />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="pais" className="text-sm font-medium">
-            País
-          </label>
-          <select
-            id="pais"
-            defaultValue="ES"
-            disabled
-            className="w-full rounded-md border bg-muted px-3 py-2 text-sm"
-          >
-            <option value="ES">España</option>
-          </select>
-          <input type="hidden" name="pais" value="ES" />
-          <p className="text-xs text-muted-foreground">
-            Por ahora solo disponible para España. Pronto añadiremos más países.
-          </p>
         </div>
 
         <fieldset className="space-y-2">
