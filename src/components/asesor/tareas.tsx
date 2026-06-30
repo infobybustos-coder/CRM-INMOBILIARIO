@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,8 @@ export function Tareas({
   sugeridas?: "propietario" | "comprador" | "inmueble";
 }) {
   const [state, formAction, pending] = useActionState(crearTareaAction, null);
+  const [mostrarMas, setMostrarMas] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const tituloRef = useRef<HTMLInputElement>(null);
   const lista =
     sugeridas === "comprador"
@@ -73,43 +76,77 @@ export function Tareas({
         ? TAREAS_SUGERIDAS_INMUEBLE
         : TAREAS_SUGERIDAS_PROPIETARIO;
 
+  function elegirSugerencia(texto: string) {
+    if (tituloRef.current) {
+      tituloRef.current.value = texto;
+      tituloRef.current.focus();
+    }
+  }
+
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <h2 className="font-semibold">Tareas</h2>
 
-      <form action={formAction} className="flex flex-wrap gap-2">
-        <select
-          defaultValue=""
-          onChange={(e) => {
-            if (e.target.value && tituloRef.current) {
-              tituloRef.current.value = e.target.value;
-              tituloRef.current.focus();
-            }
-            e.target.value = "";
-          }}
-          className="rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground"
-        >
-          <option value="">Tareas sugeridas...</option>
-          {lista.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <input
-          ref={tituloRef}
-          name="titulo"
-          placeholder="Nueva tarea..."
-          className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-        />
-        <input
-          name="fecha_vencimiento"
-          type="date"
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-        />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Añadiendo..." : "Añadir"}
-        </Button>
+      <form
+        ref={formRef}
+        action={formAction}
+        onSubmit={() => setMostrarMas(false)}
+        className="space-y-3"
+      >
+        <div className="flex gap-2">
+          <input
+            ref={tituloRef}
+            name="titulo"
+            placeholder="Nueva tarea..."
+            className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setMostrarMas((v) => !v)}
+            aria-label={mostrarMas ? "Ocultar opciones" : "Más opciones"}
+            aria-pressed={mostrarMas}
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-md border transition-colors",
+              mostrarMas ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-accent"
+            )}
+          >
+            {mostrarMas ? <X className="size-4" /> : <Plus className="size-4" />}
+          </button>
+          <Button type="submit" size="sm" disabled={pending} className="shrink-0">
+            {pending ? "..." : "Añadir"}
+          </Button>
+        </div>
+
+        {mostrarMas && (
+          <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+            <div className="space-y-1.5">
+              <label htmlFor="fecha_vencimiento" className="text-xs font-medium text-muted-foreground">
+                Fecha límite (opcional)
+              </label>
+              <input
+                id="fecha_vencimiento"
+                name="fecha_vencimiento"
+                type="date"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Sugerencias rápidas</p>
+              <div className="flex flex-wrap gap-1.5">
+                {lista.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => elegirSugerencia(t)}
+                    className="rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-accent"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </form>
       {state && "error" in state && <p className="text-sm text-destructive">{state.error}</p>}
 
