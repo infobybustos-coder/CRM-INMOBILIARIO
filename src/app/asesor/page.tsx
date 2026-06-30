@@ -194,7 +194,7 @@ export default async function AsesorDashboard() {
       label: "Tareas pendientes",
       valor: tareasPendientes.count ?? 0,
       icono: CheckSquare,
-      href: "/asesor/propietarios",
+      href: "/asesor/tareas",
       color: "text-rose-500",
     },
   ];

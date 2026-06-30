@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { itemsDeHoy, itemsVencidos, type AgendaItem } from "@/lib/agenda";
 
@@ -7,15 +8,21 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
 
   if (hoy.length === 0 && vencidos.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border bg-emerald-500/10 p-4 text-sm text-emerald-600">
+      <Link
+        href="/asesor/tareas"
+        className="flex items-center gap-2 rounded-lg border bg-emerald-500/10 p-4 text-sm text-emerald-600 transition-colors hover:bg-emerald-500/15"
+      >
         <CheckCircle2 className="size-5 shrink-0" />
         <p>No tienes nada pendiente para hoy. ¡Vas al día!</p>
-      </div>
+      </Link>
     );
   }
 
   return (
-    <div className="space-y-2 rounded-lg border p-4">
+    <Link
+      href="/asesor/tareas"
+      className="block space-y-2 rounded-lg border p-4 transition-colors hover:bg-accent/50"
+    >
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Tareas pendientes
       </p>
@@ -37,6 +44,6 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
           </span>
         </p>
       )}
-    </div>
+    </Link>
   );
 }
