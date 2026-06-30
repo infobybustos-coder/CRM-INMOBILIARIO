@@ -54,6 +54,9 @@ export function InvitarForm() {
           <p className="text-sm">
             Comparte este enlace con la persona invitada (válido 7 días):
           </p>
+          {state.aviso && (
+            <p className="text-sm text-amber-600">{state.aviso}</p>
+          )}
           <div className="flex items-center gap-2">
             <input
               readOnly

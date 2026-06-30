@@ -4,8 +4,16 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  ASESORES_INCLUIDOS_INMOBILIARIA,
+  PRECIO_ASESOR_EXTRA,
+  esIlimitado,
+} from "@/lib/planes";
 
-export type InvitarActionState = { error: string } | { link: string } | null;
+export type InvitarActionState =
+  | { error: string }
+  | { link: string; aviso?: string }
+  | null;
 
 const ROLES = ["administrador", "director_comercial", "agente", "captador"] as const;
 
@@ -18,6 +26,13 @@ export async function crearInvitacion(
     return { error: "No tienes permiso para invitar." };
   }
 
+  if (!esIlimitado(usuario.tenant ?? {})) {
+    return {
+      error:
+        "Invitar a tu equipo requiere el plan de pago Inmobiliaria. Mejora tu plan para añadir asesores.",
+    };
+  }
+
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const rol = String(formData.get("rol") ?? "");
 
@@ -27,6 +42,17 @@ export async function crearInvitacion(
   }
 
   const admin = createAdminClient();
+
+  const { count: miembrosActuales } = await admin
+    .from("usuarios")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", usuario.tenant_id);
+
+  const aviso =
+    (miembrosActuales ?? 0) >= ASESORES_INCLUIDOS_INMOBILIARIA
+      ? `Este asesor supera los ${ASESORES_INCLUIDOS_INMOBILIARIA} incluidos en tu plan: se añadirán ${PRECIO_ASESOR_EXTRA.toFixed(2)}€/mes a tu factura.`
+      : undefined;
+
   const token = crypto.randomBytes(24).toString("hex");
 
   const { error } = await admin.from("invitaciones").insert({
@@ -44,5 +70,5 @@ export async function crearInvitacion(
   revalidatePath("/inmobiliaria/equipo");
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return { link: `${base}/invitar/${token}` };
+  return { link: `${base}/invitar/${token}`, aviso };
 }

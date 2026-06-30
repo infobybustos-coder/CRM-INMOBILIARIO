@@ -3,8 +3,31 @@
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { limiteRecurso } from "@/lib/planes";
 
 export type CrearClienteState = { error: string } | { ok: true } | null;
+
+async function limiteAlcanzado(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  usuario: NonNullable<Awaited<ReturnType<typeof getUsuarioConTenant>>>,
+  tabla: "propietarios" | "inmuebles" | "compradores",
+  etiqueta: string
+) {
+  const limite = limiteRecurso(usuario.tenant ?? {}, tabla);
+  if (limite === null) return null;
+
+  const { count } = await supabase
+    .from(tabla)
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", usuario.tenant_id);
+
+  if ((count ?? 0) >= limite) {
+    return {
+      error: `Has llegado al límite de ${limite} ${etiqueta} del plan Gratis. Mejora tu plan para añadir más.`,
+    };
+  }
+  return null;
+}
 
 export async function crearClienteRapido(
   _prevState: CrearClienteState,
@@ -23,6 +46,9 @@ export async function crearClienteRapido(
     if (!referencia || !direccion) {
       return { error: "Pon al menos la referencia y la dirección." };
     }
+
+    const limiteError = await limiteAlcanzado(supabase, usuario, "inmuebles", "inmuebles");
+    if (limiteError) return limiteError;
 
     const { error } = await supabase.from("inmuebles").insert({
       tenant_id: usuario.tenant_id,
@@ -53,6 +79,14 @@ export async function crearClienteRapido(
   }
 
   const tabla = tipo === "comprador" ? "compradores" : "propietarios";
+
+  const limiteError = await limiteAlcanzado(
+    supabase,
+    usuario,
+    tabla,
+    tabla === "compradores" ? "compradores" : "captaciones"
+  );
+  if (limiteError) return limiteError;
 
   const { error } = await supabase.from(tabla).insert({
     tenant_id: usuario.tenant_id,
