@@ -76,7 +76,7 @@ export default async function PropietarioPage({
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />
-        Volver a Propietarios
+        Volver a Captaciones
       </Link>
 
       <div className="flex items-center gap-3">

@@ -35,7 +35,7 @@ export default async function PropietariosPage({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Propietarios</h1>
+        <h1 className="text-2xl font-semibold">Captaciones</h1>
         <VistaSwitcher vista={vista} />
       </div>
 

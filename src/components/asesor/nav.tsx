@@ -15,10 +15,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const ENLACES = [
-  { href: "/asesor", label: "Inicio", icon: LayoutDashboard },
-  { href: "/asesor/propietarios", label: "Propietarios", icon: Users },
-  { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
+  { href: "/asesor", label: "Vista General", icon: LayoutDashboard },
   { href: "/asesor/inmuebles", label: "Inmuebles", icon: Home },
+  { href: "/asesor/propietarios", label: "Captaciones", icon: Users },
+  { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
   { href: "/asesor/agenda", label: "Agenda", icon: CalendarDays },
 ];
 
