@@ -11,7 +11,7 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
   if (total === 0) {
     return (
       <Link
-        href="/asesor/tareas"
+        href="/asesor/agenda"
         className="flex items-center gap-2 rounded-lg border bg-emerald-500/10 p-4 text-sm text-emerald-600 transition-colors hover:bg-emerald-500/15"
       >
         <CheckCircle2 className="size-5 shrink-0" />
@@ -28,7 +28,7 @@ export function ResumenTareas({ items }: { items: AgendaItem[] }) {
 
   return (
     <Link
-      href="/asesor/tareas"
+      href="/asesor/agenda"
       className="block space-y-2 rounded-lg border p-4 transition-colors hover:bg-accent/50"
     >
       <div className="flex items-center justify-between">

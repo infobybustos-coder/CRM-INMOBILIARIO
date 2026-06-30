@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Pencil, Check, X, FileDown, Ban, Plus } from "lucide-react";
+import { CheckCircle2, Pencil, Check, X, FileDown, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Origen = "tarea" | "evento";
@@ -21,7 +21,6 @@ type TareaItem = {
 };
 
 type EditarTareaState = { error: string } | { ok: true } | null;
-type CrearTareaState = { error: string } | { ok: true } | null;
 
 const ETIQUETA_TIPO: Record<string, string> = {
   propietario: "Propietario",
@@ -63,7 +62,6 @@ export function ListaTareas({
   alternarTareaAction,
   editarTareaAction,
   cancelarTareaAction,
-  crearTareaAction,
 }: {
   items: TareaItem[];
   alternarTareaAction: (id: string, completada: boolean, origen: Origen) => Promise<void>;
@@ -74,10 +72,6 @@ export function ListaTareas({
     origen: Origen
   ) => Promise<EditarTareaState>;
   cancelarTareaAction: (id: string, origen: Origen) => Promise<void>;
-  crearTareaAction: (
-    prevState: CrearTareaState,
-    formData: FormData
-  ) => Promise<CrearTareaState>;
 }) {
   const [completadas, setCompletadas] = useState<Record<string, boolean>>(
     Object.fromEntries(items.map((t) => [t.id, t.estado === "completada"]))
@@ -288,19 +282,14 @@ export function ListaTareas({
 
   if (items.length === 0) {
     return (
-      <div className="space-y-4">
-        <NuevaTareaForm crearTareaAction={crearTareaAction} />
-        <p className="rounded-lg border p-4 text-sm text-muted-foreground">
-          No tienes tareas creadas. Añádelas desde aquí, desde la ficha de un propietario, comprador, inmueble, o desde la Agenda.
-        </p>
-      </div>
+      <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+        No tienes tareas creadas. Añádelas con el botón + de abajo, desde la ficha de un propietario, comprador o inmueble, o desde el calendario.
+      </p>
     );
   }
 
   return (
     <div className="space-y-5">
-      <NuevaTareaForm crearTareaAction={crearTareaAction} />
-
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1.5">
           <label htmlFor="filtro_fecha" className="text-xs font-medium text-muted-foreground">
@@ -377,53 +366,6 @@ export function ListaTareas({
         </>
       )}
     </div>
-  );
-}
-
-function NuevaTareaForm({
-  crearTareaAction,
-}: {
-  crearTareaAction: (
-    prevState: CrearTareaState,
-    formData: FormData
-  ) => Promise<CrearTareaState>;
-}) {
-  const [estado, formAction, pendiente] = useActionState(crearTareaAction, null);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (estado && "ok" in estado) formRef.current?.reset();
-  }, [estado]);
-
-  return (
-    <form
-      ref={formRef}
-      action={formAction}
-      className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start"
-    >
-      <input
-        name="titulo"
-        placeholder="Nueva tarea..."
-        required
-        className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-      />
-      <input
-        type="date"
-        name="fecha_vencimiento"
-        className="rounded-md border bg-background px-3 py-2 text-sm"
-      />
-      <button
-        type="submit"
-        disabled={pendiente}
-        className="flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-      >
-        <Plus className="size-4" />
-        Añadir
-      </button>
-      {estado && "error" in estado && (
-        <p className="text-xs text-destructive sm:basis-full">{estado.error}</p>
-      )}
-    </form>
   );
 }
 

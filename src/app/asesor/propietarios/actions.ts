@@ -131,7 +131,7 @@ export async function crearTarea(
 
   revalidatePath(`/asesor/propietarios/${propietarioId}`);
   revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
   return null;
 }
 
@@ -153,7 +153,7 @@ export async function alternarTarea(
 
   revalidatePath(`/asesor/propietarios/${propietarioId}`);
   revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
   revalidatePath("/asesor/agenda");
 }
 

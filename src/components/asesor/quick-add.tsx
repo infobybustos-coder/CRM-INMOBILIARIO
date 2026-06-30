@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Plus, X, User, Phone, MapPin, Mail, Home, Tag } from "lucide-react";
 import { crearClienteRapido } from "@/app/asesor/clientes/actions";
+import { crearTareaGeneral } from "@/app/asesor/tareas/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,101 @@ const TIPO_POR_SECCION: Record<string, Tipo> = {
 
 export function QuickAdd() {
   const pathname = usePathname();
+
+  if (pathname?.startsWith("/asesor/agenda")) {
+    return <QuickAddTarea />;
+  }
+
+  return <QuickAddCliente pathname={pathname} />;
+}
+
+function QuickAddTarea() {
+  const [abierto, setAbierto] = useState(false);
+  const [state, formAction, pending] = useActionState(crearTareaGeneral, null);
+  const [stateProcesado, setStateProcesado] = useState(state);
+
+  if (state !== stateProcesado) {
+    setStateProcesado(state);
+    if (state && "ok" in state) setAbierto(false);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        aria-label="Añadir tarea"
+        className={cn(
+          "fixed right-4 bottom-20 z-50 flex size-14 items-center justify-center",
+          "rounded-full bg-primary text-primary-foreground shadow-lg",
+          "md:right-8 md:bottom-8"
+        )}
+      >
+        <Plus className="size-6" />
+      </button>
+
+      {abierto && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center">
+          <div className="w-full max-w-sm space-y-5 rounded-t-2xl border bg-card p-6 shadow-2xl md:rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Añadir tarea</h2>
+                <p className="text-xs text-muted-foreground">Una tarea pendiente, sin ficha asociada.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAbierto(false)}
+                aria-label="Cerrar"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <form action={formAction} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="titulo" className="text-sm font-medium">
+                  Título
+                </label>
+                <input
+                  id="titulo"
+                  name="titulo"
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Ej. Llamar a Juan"
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="fecha_vencimiento" className="text-sm font-medium">
+                  Fecha (opcional)
+                </label>
+                <input
+                  id="fecha_vencimiento"
+                  name="fecha_vencimiento"
+                  type="date"
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              {state && "error" in state && (
+                <p className="text-sm text-destructive">{state.error}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={pending}>
+                {pending ? "Guardando..." : "Guardar"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function QuickAddCliente({ pathname }: { pathname: string | null }) {
   const tipoFijo = Object.entries(TIPO_POR_SECCION).find(([ruta]) =>
     pathname?.startsWith(ruta)
   )?.[1];

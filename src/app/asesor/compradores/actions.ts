@@ -127,7 +127,7 @@ export async function crearTarea(
 
   revalidatePath(`/asesor/compradores/${compradorId}`);
   revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
   return null;
 }
 
@@ -145,7 +145,7 @@ export async function alternarTarea(tareaId: string, compradorId: string, comple
 
   revalidatePath(`/asesor/compradores/${compradorId}`);
   revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
   revalidatePath("/asesor/agenda");
 }
 

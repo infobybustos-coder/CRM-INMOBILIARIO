@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export type OrigenItem = "tarea" | "evento";
 
 function revalidarTodo() {
-  revalidatePath("/asesor/tareas");
+  revalidatePath("/asesor/agenda");
   revalidatePath("/asesor", "layout");
   revalidatePath("/asesor/agenda");
   revalidatePath("/asesor");

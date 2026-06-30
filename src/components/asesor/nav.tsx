@@ -9,7 +9,6 @@ import {
   UserSearch,
   Home,
   CalendarDays,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -20,8 +19,7 @@ const ENLACES = [
   { href: "/asesor/inmuebles", label: "Inmuebles", icon: Home },
   { href: "/asesor/propietarios", label: "Captaciones", icon: Users },
   { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
-  { href: "/asesor/agenda", label: "Agenda", icon: CalendarDays },
-  { href: "/asesor/tareas", label: "Tareas", icon: CheckSquare },
+  { href: "/asesor/agenda", label: "Agenda y tareas", icon: CalendarDays },
 ];
 
 function aplicarColapso(colapsado: boolean) {
@@ -85,7 +83,7 @@ export function AsesorNav({ tareasNotificacion = 0 }: { tareasNotificacion?: num
           >
             <span className="relative">
               <Icon className="size-5 md:size-5" />
-              {href === "/asesor/tareas" && tareasNotificacion > 0 && (
+              {href === "/asesor/agenda" && tareasNotificacion > 0 && (
                 <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-4 text-white">
                   {tareasNotificacion > 99 ? "99+" : tareasNotificacion}
                 </span>
