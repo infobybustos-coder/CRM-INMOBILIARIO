@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/compradores/filtros";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
@@ -19,10 +19,8 @@ export default async function InmobiliariaCompradoresPage({
 
   const params = await searchParams;
 
-  if (usuario.rol === "captador") redirect("/inmobiliaria/propietarios");
-
   const vista = params.vista === "tabla" ? "tabla" : "kanban";
-  const filtrarPorAgente = usuario.rol === "agente";
+  const filtrarPorAgente = !esGestor(usuario.rol);
 
   const supabase = await createClient();
   let query = supabase

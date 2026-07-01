@@ -29,9 +29,9 @@ export default async function EquipoPage() {
 
   const ETIQUETAS_ROL: Record<string, string> = {
     administrador: "Administrador",
-    director_comercial: "Director Comercial",
-    agente: "Agente",
-    captador: "Captador",
+    director_comercial: "Administrador",
+    agente: "Agente Inmobiliario",
+    captador: "Agente Inmobiliario",
   };
 
   return (
@@ -83,13 +83,11 @@ export default async function EquipoPage() {
               Simula cómo ve el dashboard cada tipo de usuario de tu equipo.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             {(
               [
-                { rol: "administrador", label: "Administrador", desc: "Acceso total" },
-                { rol: "director_comercial", label: "Director Comercial", desc: "Gestión y equipo" },
-                { rol: "agente", label: "Agente", desc: "Solo sus asignados" },
-                { rol: "captador", label: "Captador", desc: "Solo captaciones" },
+                { rol: "administrador", label: "Administrador", desc: "Acceso total y gestión de equipo" },
+                { rol: "agente", label: "Agente Inmobiliario", desc: "Visitas, ofertas, ventas y agenda" },
               ] as const
             ).map(({ rol, label, desc }) => (
               <form key={rol} action={activarVistaPrevia}>

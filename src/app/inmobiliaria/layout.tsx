@@ -10,9 +10,9 @@ import { desactivarVistaPrevia } from "./equipo/ver-como-actions";
 
 const ETIQUETAS_ROL: Record<string, string> = {
   administrador: "Administrador",
-  director_comercial: "Director Comercial",
-  agente: "Agente",
-  captador: "Captador",
+  director_comercial: "Administrador",
+  agente: "Agente Inmobiliario",
+  captador: "Agente Inmobiliario",
 };
 
 export default async function InmobiliariaLayout({
@@ -30,7 +30,6 @@ export default async function InmobiliariaLayout({
   const rolEfectivo = verComo ?? usuario.rol;
 
   const gestor = esGestor(rolEfectivo);
-  const captador = rolEfectivo === "captador";
 
   const supabase = await createClient();
   const avatarUrl = usuario.avatar_url
@@ -63,7 +62,7 @@ export default async function InmobiliariaLayout({
         </div>
       </header>
       <main className="p-4 pb-24 md:pb-6">{children}</main>
-      <InmobiliariaNav esGestor={gestor} esCaptador={captador} />
+      <InmobiliariaNav esGestor={gestor} />
     </div>
   );
 }

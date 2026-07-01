@@ -34,10 +34,8 @@ export function InvitarForm() {
             defaultValue="agente"
             className="w-48 rounded-md border px-3 py-2 text-sm"
           >
+            <option value="agente">Agente Inmobiliario</option>
             <option value="administrador">Administrador</option>
-            <option value="director_comercial">Director Comercial</option>
-            <option value="agente">Agente</option>
-            <option value="captador">Captador</option>
           </select>
         </div>
         <Button type="submit" disabled={pending}>

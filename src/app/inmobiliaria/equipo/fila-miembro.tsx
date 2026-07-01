@@ -3,12 +3,12 @@
 import { useActionState } from "react";
 import { cambiarRolMiembro, alternarActivoMiembro, type GestionMiembroState } from "./actions";
 
-const ROLES = ["administrador", "director_comercial", "agente", "captador"] as const;
+const ROLES = ["administrador", "agente"] as const;
 const ETIQUETAS_ROL: Record<string, string> = {
   administrador: "Administrador",
-  director_comercial: "Director Comercial",
-  agente: "Agente",
-  captador: "Captador",
+  director_comercial: "Administrador",
+  agente: "Agente Inmobiliario",
+  captador: "Agente Inmobiliario",
 };
 
 type Miembro = {

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
 import { Tabla } from "@/components/asesor/inmuebles/tabla";
@@ -17,9 +17,7 @@ export default async function InmobiliariaInmueblesPage({
 
   const params = await searchParams;
 
-  if (usuario.rol === "captador") redirect("/inmobiliaria/propietarios");
-
-  const filtrarPorAgente = usuario.rol === "agente";
+  const filtrarPorAgente = !esGestor(usuario.rol);
 
   const supabase = await createClient();
   let query = supabase
