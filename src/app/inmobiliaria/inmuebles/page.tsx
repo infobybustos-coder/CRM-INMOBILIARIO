@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
+import { VerComoSwitcher } from "@/components/inmobiliaria/ver-como-switcher";
 import { Tabla } from "@/components/asesor/inmuebles/tabla";
 import type { Inmueble } from "@/app/asesor/inmuebles/constantes";
 
@@ -15,7 +16,12 @@ export default async function InmobiliariaInmueblesPage({
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
-  if (usuario.rol === "captador") redirect("/inmobiliaria/propietarios");
+  const params = await searchParams;
+  const verComo = esGestor(usuario.rol) && params.ver_como ? params.ver_como : usuario.rol;
+
+  if (usuario.rol === "captador" || verComo === "captador") redirect("/inmobiliaria/propietarios");
+
+  const filtrarPorAgente = verComo === "agente";
 
   const supabase = await createClient();
   let query = supabase
@@ -24,7 +30,7 @@ export default async function InmobiliariaInmueblesPage({
       "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en, zonas(nombre, ciudad)"
     );
 
-  const params = await searchParams;
+  if (filtrarPorAgente) query = query.eq("agente_id", usuario.id);
   if (params.estado) query = query.eq("estado", params.estado);
   if (params.tipo) query = query.eq("tipo", params.tipo);
   if (params.precio_min) query = query.gte("precio", Number(params.precio_min));
@@ -77,6 +83,8 @@ export default async function InmobiliariaInmueblesPage({
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Inmuebles</h1>
+
+      {esGestor(usuario.rol) && <VerComoSwitcher rolActual={usuario.rol} />}
 
       <Filtros />
 
