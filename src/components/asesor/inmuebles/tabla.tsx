@@ -22,7 +22,13 @@ const COLOR_ESTADO: Record<string, string> = {
 
 type Columna = "direccion" | "estado" | "precio" | "metros_cuadrados" | "visitas";
 
-export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
+export function Tabla({
+  inmuebles,
+  basePath = "/asesor/inmuebles",
+}: {
+  inmuebles: Inmueble[];
+  basePath?: string;
+}) {
   const router = useRouter();
   const { formatear } = useMoneda();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
@@ -84,7 +90,7 @@ export function Tabla({ inmuebles }: { inmuebles: Inmueble[] }) {
           {ordenados.map((i) => (
             <tr
               key={i.id}
-              onClick={() => router.push(`/asesor/inmuebles/${i.id}`)}
+              onClick={() => router.push(`${basePath}/${i.id}`)}
               className="cursor-pointer border-b last:border-0 hover:bg-accent/50"
             >
               <td className="px-4 py-2">

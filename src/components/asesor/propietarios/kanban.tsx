@@ -57,7 +57,13 @@ function esVencida(fecha: string | null) {
   return new Date(fecha) < new Date(new Date().toDateString());
 }
 
-function Tarjeta({ propietario }: { propietario: Propietario }) {
+function Tarjeta({
+  propietario,
+  basePath = "/asesor/propietarios",
+}: {
+  propietario: Propietario;
+  basePath?: string;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: propietario.id,
   });
@@ -69,7 +75,7 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
 
   return (
     <Link
-      href={`/asesor/propietarios/${propietario.id}`}
+      href={`${basePath}/${propietario.id}`}
       ref={setNodeRef}
       {...listeners}
       {...attributes}
@@ -130,9 +136,11 @@ function Tarjeta({ propietario }: { propietario: Propietario }) {
 function Columna({
   estado,
   propietarios,
+  basePath = "/asesor/propietarios",
 }: {
   estado: string;
   propietarios: Propietario[];
+  basePath?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: estado });
 
@@ -153,14 +161,20 @@ function Columna({
       </div>
       <div className="flex min-h-12 flex-1 flex-col gap-2 overflow-y-auto">
         {propietarios.map((p) => (
-          <Tarjeta key={p.id} propietario={p} />
+          <Tarjeta key={p.id} propietario={p} basePath={basePath} />
         ))}
       </div>
     </div>
   );
 }
 
-export function Kanban({ propietarios }: { propietarios: Propietario[] }) {
+export function Kanban({
+  propietarios,
+  basePath = "/asesor/propietarios",
+}: {
+  propietarios: Propietario[];
+  basePath?: string;
+}) {
   const [items, setItems] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -193,6 +207,7 @@ export function Kanban({ propietarios }: { propietarios: Propietario[] }) {
             key={estado}
             estado={estado}
             propietarios={items.filter((p) => p.estado === estado)}
+            basePath={basePath}
           />
         ))}
       </div>

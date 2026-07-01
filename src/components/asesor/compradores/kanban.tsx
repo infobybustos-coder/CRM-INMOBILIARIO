@@ -52,7 +52,13 @@ const FONDO_ESTADO: Record<string, string> = {
   perdido: "bg-rose-500/10",
 };
 
-function Tarjeta({ comprador }: { comprador: Comprador }) {
+function Tarjeta({
+  comprador,
+  basePath = "/asesor/compradores",
+}: {
+  comprador: Comprador;
+  basePath?: string;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: comprador.id,
   });
@@ -73,7 +79,7 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
 
   return (
     <Link
-      href={`/asesor/compradores/${comprador.id}`}
+      href={`${basePath}/${comprador.id}`}
       ref={setNodeRef}
       {...listeners}
       {...attributes}
@@ -124,9 +130,11 @@ function Tarjeta({ comprador }: { comprador: Comprador }) {
 function Columna({
   estado,
   compradores,
+  basePath = "/asesor/compradores",
 }: {
   estado: string;
   compradores: Comprador[];
+  basePath?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: estado });
 
@@ -147,14 +155,20 @@ function Columna({
       </div>
       <div className="flex min-h-12 flex-1 flex-col gap-2 overflow-y-auto">
         {compradores.map((c) => (
-          <Tarjeta key={c.id} comprador={c} />
+          <Tarjeta key={c.id} comprador={c} basePath={basePath} />
         ))}
       </div>
     </div>
   );
 }
 
-export function Kanban({ compradores }: { compradores: Comprador[] }) {
+export function Kanban({
+  compradores,
+  basePath = "/asesor/compradores",
+}: {
+  compradores: Comprador[];
+  basePath?: string;
+}) {
   const [items, setItems] = useState(compradores);
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -187,6 +201,7 @@ export function Kanban({ compradores }: { compradores: Comprador[] }) {
             key={estado}
             estado={estado}
             compradores={items.filter((c) => c.estado === estado)}
+            basePath={basePath}
           />
         ))}
       </div>

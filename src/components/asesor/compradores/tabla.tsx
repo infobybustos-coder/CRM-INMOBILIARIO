@@ -21,7 +21,13 @@ const COLOR_PRIORIDAD: Record<string, string> = {
   baja: "bg-muted text-muted-foreground",
 };
 
-export function Tabla({ compradores }: { compradores: Comprador[] }) {
+export function Tabla({
+  compradores,
+  basePath = "/asesor/compradores",
+}: {
+  compradores: Comprador[];
+  basePath?: string;
+}) {
   const { formatear } = useMoneda();
   const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
     columna: "nombre",
@@ -83,7 +89,7 @@ export function Tabla({ compradores }: { compradores: Comprador[] }) {
             return (
               <tr key={c.id} className="border-b last:border-0 hover:bg-accent/50">
                 <td className="px-4 py-2">
-                  <Link href={`/asesor/compradores/${c.id}`} className="font-medium underline">
+                  <Link href={`${basePath}/${c.id}`} className="font-medium underline">
                     {c.nombre}
                   </Link>
                 </td>
