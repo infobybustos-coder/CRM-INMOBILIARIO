@@ -1,6 +1,10 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
+export function esGestor(rol: string): boolean {
+  return rol === "administrador" || rol === "director_comercial";
+}
+
 export async function getUsuarioConTenant() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

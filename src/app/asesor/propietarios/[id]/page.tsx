@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioPropietario } from "@/components/asesor/propietarios/formulario-propietario";
 import { Notas } from "@/components/asesor/notas";
@@ -40,15 +40,19 @@ export default async function PropietarioPage({
   const { data: propietario } = await supabase
     .from("propietarios")
     .select(
-      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en"
+      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en, agente_id"
     )
     .eq("id", id)
-    .eq("agente_id", usuario.id)
+    .eq(
+      esGestor(usuario.rol) ? "tenant_id" : "agente_id",
+      esGestor(usuario.rol) ? usuario.tenant_id : usuario.id
+    )
     .single();
 
   if (!propietario) notFound();
 
-  const [{ data: actividades }, { data: tareas }, { data: documentos }] = await Promise.all([
+  const gestor = esGestor(usuario.rol);
+  const [{ data: actividades }, { data: tareas }, { data: documentos }, { data: agentes }] = await Promise.all([
     supabase
       .from("actividades")
       .select("id, tipo, contenido, creado_en")
@@ -67,6 +71,14 @@ export default async function PropietarioPage({
       .eq("entidad_tipo", "propietario")
       .eq("entidad_id", id)
       .order("creado_en", { ascending: false }),
+    gestor
+      ? supabase
+          .from("usuarios")
+          .select("id, nombre_completo")
+          .eq("tenant_id", usuario.tenant_id)
+          .eq("activo", true)
+          .order("nombre_completo")
+      : Promise.resolve({ data: [] }),
   ]);
 
   return (
@@ -105,7 +117,10 @@ export default async function PropietarioPage({
         crearSiguientePasoAction={crearSiguientePaso}
       />
 
-      <FormularioPropietario propietario={propietario as Propietario} />
+      <FormularioPropietario
+        propietario={propietario as Propietario}
+        agentes={gestor ? (agentes ?? []) : []}
+      />
 
       <GuionCaptacion
         respuestas={(propietario as Propietario).guion_captacion}

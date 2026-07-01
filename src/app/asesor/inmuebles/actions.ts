@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireUsuario() {
@@ -33,11 +33,15 @@ export async function actualizarInmueble(
   const zonaId = String(formData.get("zona_id") ?? "");
   const propietarioId = String(formData.get("propietario_id") ?? "");
 
+  const gestor = esGestor(usuario.rol);
+  const filtroCol = gestor ? "tenant_id" : "agente_id";
+  const filtroVal = gestor ? usuario.tenant_id : usuario.id;
+
   const { data: actual } = await supabase
     .from("inmuebles")
     .select("estado")
     .eq("id", id)
-    .eq("agente_id", usuario.id)
+    .eq(filtroCol, filtroVal)
     .single();
 
   const { error } = await supabase
@@ -58,7 +62,7 @@ export async function actualizarInmueble(
       fecha_publicacion: fechaPublicacion ? String(fechaPublicacion) : null,
     })
     .eq("id", id)
-    .eq("agente_id", usuario.id);
+    .eq(filtroCol, filtroVal);
 
   if (error) {
     return error.code === "23505"

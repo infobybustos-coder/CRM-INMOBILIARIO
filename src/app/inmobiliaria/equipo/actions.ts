@@ -22,7 +22,7 @@ export async function crearInvitacion(
   formData: FormData
 ): Promise<InvitarActionState> {
   const usuario = await getUsuarioConTenant();
-  if (!usuario || usuario.rol !== "administrador") {
+  if (!usuario || !["administrador", "director_comercial"].includes(usuario.rol)) {
     return { error: "No tienes permiso para invitar." };
   }
 
@@ -71,4 +71,67 @@ export async function crearInvitacion(
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return { link: `${base}/invitar/${token}`, aviso };
+}
+
+export type GestionMiembroState = { error: string } | { ok: true } | null;
+
+export async function cambiarRolMiembro(
+  _prevState: GestionMiembroState,
+  formData: FormData
+): Promise<GestionMiembroState> {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario || !["administrador", "director_comercial"].includes(usuario.rol)) {
+    return { error: "No tienes permiso." };
+  }
+
+  const miembroId = String(formData.get("miembro_id") ?? "");
+  const nuevoRol = String(formData.get("rol") ?? "");
+
+  if (!ROLES.includes(nuevoRol as (typeof ROLES)[number])) {
+    return { error: "Rol no válido." };
+  }
+  if (miembroId === usuario.id) {
+    return { error: "No puedes cambiar tu propio rol." };
+  }
+
+  const supabase = await createAdminClient();
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ rol: nuevoRol })
+    .eq("id", miembroId)
+    .eq("tenant_id", usuario.tenant_id);
+
+  if (error) return { error: "No se pudo cambiar el rol." };
+
+  revalidatePath("/inmobiliaria/equipo");
+  return { ok: true };
+}
+
+export async function alternarActivoMiembro(
+  _prevState: GestionMiembroState,
+  formData: FormData
+): Promise<GestionMiembroState> {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario || !["administrador", "director_comercial"].includes(usuario.rol)) {
+    return { error: "No tienes permiso." };
+  }
+
+  const miembroId = String(formData.get("miembro_id") ?? "");
+  const activo = formData.get("activo") === "true";
+
+  if (miembroId === usuario.id) {
+    return { error: "No puedes desactivarte a ti mismo." };
+  }
+
+  const supabase = await createAdminClient();
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ activo })
+    .eq("id", miembroId)
+    .eq("tenant_id", usuario.tenant_id);
+
+  if (error) return { error: "No se pudo actualizar." };
+
+  revalidatePath("/inmobiliaria/equipo");
+  return { ok: true };
 }

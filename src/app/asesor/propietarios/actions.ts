@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireUsuario() {
@@ -18,7 +18,10 @@ export async function actualizarEstadoPropietario(id: string, estado: string) {
     .from("propietarios")
     .update({ estado })
     .eq("id", id)
-    .eq("agente_id", usuario.id);
+    .eq(
+      esGestor(usuario.rol) ? "tenant_id" : "agente_id",
+      esGestor(usuario.rol) ? usuario.tenant_id : usuario.id
+    );
 
   await supabase.from("actividades").insert({
     tenant_id: usuario.tenant_id,
@@ -52,6 +55,9 @@ export async function actualizarPropietario(
   const fechaProximaAccion = formData.get("fecha_proxima_accion");
   const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
 
+  const gestor = esGestor(usuario.rol);
+  const nuevoAgenteId = gestor ? String(formData.get("agente_id") ?? "").trim() || null : null;
+
   const { error } = await supabase
     .from("propietarios")
     .update({
@@ -66,9 +72,13 @@ export async function actualizarPropietario(
       fecha_proxima_accion: fechaProximaAccion ? String(fechaProximaAccion) : null,
       fecha_ultimo_contacto: fechaUltimoContacto ? String(fechaUltimoContacto) : null,
       notas: String(formData.get("notas") ?? "").trim() || null,
+      ...(nuevoAgenteId ? { agente_id: nuevoAgenteId } : {}),
     })
     .eq("id", id)
-    .eq("agente_id", usuario.id);
+    .eq(
+      gestor ? "tenant_id" : "agente_id",
+      gestor ? usuario.tenant_id : usuario.id
+    );
 
   if (error) return { error: "No se pudo guardar." };
 

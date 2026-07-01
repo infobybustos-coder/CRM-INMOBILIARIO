@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
 import { Notas } from "@/components/asesor/notas";
@@ -31,15 +31,19 @@ export default async function CompradorPage({
   const { data: comprador } = await supabase
     .from("compradores")
     .select(
-      "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en"
+      "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en, agente_id"
     )
     .eq("id", id)
-    .eq("agente_id", usuario.id)
+    .eq(
+      esGestor(usuario.rol) ? "tenant_id" : "agente_id",
+      esGestor(usuario.rol) ? usuario.tenant_id : usuario.id
+    )
     .single();
 
   if (!comprador) notFound();
 
-  const [{ data: actividades }, { data: tareas }, { data: zonas }] = await Promise.all([
+  const gestor = esGestor(usuario.rol);
+  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] = await Promise.all([
     supabase
       .from("actividades")
       .select("id, tipo, contenido, creado_en")
@@ -57,6 +61,14 @@ export default async function CompradorPage({
       .select("id, nombre, ciudad")
       .eq("tenant_id", usuario.tenant_id)
       .order("nombre", { ascending: true }),
+    gestor
+      ? supabase
+          .from("usuarios")
+          .select("id, nombre_completo")
+          .eq("tenant_id", usuario.tenant_id)
+          .eq("activo", true)
+          .order("nombre_completo")
+      : Promise.resolve({ data: [] }),
   ]);
 
   return (
@@ -89,7 +101,11 @@ export default async function CompradorPage({
         </span>
       </div>
 
-      <FormularioComprador comprador={comprador as Comprador} zonas={zonas ?? []} />
+      <FormularioComprador
+        comprador={comprador as Comprador}
+        zonas={zonas ?? []}
+        agentes={gestor ? (agentes ?? []) : []}
+      />
 
       <Tareas
         entidadId={id}

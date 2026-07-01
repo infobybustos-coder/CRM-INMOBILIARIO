@@ -2,34 +2,36 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { InvitarForm } from "./invitar-form";
-
-const ETIQUETAS_ROL: Record<string, string> = {
-  administrador: "Administrador",
-  director_comercial: "Director Comercial",
-  agente: "Agente",
-  captador: "Captador",
-};
+import { FilaMiembro } from "./fila-miembro";
 
 export default async function EquipoPage() {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
+  const esGestor = ["administrador", "director_comercial"].includes(usuario.rol);
+
   const supabase = await createClient();
   const { data: miembros } = await supabase
     .from("usuarios")
-    .select("id, nombre_completo, email, rol")
+    .select("id, nombre_completo, email, rol, activo")
     .eq("tenant_id", usuario.tenant_id)
     .order("creado_en");
 
-  const { data: invitacionesPendientes } =
-    usuario.rol === "administrador"
-      ? await supabase
-          .from("invitaciones")
-          .select("id, email, rol, creado_en")
-          .eq("tenant_id", usuario.tenant_id)
-          .is("usado_en", null)
-          .order("creado_en", { ascending: false })
-      : { data: [] };
+  const { data: invitacionesPendientes } = esGestor
+    ? await supabase
+        .from("invitaciones")
+        .select("id, email, rol, creado_en")
+        .eq("tenant_id", usuario.tenant_id)
+        .is("usado_en", null)
+        .order("creado_en", { ascending: false })
+    : { data: [] };
+
+  const ETIQUETAS_ROL: Record<string, string> = {
+    administrador: "Administrador",
+    director_comercial: "Director Comercial",
+    agente: "Agente",
+    captador: "Captador",
+  };
 
   return (
     <div className="space-y-8">
@@ -47,21 +49,32 @@ export default async function EquipoPage() {
               <th className="px-4 py-2 text-left font-medium">Nombre</th>
               <th className="px-4 py-2 text-left font-medium">Email</th>
               <th className="px-4 py-2 text-left font-medium">Rol</th>
+              {esGestor && (
+                <th className="px-4 py-2 text-left font-medium">Estado</th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {miembros?.map((m) => (
-              <tr key={m.id} className="border-b last:border-0">
-                <td className="px-4 py-2">{m.nombre_completo}</td>
-                <td className="px-4 py-2">{m.email}</td>
-                <td className="px-4 py-2">{ETIQUETAS_ROL[m.rol] ?? m.rol}</td>
-              </tr>
-            ))}
+            {miembros?.map((m) =>
+              esGestor ? (
+                <FilaMiembro
+                  key={m.id}
+                  miembro={m}
+                  esMiMismoId={m.id === usuario.id}
+                />
+              ) : (
+                <tr key={m.id} className="border-b last:border-0">
+                  <td className="px-4 py-2">{m.nombre_completo}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{m.email}</td>
+                  <td className="px-4 py-2">{ETIQUETAS_ROL[m.rol] ?? m.rol}</td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
 
-      {usuario.rol === "administrador" && (
+      {esGestor && (
         <>
           <InvitarForm />
 

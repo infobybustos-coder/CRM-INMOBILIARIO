@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireUsuario() {
@@ -14,7 +14,14 @@ export async function actualizarEstadoComprador(id: string, estado: string) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
 
-  await supabase.from("compradores").update({ estado }).eq("id", id).eq("agente_id", usuario.id);
+  await supabase
+    .from("compradores")
+    .update({ estado })
+    .eq("id", id)
+    .eq(
+      esGestor(usuario.rol) ? "tenant_id" : "agente_id",
+      esGestor(usuario.rol) ? usuario.tenant_id : usuario.id
+    );
 
   await supabase.from("actividades").insert({
     tenant_id: usuario.tenant_id,
@@ -41,6 +48,8 @@ export async function actualizarComprador(
   const nombre = String(formData.get("nombre") ?? "").trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
 
+  const gestor = esGestor(usuario.rol);
+  const nuevoAgenteId = gestor ? String(formData.get("agente_id") ?? "").trim() || null : null;
   const presupuestoMin = formData.get("presupuesto_min");
   const presupuestoMax = formData.get("presupuesto_max");
   const fechaProximaAccion = formData.get("fecha_proxima_accion");
@@ -62,9 +71,13 @@ export async function actualizarComprador(
       fecha_proxima_accion: fechaProximaAccion ? String(fechaProximaAccion) : null,
       fecha_ultimo_contacto: fechaUltimoContacto ? String(fechaUltimoContacto) : null,
       notas: String(formData.get("notas") ?? "").trim() || null,
+      ...(nuevoAgenteId ? { agente_id: nuevoAgenteId } : {}),
     })
     .eq("id", id)
-    .eq("agente_id", usuario.id);
+    .eq(
+      gestor ? "tenant_id" : "agente_id",
+      gestor ? usuario.tenant_id : usuario.id
+    );
 
   if (error) return { error: "No se pudo guardar." };
 
