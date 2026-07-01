@@ -29,6 +29,7 @@ export default async function InmobiliariaInmueblesPage({
     );
 
   if (filtrarPorAgente) query = query.eq("agente_id", usuario.id);
+  else if (params.agente_id) query = query.eq("agente_id", params.agente_id);
   if (params.estado) query = query.eq("estado", params.estado);
   if (params.tipo) query = query.eq("tipo", params.tipo);
   if (params.precio_min) query = query.gte("precio", Number(params.precio_min));

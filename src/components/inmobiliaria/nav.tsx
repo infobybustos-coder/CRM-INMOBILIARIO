@@ -9,6 +9,7 @@ import {
   UserSearch,
   Home,
   UsersRound,
+  UserCog,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -26,6 +27,12 @@ const ENLACES_BASE: Enlace[] = [
   { href: "/inmobiliaria/inmuebles", label: "Inmuebles", icon: Home },
   { href: "/inmobiliaria/compradores", label: "Compradores", icon: UserSearch },
 ];
+
+const ENLACE_AGENTES: Enlace = {
+  href: "/inmobiliaria/agentes",
+  label: "Agentes",
+  icon: UserCog,
+};
 
 const ENLACE_EQUIPO: Enlace = {
   href: "/inmobiliaria/equipo",
@@ -69,7 +76,7 @@ export function InmobiliariaNav({
       if (esCaptador && e.href === "/inmobiliaria/inmuebles") return false;
       return true;
     }),
-    ...(esGestor ? [ENLACE_EQUIPO] : []),
+    ...(esGestor ? [ENLACE_AGENTES, ENLACE_EQUIPO] : []),
   ];
 
   return (

@@ -30,6 +30,7 @@ export default async function InmobiliariaPropietariosPage({
     );
 
   if (filtrarPorAgente) query = query.eq("agente_id", usuario.id);
+  else if (params.agente_id) query = query.eq("agente_id", params.agente_id);
   if (params.estado) query = query.eq("estado", params.estado);
   if (params.tipo_inmueble) query = query.eq("tipo_inmueble", params.tipo_inmueble);
 
