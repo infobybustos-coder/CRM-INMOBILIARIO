@@ -3,6 +3,7 @@ import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { InvitarForm } from "./invitar-form";
 import { FilaMiembro } from "./fila-miembro";
+import { activarVistaPrevia } from "./ver-como-actions";
 
 export default async function EquipoPage() {
   const usuario = await getUsuarioConTenant();
@@ -73,6 +74,39 @@ export default async function EquipoPage() {
           </tbody>
         </table>
       </div>
+
+      {esGestor && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-lg font-medium">Vista previa por rol</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Simula cómo ve el dashboard cada tipo de usuario de tu equipo.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                { rol: "administrador", label: "Administrador", desc: "Acceso total" },
+                { rol: "director_comercial", label: "Director Comercial", desc: "Gestión y equipo" },
+                { rol: "agente", label: "Agente", desc: "Solo sus asignados" },
+                { rol: "captador", label: "Captador", desc: "Solo captaciones" },
+              ] as const
+            ).map(({ rol, label, desc }) => (
+              <form key={rol} action={activarVistaPrevia}>
+                <input type="hidden" name="rol" value={rol} />
+                <button
+                  type="submit"
+                  disabled={rol === usuario.rol}
+                  className="w-full rounded-lg border p-3 text-left transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="block text-sm font-semibold">{label}</span>
+                  <span className="block text-xs text-muted-foreground">{desc}</span>
+                </button>
+              </form>
+            ))}
+          </div>
+        </div>
+      )}
 
       {esGestor && (
         <>

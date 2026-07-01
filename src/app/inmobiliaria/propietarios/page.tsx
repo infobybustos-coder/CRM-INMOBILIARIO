@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant, esGestor } from "@/lib/auth";
+import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/propietarios/filtros";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
 import { Kanban } from "@/components/asesor/propietarios/kanban";
 import { Tabla } from "@/components/asesor/propietarios/tabla";
-import { VerComoSwitcher } from "@/components/inmobiliaria/ver-como-switcher";
 import type { Propietario } from "@/app/asesor/propietarios/constantes";
 
 const BASE = "/inmobiliaria/propietarios";
@@ -21,8 +20,7 @@ export default async function InmobiliariaPropietariosPage({
   const params = await searchParams;
   const vista = params.vista === "tabla" ? "tabla" : "kanban";
 
-  const verComo = esGestor(usuario.rol) && params.ver_como ? params.ver_como : usuario.rol;
-  const filtrarPorAgente = verComo === "agente" || verComo === "captador";
+  const filtrarPorAgente = usuario.rol === "agente" || usuario.rol === "captador";
 
   const supabase = await createClient();
   let query = supabase
@@ -44,8 +42,6 @@ export default async function InmobiliariaPropietariosPage({
         <h1 className="text-2xl font-semibold">Captaciones</h1>
         <VistaSwitcher vista={vista} />
       </div>
-
-      {esGestor(usuario.rol) && <VerComoSwitcher rolActual={usuario.rol} />}
 
       <Filtros />
 
