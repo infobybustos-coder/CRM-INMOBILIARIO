@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -77,16 +77,17 @@ function aplicarColapso(colapsado: boolean) {
     ?.setAttribute("data-nav-colapsado", String(colapsado));
 }
 
-function colapsadoInicial() {
-  if (typeof window === "undefined") return false;
-  const guardado = localStorage.getItem("nav-inmobiliaria-colapsado") === "true";
-  aplicarColapso(guardado);
-  return guardado;
-}
-
 export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
   const pathname = usePathname();
-  const [colapsado, setColapsado] = useState(colapsadoInicial);
+  const [colapsado, setColapsado] = useState(false);
+
+  useEffect(() => {
+    const guardado = localStorage.getItem("nav-inmobiliaria-colapsado") === "true";
+    if (guardado) {
+      setColapsado(true);
+      aplicarColapso(true);
+    }
+  }, []);
 
   function alternar() {
     const nuevo = !colapsado;
