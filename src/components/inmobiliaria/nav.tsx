@@ -63,7 +63,7 @@ const GRUPOS: Grupo[] = [
     soloGestor: true,
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
-      { href: "#", label: "Rendimiento", icon: BarChart2, proximamente: true },
+      { href: "/inmobiliaria/rendimiento", label: "Rendimiento", icon: BarChart2 },
       { href: "#", label: "Mensajes", icon: MessageSquare, proximamente: true },
       { href: "/inmobiliaria/actividad", label: "Actividad", icon: Activity },
     ],
@@ -74,8 +74,8 @@ const GRUPOS: Grupo[] = [
     soloGestor: true,
     enlaces: [
       { href: "/inmobiliaria/equipo", label: "Usuarios", icon: UsersRound },
-      { href: "#", label: "Empresa", icon: Settings, proximamente: true },
-      { href: "#", label: "Suscripción", icon: Settings, proximamente: true },
+      { href: "/inmobiliaria/empresa", label: "Empresa", icon: Settings },
+      { href: "/inmobiliaria/suscripcion", label: "Suscripción", icon: Settings },
     ],
   },
 ];
