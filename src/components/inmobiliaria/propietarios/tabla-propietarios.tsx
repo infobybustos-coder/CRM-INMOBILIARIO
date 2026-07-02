@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { calcularPrioridad, calcularCaptacionScore, diasDesde } from "@/lib/prioridad";
-import { ETIQUETAS_ESTADO, ETIQUETAS_TIPO_INMUEBLE } from "@/app/asesor/propietarios/constantes";
+import { ETIQUETAS_ESTADO } from "@/app/asesor/propietarios/constantes";
 import { cn } from "@/lib/utils";
 
 type Propietario = {
   id: string;
   nombre: string;
+  telefono: string | null;
+  tipo_inmueble: string | null;
   direccion: string | null;
   estado: string;
   valor_estimado: number | null;
@@ -15,11 +17,10 @@ type Propietario = {
   fecha_proxima_accion: string | null;
   fuente_lead: string | null;
   agente_id: string | null;
-  guion_captacion: unknown;
   notas: string | null;
+  urgencia?: string | null;
 };
 
-const PRIORIDAD_LABEL: Record<string, string> = { alta: "Alta", media: "Media", baja: "Baja" };
 const PRIORIDAD_COLOR: Record<string, string> = {
   alta: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   media: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -36,12 +37,12 @@ const ESTADO_COLOR: Record<string, string> = {
   perdido: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 const FUENTE_LABEL: Record<string, string> = {
-  portal: "Portal",
   referido: "Referido",
+  portal_inmobiliario: "Portal",
   redes_sociales: "RRSS",
-  buzon: "Buzón",
+  puerta_fria: "Puerta fría",
   web: "Web",
-  llamada_fria: "Llamada",
+  llamada_entrante: "Llamada",
   otro: "Otro",
 };
 
@@ -55,21 +56,24 @@ function fmtContacto(fecha: string | null): string {
   return `Hace ${Math.floor(dias / 30)}m`;
 }
 
-function fmtProxima(fecha: string | null): string {
-  if (!fecha) return "—";
+function fmtProxima(fecha: string | null): { texto: string; vencida: boolean } {
+  if (!fecha) return { texto: "—", vencida: false };
   const d = new Date(fecha);
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   const diff = Math.floor((d.getTime() - hoy.getTime()) / 86400000);
-  if (diff < 0) return `Hace ${Math.abs(diff)}d ⚠`;
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  if (diff < 0) return { texto: `⚠ Hace ${Math.abs(diff)}d`, vencida: true };
+  if (diff === 0) return { texto: "Hoy", vencida: false };
+  if (diff === 1) return { texto: "Mañana", vencida: false };
+  return { texto: d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }), vencida: false };
 }
 
 function fmtEuro(n: number | null): string {
   if (!n) return "—";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 export function TablaPropietarios({
@@ -81,26 +85,34 @@ export function TablaPropietarios({
   agentes: Record<string, string>;
   basePath?: string;
 }) {
+  if (propietarios.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+        Sin captaciones
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-xl border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <th className="px-4 py-3 text-left">Prioridad · Score</th>
-            <th className="px-4 py-3 text-left">Propietario · Dirección</th>
-            <th className="px-4 py-3 text-left">Estado</th>
-            <th className="px-4 py-3 text-left">Asesor</th>
-            <th className="px-4 py-3 text-left">Próxima acción</th>
-            <th className="px-4 py-3 text-left">Último contacto</th>
-            <th className="px-4 py-3 text-left hidden lg:table-cell">Fuente</th>
-            <th className="px-4 py-3 text-right hidden lg:table-cell">Valor est.</th>
+          <tr className="border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <th className="px-4 py-3 text-left">⭐ Prio · 🎯 Score</th>
+            <th className="px-4 py-3 text-left">👤 Propietario</th>
+            <th className="px-4 py-3 text-left">📊 Estado</th>
+            <th className="px-4 py-3 text-left hidden sm:table-cell">👨‍💼 Asesor</th>
+            <th className="px-4 py-3 text-left hidden md:table-cell">📅 Próxima acción</th>
+            <th className="px-4 py-3 text-left hidden md:table-cell">⏱ Último contacto</th>
+            <th className="px-4 py-3 text-left hidden lg:table-cell">🌐 Fuente</th>
+            <th className="px-4 py-3 text-right hidden lg:table-cell">💰 Valor est.</th>
           </tr>
         </thead>
         <tbody className="divide-y">
           {propietarios.map((p) => {
             const prioridad = calcularPrioridad(p);
             const score = calcularCaptacionScore(p);
-            const proxVencida = p.fecha_proxima_accion && new Date(p.fecha_proxima_accion) < new Date();
+            const { texto: proxText, vencida } = fmtProxima(p.fecha_proxima_accion);
 
             return (
               <tr key={p.id} className="group hover:bg-muted/30 transition-colors">
@@ -108,54 +120,78 @@ export function TablaPropietarios({
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-1">
                     {prioridad ? (
-                      <span className={cn("inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold w-fit", PRIORIDAD_COLOR[prioridad])}>
-                        {PRIORIDAD_LABEL[prioridad]}
+                      <span
+                        className={cn(
+                          "w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize",
+                          PRIORIDAD_COLOR[prioridad]
+                        )}
+                      >
+                        {prioridad}
                       </span>
-                    ) : <span className="text-xs text-muted-foreground/50">—</span>}
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40">—</span>
+                    )}
                     <span className="text-xs font-bold text-primary">{score}</span>
                   </div>
                 </td>
 
                 {/* Nombre + dirección */}
                 <td className="px-4 py-3">
-                  <Link href={`${basePath}/${p.id}`} className="font-medium hover:text-primary hover:underline">
+                  <Link
+                    href={`${basePath}/${p.id}`}
+                    className="font-medium hover:text-primary hover:underline"
+                  >
                     {p.nombre}
                   </Link>
                   {p.direccion && (
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{p.direccion}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                      📍 {p.direccion}
+                    </p>
                   )}
                 </td>
 
                 {/* Estado */}
                 <td className="px-4 py-3">
-                  <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", ESTADO_COLOR[p.estado] ?? "bg-muted text-muted-foreground")}>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
+                      ESTADO_COLOR[p.estado] ?? "bg-muted text-muted-foreground"
+                    )}
+                  >
                     {ETIQUETAS_ESTADO[p.estado] ?? p.estado}
                   </span>
                 </td>
 
                 {/* Asesor */}
-                <td className="px-4 py-3 text-sm text-muted-foreground">
+                <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
                   {p.agente_id ? (agentes[p.agente_id] ?? "—").split(" ")[0] : "—"}
                 </td>
 
                 {/* Próxima acción */}
-                <td className="px-4 py-3">
-                  <span className={cn("text-sm", proxVencida ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground")}>
-                    {fmtProxima(p.fecha_proxima_accion)}
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <span
+                    className={cn(
+                      "text-sm",
+                      vencida
+                        ? "font-semibold text-red-600 dark:text-red-400"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {proxText}
                   </span>
                 </td>
 
                 {/* Último contacto */}
-                <td className="px-4 py-3 text-sm text-muted-foreground">
+                <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
                   {fmtContacto(p.fecha_ultimo_contacto)}
                 </td>
 
-                {/* Fuente (oculto en móvil) */}
+                {/* Fuente */}
                 <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
                   {p.fuente_lead ? (FUENTE_LABEL[p.fuente_lead] ?? p.fuente_lead) : "—"}
                 </td>
 
-                {/* Valor estimado (oculto en móvil) */}
+                {/* Valor estimado */}
                 <td className="px-4 py-3 text-right text-sm font-medium hidden lg:table-cell">
                   {fmtEuro(p.valor_estimado)}
                 </td>

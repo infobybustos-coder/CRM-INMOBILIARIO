@@ -36,7 +36,7 @@ export default async function InmobiliariaCompradorPage({
   const { data: comprador, error: compradorError } = await supabase
     .from("compradores")
     .select(
-      "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en, agente_id"
+      "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, habitaciones, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en, agente_id"
     )
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id)

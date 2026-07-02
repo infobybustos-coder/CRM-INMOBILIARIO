@@ -23,6 +23,7 @@ type CompradorFicha = {
   financiacion: string | null;
   tipo_inmueble: string | null;
   zona_buscada_id: string | null;
+  habitaciones: number | null;
   urgencia: string | null;
   estado: string;
   fecha_ultimo_contacto: string | null;
@@ -129,6 +130,17 @@ export function FichaComprador({
           </Campo>
           <Campo label="Presupuesto máximo (€)" highlight={falta(comprador.presupuesto_max)}>
             <input name="presupuesto_max" type="number" min="0" step="1000" defaultValue={comprador.presupuesto_max ?? ""} className={inputCls} placeholder="300 000" />
+          </Campo>
+          <Campo label="Habitaciones mínimas">
+            <input
+              name="habitaciones"
+              type="number"
+              min="0"
+              max="20"
+              defaultValue={comprador.habitaciones ?? ""}
+              className={inputCls}
+              placeholder="Ej: 3"
+            />
           </Campo>
           <Campo label="Financiación" highlight={falta(comprador.financiacion)}>
             <select name="financiacion" defaultValue={comprador.financiacion ?? ""} className={selectCls}>

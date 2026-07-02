@@ -69,6 +69,7 @@ export async function actualizarCompradorInmobiliaria(
   const gestor = esGestor(usuario.rol);
   const presupuestoMin = formData.get("presupuesto_min");
   const presupuestoMax = formData.get("presupuesto_max");
+  const habitaciones = formData.get("habitaciones");
   const fechaProximaAccion = formData.get("fecha_proxima_accion");
   const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
   const zonaBuscadaId = String(formData.get("zona_buscada_id") ?? "");
@@ -81,6 +82,7 @@ export async function actualizarCompradorInmobiliaria(
       email: String(formData.get("email") ?? "").trim() || null,
       presupuesto_min: presupuestoMin ? Number(presupuestoMin) : null,
       presupuesto_max: presupuestoMax ? Number(presupuestoMax) : null,
+      habitaciones: habitaciones ? Number(habitaciones) : null,
       financiacion: String(formData.get("financiacion") ?? "") || null,
       tipo_inmueble: String(formData.get("tipo_inmueble") ?? "") || null,
       zona_buscada_id: zonaBuscadaId || null,
