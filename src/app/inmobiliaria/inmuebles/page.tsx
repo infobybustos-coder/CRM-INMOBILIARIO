@@ -3,9 +3,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Filtros } from "@/components/asesor/inmuebles/filtros";
-import { Tabla } from "@/components/asesor/inmuebles/tabla";
-import type { Inmueble } from "@/app/asesor/inmuebles/constantes";
+import { TablaInmuebles } from "@/components/inmobiliaria/inmuebles/tabla-inmuebles";
 
 const BASE = "/inmobiliaria/inmuebles";
 
@@ -18,58 +16,41 @@ export default async function InmobiliariaInmueblesPage({
   if (!usuario) redirect("/login");
 
   const params = await searchParams;
-
-  const filtrarPorAgente = !esGestor(usuario.rol);
+  const gestor = esGestor(usuario.rol);
 
   const supabase = await createClient();
+
   let query = supabase
     .from("inmuebles")
     .select(
-      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en, zonas(nombre, ciudad)"
+      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en, agente_id, zonas(nombre, ciudad)"
     );
 
-  if (filtrarPorAgente) query = query.eq("agente_id", usuario.id);
+  if (!gestor) query = query.eq("agente_id", usuario.id);
   else if (params.agente_id) query = query.eq("agente_id", params.agente_id);
   if (params.estado) query = query.eq("estado", params.estado);
-  if (params.tipo) query = query.eq("tipo", params.tipo);
-  if (params.precio_min) query = query.gte("precio", Number(params.precio_min));
-  if (params.precio_max) query = query.lte("precio", Number(params.precio_max));
 
-  const { data } = await query.order("creado_en", { ascending: false });
-  const base = data ?? [];
-  const ids = base.map((i) => i.id);
+  const [{ data: base }, { data: usuariosData }, { data: fotos }, { data: visitasData }] =
+    await Promise.all([
+      query.order("creado_en", { ascending: false }),
+      supabase.from("usuarios").select("id, nombre_completo").eq("tenant_id", usuario.tenant_id).eq("activo", true),
+      supabase.from("documentos").select("entidad_id, url_storage, creado_en").eq("entidad_tipo", "inmueble").eq("tipo_documento", "foto").order("creado_en", { ascending: false }),
+      supabase.from("eventos_agenda").select("entidad_id").eq("entidad_tipo", "inmueble").eq("tipo", "visita"),
+    ]);
 
-  const [{ data: fotos }, { data: visitas }] = await Promise.all([
-    ids.length
-      ? supabase
-          .from("documentos")
-          .select("entidad_id, url_storage, creado_en")
-          .eq("entidad_tipo", "inmueble")
-          .eq("tipo_documento", "foto")
-          .in("entidad_id", ids)
-          .order("creado_en", { ascending: false })
-      : Promise.resolve({ data: [] }),
-    ids.length
-      ? supabase
-          .from("eventos_agenda")
-          .select("entidad_id")
-          .eq("entidad_tipo", "inmueble")
-          .eq("tipo", "visita")
-          .in("entidad_id", ids)
-      : Promise.resolve({ data: [] }),
-  ]);
-
+  const agentes: Record<string, string> = Object.fromEntries(
+    (usuariosData ?? []).map((u) => [u.id, u.nombre_completo])
+  );
   const fotoPorInmueble = new Map<string, string>();
   for (const f of fotos ?? []) {
     if (!fotoPorInmueble.has(f.entidad_id)) fotoPorInmueble.set(f.entidad_id, f.url_storage);
   }
-
   const visitasPorInmueble = new Map<string, number>();
-  for (const v of visitas ?? []) {
+  for (const v of visitasData ?? []) {
     visitasPorInmueble.set(v.entidad_id, (visitasPorInmueble.get(v.entidad_id) ?? 0) + 1);
   }
 
-  const inmuebles = base.map((i) => {
+  const inmuebles = (base ?? []).map((i) => {
     const zona = Array.isArray(i.zonas) ? i.zonas[0] : i.zonas;
     return {
       ...i,
@@ -77,10 +58,27 @@ export default async function InmobiliariaInmueblesPage({
       visitas: visitasPorInmueble.get(i.id) ?? 0,
       poblacion: zona?.ciudad ?? zona?.nombre ?? null,
     };
-  }) as Inmueble[];
+  });
+
+  // KPIs
+  const activos = inmuebles.filter((i) => ["publicado", "visitas", "oferta"].includes(i.estado)).length;
+  const nuevos30 = inmuebles.filter((i) => new Date(i.creado_en) >= new Date(Date.now() - 30 * 86400000)).length;
+  const vendidos = inmuebles.filter((i) => i.estado === "vendido").length;
+  const reservados = inmuebles.filter((i) => i.estado === "reservado").length;
+  const sinFotos = inmuebles.filter((i) => !i.foto).length;
+  const sinDoc = inmuebles.filter((i) => i.estado === "captacion" || i.estado === "preparacion").length;
+
+  const kpis = [
+    { label: "Activos", value: activos, color: "text-emerald-600" },
+    { label: "Nuevos (30d)", value: nuevos30, color: "text-sky-600" },
+    { label: "Vendidos", value: vendidos, color: "text-primary" },
+    { label: "Reservados", value: reservados, color: "text-orange-600" },
+    { label: "Sin fotos", value: sinFotos, color: "text-amber-600" },
+    { label: "En preparación", value: sinDoc, color: "text-muted-foreground" },
+  ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Inmuebles</h1>
         <Link
@@ -92,14 +90,25 @@ export default async function InmobiliariaInmueblesPage({
         </Link>
       </div>
 
-      <Filtros />
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {kpis.map((k) => (
+          <div key={k.label} className="rounded-xl border bg-card p-3 text-center">
+            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+            <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{k.label}</p>
+          </div>
+        ))}
+      </div>
 
       {inmuebles.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No hay inmuebles registrados en este tenant todavía.
-        </p>
+        <div className="rounded-xl border border-dashed p-10 text-center">
+          <p className="font-medium text-muted-foreground">Sin inmuebles aún</p>
+          <Link href="/inmobiliaria/inmuebles/nuevo" className="mt-2 inline-block text-sm text-primary hover:underline">
+            + Crear el primer inmueble
+          </Link>
+        </div>
       ) : (
-        <Tabla inmuebles={inmuebles} basePath={BASE} />
+        <TablaInmuebles inmuebles={inmuebles} agentes={agentes} basePath={BASE} />
       )}
     </div>
   );

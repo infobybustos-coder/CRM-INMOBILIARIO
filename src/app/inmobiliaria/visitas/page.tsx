@@ -3,7 +3,8 @@ import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NuevaVisitaForm } from "./nueva-visita-form";
 import { FilaVisita } from "./fila-visita";
-import { CalendarDays, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, XCircle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default async function VisitasPage() {
   const usuario = await getUsuarioConTenant();
@@ -24,100 +25,104 @@ export default async function VisitasPage() {
   const { data } = await query;
   const visitas = data ?? [];
 
-  // Load inmueble/propietario names for context
   const inmuebleIds = [...new Set(visitas.filter(v => v.entidad_tipo === "inmueble").map(v => v.entidad_id).filter(Boolean))];
   const propietarioIds = [...new Set(visitas.filter(v => v.entidad_tipo === "propietario").map(v => v.entidad_id).filter(Boolean))];
 
-  const [{ data: inmuebles }, { data: propietarios }] = await Promise.all([
+  const [{ data: inmuebles }, { data: propietarios }, { data: usuariosData }] = await Promise.all([
     inmuebleIds.length
       ? supabase.from("inmuebles").select("id, direccion").in("id", inmuebleIds)
       : Promise.resolve({ data: [] }),
     propietarioIds.length
       ? supabase.from("propietarios").select("id, nombre").in("id", propietarioIds)
       : Promise.resolve({ data: [] }),
+    supabase.from("usuarios").select("id, nombre_completo").eq("tenant_id", usuario.tenant_id).eq("activo", true),
   ]);
 
   const nombreInmueble = new Map((inmuebles ?? []).map(i => [i.id, i.direccion]));
   const nombrePropietario = new Map((propietarios ?? []).map(p => [p.id, p.nombre]));
+  const nombreAgente = new Map((usuariosData ?? []).map(u => [u.id, u.nombre_completo]));
 
-  const pendientes = visitas.filter(v => v.estado === "pendiente");
-  const completadas = visitas.filter(v => v.estado === "completado");
-  const canceladas = visitas.filter(v => v.estado === "cancelado");
+  // KPIs
+  const ahora = new Date();
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const finSemana = new Date(hoy); finSemana.setDate(hoy.getDate() + 7);
+
+  const visitasHoy = visitas.filter(v => {
+    const f = new Date(v.fecha_hora); f.setHours(0, 0, 0, 0);
+    return f.getTime() === hoy.getTime() && v.estado === "pendiente";
+  }).length;
+  const estaSemana = visitas.filter(v => {
+    const f = new Date(v.fecha_hora);
+    return f >= hoy && f <= finSemana && v.estado === "pendiente";
+  }).length;
+  const pendientes = visitas.filter(v => v.estado === "pendiente").length;
+  const confirmadas = visitas.filter(v => v.estado === "pendiente" && v.confirmado).length;
+  const realizadas = visitas.filter(v => v.estado === "completado").length;
+  const canceladas = visitas.filter(v => v.estado === "cancelado").length;
+
+  const kpis = [
+    { label: "Hoy", value: visitasHoy, color: "text-primary" },
+    { label: "Esta semana", value: estaSemana, color: "text-blue-600" },
+    { label: "Pendientes", value: pendientes, color: "text-amber-600" },
+    { label: "Confirmadas", value: confirmadas, color: "text-emerald-600" },
+    { label: "Realizadas", value: realizadas, color: "text-muted-foreground" },
+    { label: "Canceladas", value: canceladas, color: "text-rose-600" },
+  ];
+
+  const pendientesData = visitas.filter(v => v.estado === "pendiente")
+    .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime());
+  const completadasData = visitas.filter(v => v.estado === "completado");
+
+  function getNombreEntidad(v: typeof visitas[0]) {
+    if (v.entidad_tipo === "inmueble") return nombreInmueble.get(v.entidad_id ?? "") ?? null;
+    if (v.entidad_tipo === "propietario") return nombrePropietario.get(v.entidad_id ?? "") ?? null;
+    return null;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Visitas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Calendario de visitas, confirmaciones y resultados
-          </p>
-        </div>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Visitas</h1>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Pendientes", value: pendientes.length, icon: Clock, color: "text-amber-500" },
-          { label: "Completadas", value: completadas.length, icon: CheckCircle2, color: "text-emerald-500" },
-          { label: "Canceladas", value: canceladas.length, icon: XCircle, color: "text-red-500" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="rounded-xl border bg-card p-4 text-center">
-            <Icon className={`mx-auto mb-1 size-5 ${color}`} />
-            <p className="text-xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {kpis.map((k) => (
+          <div key={k.label} className="rounded-xl border bg-card p-3 text-center">
+            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+            <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{k.label}</p>
           </div>
         ))}
       </div>
 
-      {/* New visit form */}
+      {/* Nueva visita */}
       <NuevaVisitaForm />
 
-      {/* Pending visits */}
-      {pendientes.length > 0 && (
+      {/* Pendientes */}
+      {pendientesData.length > 0 && (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
             <Clock className="size-4 text-amber-500" />
             Próximas visitas
           </h2>
           <div className="rounded-xl border divide-y overflow-hidden">
-            {pendientes.map((v) => (
-              <FilaVisita
-                key={v.id}
-                visita={v}
-                nombreEntidad={
-                  v.entidad_tipo === "inmueble"
-                    ? (nombreInmueble.get(v.entidad_id ?? "") ?? null)
-                    : v.entidad_tipo === "propietario"
-                    ? (nombrePropietario.get(v.entidad_id ?? "") ?? null)
-                    : null
-                }
-              />
+            {pendientesData.map((v) => (
+              <FilaVisita key={v.id} visita={v} nombreEntidad={getNombreEntidad(v)} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Completed visits */}
-      {completadas.length > 0 && (
+      {/* Realizadas */}
+      {completadasData.length > 0 && (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
             <CheckCircle2 className="size-4 text-emerald-500" />
             Visitas realizadas
           </h2>
           <div className="rounded-xl border divide-y overflow-hidden">
-            {completadas.map((v) => (
-              <FilaVisita
-                key={v.id}
-                visita={v}
-                nombreEntidad={
-                  v.entidad_tipo === "inmueble"
-                    ? (nombreInmueble.get(v.entidad_id ?? "") ?? null)
-                    : v.entidad_tipo === "propietario"
-                    ? (nombrePropietario.get(v.entidad_id ?? "") ?? null)
-                    : null
-                }
-              />
+            {completadasData.map((v) => (
+              <FilaVisita key={v.id} visita={v} nombreEntidad={getNombreEntidad(v)} />
             ))}
           </div>
         </section>
