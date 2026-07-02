@@ -11,11 +11,12 @@ import {
   UsersRound,
   UserCog,
   CalendarDays,
-  HandshakeIcon,
-  TrendingUp,
-  FileText,
-  ListTodo,
   MessageSquare,
+  ListTodo,
+  CheckSquare,
+  Activity,
+  BarChart2,
+  Settings,
   Lock,
   ChevronLeft,
   ChevronRight,
@@ -27,50 +28,54 @@ type Enlace = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   proximamente?: boolean;
+  soloGestor?: boolean;
 };
 
 type Grupo = {
-  titulo?: string;
+  titulo: string;
+  emoji: string;
   enlaces: Enlace[];
   soloGestor?: boolean;
 };
 
 const GRUPOS: Grupo[] = [
   {
+    titulo: "Captación",
+    emoji: "🎯",
     enlaces: [
-      { href: "/inmobiliaria", label: "Centro de Control", icon: LayoutDashboard },
-    ],
-  },
-  {
-    titulo: "Gestión",
-    enlaces: [
-      { href: "/inmobiliaria/propietarios", label: "Captaciones", icon: Users },
+      { href: "/inmobiliaria/propietarios", label: "Propietarios", icon: Users },
       { href: "/inmobiliaria/inmuebles", label: "Inmuebles", icon: Home },
       { href: "/inmobiliaria/compradores", label: "Compradores", icon: UserSearch },
-    ],
-  },
-  {
-    titulo: "Operaciones",
-    enlaces: [
       { href: "/inmobiliaria/visitas", label: "Visitas", icon: CalendarDays },
-      { href: "/inmobiliaria/ofertas", label: "Ofertas", icon: HandshakeIcon },
-      { href: "/inmobiliaria/ventas", label: "Ventas", icon: TrendingUp },
     ],
   },
   {
-    titulo: "Herramientas",
+    titulo: "Seguimiento",
+    emoji: "✅",
     enlaces: [
-      { href: "/inmobiliaria/agenda", label: "Agenda", icon: ListTodo },
-      { href: "/inmobiliaria/documentos", label: "Documentos", icon: FileText },
-      { href: "#", label: "Mensajes", icon: MessageSquare, proximamente: true },
+      { href: "/inmobiliaria/agenda", label: "Agenda", icon: CalendarDays },
+      { href: "/inmobiliaria/tareas", label: "Tareas", icon: CheckSquare },
     ],
   },
   {
-    titulo: "Admin",
+    titulo: "Equipo",
+    emoji: "👥",
     soloGestor: true,
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
-      { href: "/inmobiliaria/equipo", label: "Equipo", icon: UsersRound },
+      { href: "#", label: "Rendimiento", icon: BarChart2, proximamente: true },
+      { href: "#", label: "Mensajes", icon: MessageSquare, proximamente: true },
+      { href: "/inmobiliaria/actividad", label: "Actividad", icon: Activity },
+    ],
+  },
+  {
+    titulo: "Configuración",
+    emoji: "⚙️",
+    soloGestor: true,
+    enlaces: [
+      { href: "/inmobiliaria/equipo", label: "Usuarios", icon: UsersRound },
+      { href: "#", label: "Empresa", icon: Settings, proximamente: true },
+      { href: "#", label: "Suscripción", icon: Settings, proximamente: true },
     ],
   },
 ];
@@ -100,18 +105,7 @@ export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
     aplicarColapso(nuevo);
   }
 
-  // Mobile: flatten all visible links (max 5 most important)
-  const todosEnlaces = GRUPOS.flatMap((g) =>
-    g.soloGestor && !esGestor ? [] : g.enlaces
-  );
-
-  const enlacesMobile = [
-    todosEnlaces.find((e) => e.href === "/inmobiliaria")!,
-    todosEnlaces.find((e) => e.href === "/inmobiliaria/visitas")!,
-    todosEnlaces.find((e) => e.href === "/inmobiliaria/ofertas")!,
-    todosEnlaces.find((e) => e.href === "/inmobiliaria/ventas")!,
-    todosEnlaces.find((e) => e.href === "/inmobiliaria/agenda")!,
-  ].filter(Boolean);
+  const dashboardActivo = pathname === "/inmobiliaria";
 
   return (
     <>
@@ -119,7 +113,7 @@ export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
       <nav
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden flex-col border-r bg-card/95 backdrop-blur-sm md:flex",
-          colapsado ? "w-16" : "w-56"
+          colapsado ? "w-16" : "w-60"
         )}
       >
         {/* Collapse toggle */}
@@ -140,42 +134,67 @@ export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
         </button>
 
         {/* Scrollable link area */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+
+          {/* Centro de Control — direct top button */}
+          <Link
+            href="/inmobiliaria"
+            title={colapsado ? "Centro de Control" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              colapsado && "justify-center",
+              dashboardActivo
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <LayoutDashboard className="size-4 shrink-0" />
+            {!colapsado && <span>Centro de Control</span>}
+          </Link>
+
+          {/* Groups */}
           {GRUPOS.map((grupo, gi) => {
             if (grupo.soloGestor && !esGestor) return null;
+
+            const visibleEnlaces = grupo.enlaces.filter(
+              (e) => !e.soloGestor || esGestor
+            );
+
             return (
-              <div key={gi}>
-                {grupo.titulo && !colapsado && (
-                  <p className="mb-1 mt-3 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 first:mt-1">
-                    {grupo.titulo}
+              <div key={gi} className="pt-3">
+                {/* Group header */}
+                {!colapsado ? (
+                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    {grupo.emoji} {grupo.titulo}
                   </p>
+                ) : (
+                  <div className="my-1.5 border-t" />
                 )}
-                {grupo.titulo && colapsado && gi > 0 && (
-                  <div className="my-2 border-t" />
-                )}
-                {grupo.enlaces.map(({ href, label, icon: Icon, proximamente }) => {
+
+                {/* Links */}
+                {visibleEnlaces.map(({ href, label, icon: Icon, proximamente }) => {
                   if (proximamente) {
                     return (
                       <div
-                        key={href}
+                        key={label}
                         title={colapsado ? `${label} (Próximamente)` : undefined}
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm cursor-not-allowed opacity-50",
+                          "flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm opacity-40",
                           colapsado && "justify-center"
                         )}
                       >
                         <Icon className="size-4 shrink-0" />
                         {!colapsado && (
-                          <span className="flex-1">{label} <span className="text-[10px]">(Próximamente)</span></span>
+                          <>
+                            <span className="flex-1">{label}</span>
+                            <Lock className="size-3 shrink-0" />
+                          </>
                         )}
-                        {!colapsado && <Lock className="size-3 shrink-0" />}
                       </div>
                     );
                   }
-                  const activo =
-                    href === "/inmobiliaria"
-                      ? pathname === "/inmobiliaria"
-                      : pathname.startsWith(href);
+
+                  const activo = pathname.startsWith(href) && href !== "/inmobiliaria";
                   return (
                     <Link
                       key={href}
@@ -202,7 +221,13 @@ export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
 
       {/* ── Mobile bottom bar ── */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card/95 backdrop-blur-sm md:hidden">
-        {enlacesMobile.map(({ href, label, icon: Icon }) => {
+        {[
+          { href: "/inmobiliaria", label: "Dashboard", icon: LayoutDashboard },
+          { href: "/inmobiliaria/propietarios", label: "Captación", icon: Users },
+          { href: "/inmobiliaria/visitas", label: "Visitas", icon: CalendarDays },
+          { href: "/inmobiliaria/agenda", label: "Agenda", icon: ListTodo },
+          { href: "/inmobiliaria/agentes", label: "Equipo", icon: UserCog },
+        ].map(({ href, label, icon: Icon }) => {
           const activo =
             href === "/inmobiliaria"
               ? pathname === "/inmobiliaria"
