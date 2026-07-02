@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { calcularPrioridad, calcularCaptacionScore, diasDesde } from "@/lib/prioridad";
-import { ETIQUETAS_ESTADO } from "@/app/asesor/propietarios/constantes";
+import { ETIQUETAS_ESTADO_PROPIETARIO, ETIQUETAS_FUENTE_LEAD } from "@/app/inmobiliaria/constantes";
 import { PanelPropietario } from "./panel-propietario";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,6 @@ type Propietario = {
   fuente_lead: string | null;
   agente_id: string | null;
   notas: string | null;
-  urgencia?: string | null;
 };
 
 type Agente = { id: string; nombre_completo: string };
@@ -38,15 +37,6 @@ const ESTADO_COLOR: Record<string, string> = {
   exclusiva_firmada: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
   captado: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   perdido: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-};
-const FUENTE_LABEL: Record<string, string> = {
-  referido: "Referido",
-  portal_inmobiliario: "Portal",
-  redes_sociales: "RRSS",
-  puerta_fria: "Puerta fría",
-  web: "Web",
-  llamada_entrante: "Llamada",
-  otro: "Otro",
 };
 
 function fmtContacto(fecha: string | null): string {
@@ -72,23 +62,17 @@ function fmtProxima(fecha: string | null): { texto: string; vencida: boolean } {
 
 function fmtEuro(n: number | null): string {
   if (!n) return "—";
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(n);
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 }
 
 export function TablaPropietarios({
   propietarios,
   agentes,
   agentesArray = [],
-  basePath = "/inmobiliaria/propietarios",
 }: {
   propietarios: Propietario[];
   agentes: Record<string, string>;
   agentesArray?: Agente[];
-  basePath?: string;
 }) {
   const [panelId, setPanelId] = useState<string | null>(null);
 
@@ -106,14 +90,14 @@ export function TablaPropietarios({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <th className="px-4 py-3 text-left">⭐ Prio · 🎯 Score</th>
-              <th className="px-4 py-3 text-left">👤 Propietario</th>
-              <th className="px-4 py-3 text-left">📊 Estado</th>
-              <th className="px-4 py-3 text-left hidden sm:table-cell">👨‍💼 Asesor</th>
-              <th className="px-4 py-3 text-left hidden md:table-cell">📅 Próxima acción</th>
-              <th className="px-4 py-3 text-left hidden md:table-cell">⏱ Último contacto</th>
-              <th className="px-4 py-3 text-left hidden lg:table-cell">🌐 Fuente</th>
-              <th className="px-4 py-3 text-right hidden lg:table-cell">💰 Valor est.</th>
+              <th className="px-4 py-3 text-left">Prio · Score</th>
+              <th className="px-4 py-3 text-left">Propietario</th>
+              <th className="px-4 py-3 text-left">Estado</th>
+              <th className="px-4 py-3 text-left hidden sm:table-cell">Asesor</th>
+              <th className="px-4 py-3 text-left hidden md:table-cell">Próxima acción</th>
+              <th className="px-4 py-3 text-left hidden md:table-cell">Último contacto</th>
+              <th className="px-4 py-3 text-left hidden lg:table-cell">Fuente</th>
+              <th className="px-4 py-3 text-right hidden lg:table-cell">Valor est.</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -128,16 +112,10 @@ export function TablaPropietarios({
                   onClick={() => setPanelId(p.id)}
                   className="group hover:bg-muted/30 transition-colors cursor-pointer"
                 >
-                  {/* Prioridad + Score */}
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
                       {prioridad ? (
-                        <span
-                          className={cn(
-                            "w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize",
-                            PRIORIDAD_COLOR[prioridad]
-                          )}
-                        >
+                        <span className={cn("w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize", PRIORIDAD_COLOR[prioridad])}>
                           {prioridad}
                         </span>
                       ) : (
@@ -147,58 +125,37 @@ export function TablaPropietarios({
                     </div>
                   </td>
 
-                  {/* Nombre + dirección */}
                   <td className="px-4 py-3">
                     <p className="font-medium group-hover:text-primary">{p.nombre}</p>
                     {p.direccion && (
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                        📍 {p.direccion}
-                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">📍 {p.direccion}</p>
                     )}
                   </td>
 
-                  {/* Estado */}
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
-                        ESTADO_COLOR[p.estado] ?? "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {ETIQUETAS_ESTADO[p.estado] ?? p.estado}
+                    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", ESTADO_COLOR[p.estado] ?? "bg-muted text-muted-foreground")}>
+                      {ETIQUETAS_ESTADO_PROPIETARIO[p.estado] ?? p.estado}
                     </span>
                   </td>
 
-                  {/* Asesor */}
                   <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
                     {p.agente_id ? (agentes[p.agente_id] ?? "—").split(" ")[0] : "—"}
                   </td>
 
-                  {/* Próxima acción */}
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span
-                      className={cn(
-                        "text-sm",
-                        vencida
-                          ? "font-semibold text-red-600 dark:text-red-400"
-                          : "text-muted-foreground"
-                      )}
-                    >
+                    <span className={cn("text-sm", vencida ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground")}>
                       {proxText}
                     </span>
                   </td>
 
-                  {/* Último contacto */}
                   <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
                     {fmtContacto(p.fecha_ultimo_contacto)}
                   </td>
 
-                  {/* Fuente */}
                   <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
-                    {p.fuente_lead ? (FUENTE_LABEL[p.fuente_lead] ?? p.fuente_lead) : "—"}
+                    {p.fuente_lead ? (ETIQUETAS_FUENTE_LEAD[p.fuente_lead] ?? p.fuente_lead) : "—"}
                   </td>
 
-                  {/* Valor estimado */}
                   <td className="px-4 py-3 text-right text-sm font-medium hidden lg:table-cell">
                     {fmtEuro(p.valor_estimado)}
                   </td>

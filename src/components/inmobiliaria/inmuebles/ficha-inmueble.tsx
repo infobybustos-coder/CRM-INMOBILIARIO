@@ -6,7 +6,7 @@ import {
   ETIQUETAS_ESTADO_INMUEBLE,
   TIPOS_INMUEBLE,
   ETIQUETAS_TIPO_INMUEBLE,
-} from "@/app/asesor/inmuebles/constantes";
+} from "@/app/inmobiliaria/constantes";
 import { actualizarInmuebleInmobiliaria } from "@/app/inmobiliaria/inmuebles/actions";
 
 type InmuebleFicha = {

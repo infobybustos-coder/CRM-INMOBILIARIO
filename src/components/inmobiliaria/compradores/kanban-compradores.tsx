@@ -14,7 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
-import { ESTADOS_COMPRADOR, ETIQUETAS_ESTADO_COMPRADOR } from "@/app/asesor/compradores/constantes";
+import { ESTADOS_COMPRADOR, ETIQUETAS_ESTADO_COMPRADOR } from "@/app/inmobiliaria/constantes";
 import { actualizarEstadoCompradorInmobiliaria } from "@/app/inmobiliaria/compradores/actions";
 import { cn } from "@/lib/utils";
 

@@ -5,8 +5,8 @@ import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FichaPropietario } from "@/components/inmobiliaria/propietarios/ficha-propietario";
 import { SubidaDocumentos } from "@/components/inmobiliaria/subida-documentos";
-import { Notas } from "@/components/asesor/notas";
-import { Tareas } from "@/components/asesor/tareas";
+import { Notas } from "@/components/inmobiliaria/notas";
+import { Tareas } from "@/components/inmobiliaria/tareas";
 import {
   crearNotaPropietario,
   crearTareaPropietario,

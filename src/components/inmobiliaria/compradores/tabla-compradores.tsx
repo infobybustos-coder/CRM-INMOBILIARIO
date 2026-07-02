@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { calcularPrioridadComprador, calcularCompraScore, diasDesde } from "@/lib/prioridad";
-import { ETIQUETAS_ESTADO_COMPRADOR } from "@/app/asesor/compradores/constantes";
+import { ETIQUETAS_ESTADO_COMPRADOR } from "@/app/inmobiliaria/constantes";
 import { cn } from "@/lib/utils";
 
 type Comprador = {

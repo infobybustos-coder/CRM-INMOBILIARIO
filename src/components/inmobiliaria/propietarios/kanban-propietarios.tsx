@@ -15,8 +15,8 @@ import {
 import { calcularPrioridad, calcularCaptacionScore, diasDesde } from "@/lib/prioridad";
 import {
   ESTADOS_PROPIETARIO,
-  ETIQUETAS_ESTADO,
-} from "@/app/asesor/propietarios/constantes";
+  ETIQUETAS_ESTADO_PROPIETARIO,
+} from "@/app/inmobiliaria/constantes";
 import { actualizarEstadoPropietarioInmobiliaria } from "@/app/inmobiliaria/propietarios/actions";
 import { PanelPropietario } from "./panel-propietario";
 import { cn } from "@/lib/utils";
@@ -75,15 +75,6 @@ const COL_DOT: Record<string, string> = {
   perdido: "bg-rose-500",
 };
 
-function camposIncompletos(p: Propietario): string[] {
-  const faltantes: string[] = [];
-  if (!p.telefono) faltantes.push("teléfono");
-  if (!p.direccion) faltantes.push("dirección");
-  if (!p.tipo_inmueble) faltantes.push("tipo inmueble");
-  if (!p.valor_estimado) faltantes.push("valor estimado");
-  return faltantes;
-}
-
 function fmtContacto(fecha: string | null): string {
   const dias = diasDesde(fecha);
   if (dias === null) return "Sin contactar";
@@ -121,24 +112,33 @@ function Tarjeta({
   const nombreAgente = propietario.agente_id ? (agentes[propietario.agente_id] ?? "").split(" ")[0] : null;
   const proxima = fmtProxima(propietario.fecha_proxima_accion);
   const esVencida = propietario.fecha_proxima_accion && new Date(propietario.fecha_proxima_accion) < new Date();
-  const incompletos = camposIncompletos(propietario);
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
       className={cn(
-        "cursor-grab touch-none rounded-lg border bg-card shadow-sm transition-shadow active:cursor-grabbing",
+        "rounded-lg border bg-card shadow-sm transition-shadow",
         "hover:shadow-md hover:border-primary/40",
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <button
-        type="button"
-        onClick={() => !isDragging && onAbrir(propietario.id)}
-        className="block w-full text-left p-3 space-y-1.5"
+      {/* Drag handle — franja superior */}
+      <div
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing touch-none px-3 pt-2 pb-1 text-[10px] text-muted-foreground/40 select-none border-b"
+      >
+        ⠿ arrastrar
+      </div>
+
+      {/* Área clickable para abrir panel */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onAbrir(propietario.id)}
+        onKeyDown={(e) => e.key === "Enter" && onAbrir(propietario.id)}
+        className="p-3 space-y-1.5 cursor-pointer"
       >
         <div className="flex items-center justify-between">
           {prioridad ? (
@@ -147,15 +147,7 @@ function Tarjeta({
               <span className="text-[11px] font-medium text-muted-foreground">{PRIORIDAD_LABEL[prioridad]}</span>
             </div>
           ) : <span />}
-          <div className="flex items-center gap-1.5">
-            {incompletos.length > 0 && (
-              <span
-                title={`Faltan: ${incompletos.join(", ")}`}
-                className="size-2 rounded-full bg-red-500"
-              />
-            )}
-            <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
-          </div>
+          <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
         </div>
 
         <p className="font-semibold leading-tight">{propietario.nombre}</p>
@@ -174,7 +166,7 @@ function Tarjeta({
           {nombreAgente && <span>👤 {nombreAgente}</span>}
           <span className="ml-auto">⏱ {fmtContacto(propietario.fecha_ultimo_contacto)}</span>
         </div>
-      </button>
+      </div>
     </div>
   );
 }
@@ -205,7 +197,7 @@ function Columna({
         <div className="flex items-center gap-1.5">
           <span className={cn("size-2 rounded-full", COL_DOT[estado])} />
           <span className={cn("text-xs font-bold uppercase tracking-wide", COL_HEADER[estado])}>
-            {ETIQUETAS_ESTADO[estado]}
+            {ETIQUETAS_ESTADO_PROPIETARIO[estado]}
           </span>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -229,17 +221,15 @@ export function KanbanPropietarios({
   propietarios,
   agentes,
   agentesArray = [],
-  basePath = "/inmobiliaria/propietarios",
 }: {
   propietarios: Propietario[];
   agentes: Record<string, string>;
   agentesArray?: Agente[];
-  basePath?: string;
 }) {
   const [items, setItems] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [panelId, setPanelId] = useState<string | null>(null);
-  const [guardadoId, setGuardadoId] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragStart(event: DragStartEvent) {
@@ -256,8 +246,8 @@ export function KanbanPropietarios({
     if (!actual || actual.estado === nuevoEstado) return;
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p)));
     actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado).then(() => {
-      setGuardadoId(id);
-      setTimeout(() => setGuardadoId(null), 2000);
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 2000);
     });
   }
 
@@ -265,8 +255,8 @@ export function KanbanPropietarios({
 
   return (
     <>
-      {guardadoId && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2">
+      {toastVisible && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg">
           ✓ Estado guardado
         </div>
       )}

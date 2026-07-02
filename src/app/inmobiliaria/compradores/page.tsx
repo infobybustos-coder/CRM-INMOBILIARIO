@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
+import { VistaSwitcher } from "@/components/inmobiliaria/vista-switcher";
 import { TablaCompradores } from "@/components/inmobiliaria/compradores/tabla-compradores";
 import { KanbanCompradores } from "@/components/inmobiliaria/compradores/kanban-compradores";
 import { calcularPrioridadComprador } from "@/lib/prioridad";

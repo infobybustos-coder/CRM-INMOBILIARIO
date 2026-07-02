@@ -7,8 +7,8 @@ import {
   ETIQUETAS_TIPO_INMUEBLE,
   FUENTES_LEAD,
   ETIQUETAS_FUENTE_LEAD,
-  ETIQUETAS_ESTADO,
-} from "@/app/asesor/propietarios/constantes";
+  ETIQUETAS_ESTADO_PROPIETARIO,
+} from "@/app/inmobiliaria/constantes";
 import {
   cargarPropietarioPanel,
   actualizarPropietarioInmobiliaria,
@@ -83,7 +83,8 @@ function FormularioPanel({
   return (
     <form action={formAction} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-5 px-5 py-4">
-        {/* Info básica */}
+
+        {/* Información básica */}
         <section className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             👤 Información
@@ -108,7 +109,7 @@ function FormularioPanel({
           </div>
         </section>
 
-        {/* Estado + Prioridad + Asesor */}
+        {/* Estado y gestión */}
         <section className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             📊 Estado y gestión
@@ -117,7 +118,7 @@ function FormularioPanel({
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Estado</label>
               <div className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
-                {ETIQUETAS_ESTADO[propietario.estado] ?? propietario.estado}
+                {ETIQUETAS_ESTADO_PROPIETARIO[propietario.estado] ?? propietario.estado}
               </div>
               <p className="text-[10px] text-muted-foreground">Cambia desde el Kanban</p>
             </div>
@@ -177,6 +178,10 @@ function FormularioPanel({
               </select>
             </div>
             <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Último contacto</label>
+              <input name="fecha_ultimo_contacto" type="date" defaultValue={aFechaInput(propietario.fecha_ultimo_contacto)} className={inputCls} />
+            </div>
+            <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Próxima acción</label>
               <input name="fecha_proxima_accion" type="date" defaultValue={aFechaInput(propietario.fecha_proxima_accion)} className={inputCls} />
             </div>
@@ -211,7 +216,7 @@ function FormularioPanel({
         </section>
       </div>
 
-      {/* Barra inferior */}
+      {/* Barra de guardado */}
       <div className="shrink-0 border-t px-5 py-3 flex items-center gap-3 bg-card">
         <button
           type="submit"
@@ -267,7 +272,6 @@ export function PanelPropietario({
     });
   }, [propietarioId]);
 
-  // Cerrar con Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -280,7 +284,6 @@ export function PanelPropietario({
 
   return (
     <>
-      {/* Backdrop */}
       {abierto && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
@@ -288,7 +291,6 @@ export function PanelPropietario({
         />
       )}
 
-      {/* Panel */}
       <div
         ref={panelRef}
         className={cn(
@@ -313,7 +315,6 @@ export function PanelPropietario({
           </button>
         </div>
 
-        {/* Contenido */}
         {cargando && (
           <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />

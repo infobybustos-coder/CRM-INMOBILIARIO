@@ -2,7 +2,6 @@
 
 import { useActionState } from "react";
 import {
-  ESTADOS_COMPRADOR,
   ETIQUETAS_ESTADO_COMPRADOR,
   TIPOS_INMUEBLE,
   ETIQUETAS_TIPO_INMUEBLE,
@@ -10,7 +9,7 @@ import {
   ETIQUETAS_FINANCIACION,
   NIVELES_URGENCIA,
   ETIQUETAS_URGENCIA,
-} from "@/app/asesor/compradores/constantes";
+} from "@/app/inmobiliaria/constantes";
 import { actualizarCompradorInmobiliaria } from "@/app/inmobiliaria/compradores/actions";
 
 type CompradorFicha = {

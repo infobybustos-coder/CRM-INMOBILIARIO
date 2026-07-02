@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { ETIQUETAS_ESTADO_INMUEBLE, ETIQUETAS_TIPO_INMUEBLE } from "@/app/asesor/inmuebles/constantes";
+import { ETIQUETAS_ESTADO_INMUEBLE, ETIQUETAS_TIPO_INMUEBLE } from "@/app/inmobiliaria/constantes";
 
 type Inmueble = {
   id: string;
