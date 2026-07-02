@@ -52,3 +52,50 @@ export async function crearComprador(
   revalidatePath("/inmobiliaria/compradores");
   redirect(`/inmobiliaria/compradores/${data.id}`);
 }
+
+export type ActualizarCompradorState = { error: string } | { ok: true } | null;
+
+export async function actualizarCompradorInmobiliaria(
+  id: string,
+  _prevState: ActualizarCompradorState,
+  formData: FormData
+): Promise<ActualizarCompradorState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  if (!nombre) return { error: "El nombre es obligatorio." };
+
+  const gestor = esGestor(usuario.rol);
+  const presupuestoMin = formData.get("presupuesto_min");
+  const presupuestoMax = formData.get("presupuesto_max");
+  const fechaProximaAccion = formData.get("fecha_proxima_accion");
+  const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
+  const zonaBuscadaId = String(formData.get("zona_buscada_id") ?? "");
+
+  const { error } = await supabase
+    .from("compradores")
+    .update({
+      nombre,
+      telefono: String(formData.get("telefono") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      presupuesto_min: presupuestoMin ? Number(presupuestoMin) : null,
+      presupuesto_max: presupuestoMax ? Number(presupuestoMax) : null,
+      financiacion: String(formData.get("financiacion") ?? "") || null,
+      tipo_inmueble: String(formData.get("tipo_inmueble") ?? "") || null,
+      zona_buscada_id: zonaBuscadaId || null,
+      urgencia: String(formData.get("urgencia") ?? "") || null,
+      fecha_proxima_accion: fechaProximaAccion ? String(fechaProximaAccion) : null,
+      fecha_ultimo_contacto: fechaUltimoContacto ? String(fechaUltimoContacto) : null,
+      notas: String(formData.get("notas") ?? "").trim() || null,
+      ...(gestor && formData.get("agente_id") ? { agente_id: String(formData.get("agente_id")) } : {}),
+    })
+    .eq("id", id)
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+
+  if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+
+  revalidatePath(`/inmobiliaria/compradores/${id}`);
+  revalidatePath("/inmobiliaria/compradores");
+  return { ok: true };
+}

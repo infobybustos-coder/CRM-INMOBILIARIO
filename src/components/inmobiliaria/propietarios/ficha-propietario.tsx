@@ -9,7 +9,7 @@ import {
   ETIQUETAS_ESTADO,
   type Propietario,
 } from "@/app/asesor/propietarios/constantes";
-import { actualizarPropietario } from "@/app/asesor/propietarios/actions";
+import { actualizarPropietarioInmobiliaria } from "@/app/inmobiliaria/propietarios/actions";
 
 function aFechaInput(f: string | null) {
   return f ? f.slice(0, 10) : "";
@@ -47,20 +47,13 @@ export function FichaPropietario({
   propietario: Propietario & { agente_id?: string };
   agentes?: Agente[];
 }) {
-  const accion = actualizarPropietario.bind(null, propietario.id);
+  const accion = actualizarPropietarioInmobiliaria.bind(null, propietario.id);
   const [state, formAction, pending] = useActionState(accion, null);
 
   const falta = (v: unknown) => !v;
 
   return (
     <form action={formAction} className="space-y-6">
-      {state && "error" in state && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
-      )}
-      {state && "ok" in state && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">Cambios guardados correctamente.</p>
-      )}
-
       {/* Contacto */}
       <div className="rounded-xl border bg-card p-5">
         <SeccionTitulo>📞 Datos de contacto</SeccionTitulo>
@@ -150,14 +143,20 @@ export function FichaPropietario({
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          className="rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
         >
-          {pending ? "Guardando..." : "Guardar cambios"}
+          {pending ? "Guardando..." : "💾 Guardar cambios"}
         </button>
+        {state && "ok" in state && (
+          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">✓ Guardado correctamente</span>
+        )}
+        {state && "error" in state && (
+          <span className="text-sm font-medium text-destructive">{state.error}</span>
+        )}
       </div>
     </form>
   );
