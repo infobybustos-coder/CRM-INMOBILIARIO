@@ -75,7 +75,7 @@ export default async function CentroControlPage() {
       .eq("tenant_id", tid),
     supabase
       .from("inmuebles")
-      .select("id, estado, precio, tipo, agente_id")
+      .select("id, estado, precio, tipo, agente_id, creado_en")
       .eq("tenant_id", tid),
     supabase
       .from("compradores")

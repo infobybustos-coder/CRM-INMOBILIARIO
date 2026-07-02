@@ -24,7 +24,9 @@ import { cn } from "@/lib/utils";
 type Propietario = {
   id: string;
   nombre: string;
+  telefono: string | null;
   direccion: string | null;
+  tipo_inmueble: string | null;
   estado: string;
   valor_estimado: number | null;
   fecha_ultimo_contacto: string | null;
