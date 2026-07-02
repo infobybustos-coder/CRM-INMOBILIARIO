@@ -16,6 +16,7 @@ import {
   FileText,
   ListTodo,
   MessageSquare,
+  Lock,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -25,6 +26,7 @@ type Enlace = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  proximamente?: boolean;
 };
 
 type Grupo = {
@@ -60,7 +62,7 @@ const GRUPOS: Grupo[] = [
     enlaces: [
       { href: "/inmobiliaria/agenda", label: "Agenda", icon: ListTodo },
       { href: "/inmobiliaria/documentos", label: "Documentos", icon: FileText },
-      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare },
+      { href: "#", label: "Mensajes", icon: MessageSquare, proximamente: true },
     ],
   },
   {
@@ -151,7 +153,25 @@ export function InmobiliariaNav({ esGestor }: { esGestor: boolean }) {
                 {grupo.titulo && colapsado && gi > 0 && (
                   <div className="my-2 border-t" />
                 )}
-                {grupo.enlaces.map(({ href, label, icon: Icon }) => {
+                {grupo.enlaces.map(({ href, label, icon: Icon, proximamente }) => {
+                  if (proximamente) {
+                    return (
+                      <div
+                        key={href}
+                        title={colapsado ? `${label} (Próximamente)` : undefined}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm cursor-not-allowed opacity-50",
+                          colapsado && "justify-center"
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        {!colapsado && (
+                          <span className="flex-1">{label} <span className="text-[10px]">(Próximamente)</span></span>
+                        )}
+                        {!colapsado && <Lock className="size-3 shrink-0" />}
+                      </div>
+                    );
+                  }
                   const activo =
                     href === "/inmobiliaria"
                       ? pathname === "/inmobiliaria"
