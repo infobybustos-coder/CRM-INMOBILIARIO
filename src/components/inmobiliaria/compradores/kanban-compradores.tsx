@@ -68,6 +68,15 @@ const COL_DOT: Record<string, string> = {
   perdido: "bg-rose-500",
 };
 
+function camposIncompletos(c: Comprador): string[] {
+  const faltantes: string[] = [];
+  if (!c.presupuesto_max) faltantes.push("presupuesto");
+  if (!c.tipo_inmueble) faltantes.push("tipo inmueble");
+  if (!c.zona_buscada_id) faltantes.push("zona");
+  if (!c.urgencia) faltantes.push("urgencia");
+  return faltantes;
+}
+
 function fmtEuro(n: number | null): string {
   if (!n) return "";
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M €`;
@@ -107,6 +116,7 @@ function Tarjeta({
   const zona = comprador.zona_buscada_id ? zonas[comprador.zona_buscada_id] : null;
   const proxima = fmtProxima(comprador.fecha_proxima_accion);
   const esVencida = comprador.fecha_proxima_accion && new Date(comprador.fecha_proxima_accion) < new Date();
+  const incompletos = camposIncompletos(comprador);
 
   return (
     <div
@@ -130,13 +140,21 @@ function Tarjeta({
         <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
       </div>
 
-      <Link
-        href={`${basePath}/${comprador.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="block font-semibold leading-tight hover:text-primary hover:underline"
-      >
-        {comprador.nombre}
-      </Link>
+      <div className="flex items-start gap-1.5">
+        <Link
+          href={`${basePath}/${comprador.id}`}
+          onClick={(e) => isDragging && e.preventDefault()}
+          className="block font-semibold leading-tight hover:text-primary hover:underline flex-1"
+        >
+          {comprador.nombre}
+        </Link>
+        {incompletos.length > 0 && (
+          <span
+            title={`Faltan: ${incompletos.join(", ")}`}
+            className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500"
+          />
+        )}
+      </div>
 
       {(comprador.presupuesto_max || comprador.presupuesto_min) && (
         <p className="text-xs font-medium text-muted-foreground">

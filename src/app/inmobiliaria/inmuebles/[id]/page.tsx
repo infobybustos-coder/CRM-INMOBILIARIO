@@ -8,6 +8,7 @@ import { Fotos } from "@/components/asesor/inmuebles/fotos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/inmuebles/actions";
+import { AlertCircle } from "lucide-react";
 import type { Inmueble } from "@/app/asesor/inmuebles/constantes";
 
 export default async function InmobiliariaInmueblePage({
@@ -87,6 +88,25 @@ export default async function InmobiliariaInmueblePage({
           </span>
         )}
       </div>
+
+      {(() => {
+        const faltantes = [
+          !inmueble.precio && "Precio",
+          !inmueble.tipo && "Tipo",
+          !inmueble.metros_cuadrados && "m²",
+          !inmueble.propietario_id && "Propietario",
+          !inmueble.zona_id && "Zona",
+          !inmueble.descripcion && "Descripción",
+        ].filter(Boolean) as string[];
+        return faltantes.length > 0 ? (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Ficha incompleta.</strong> Faltan: {faltantes.join(", ")}.
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       <FormularioInmueble
         inmueble={inmueble as Inmueble}

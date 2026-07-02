@@ -18,6 +18,7 @@ import {
 } from "@/app/asesor/propietarios/actions";
 import type { Propietario } from "@/app/asesor/propietarios/constantes";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COLOR_PRIORIDAD: Record<string, string> = {
@@ -111,6 +112,24 @@ export default async function InmobiliariaPropietarioPage({
           Score: {calcularCaptacionScore(propietario)}
         </span>
       </div>
+
+      {(() => {
+        const faltantes = [
+          !propietario.telefono && "Teléfono",
+          !propietario.direccion && "Dirección",
+          !propietario.tipo_inmueble && "Tipo de inmueble",
+          !propietario.valor_estimado && "Valor estimado",
+          !propietario.fuente_lead && "Fuente del lead",
+        ].filter(Boolean) as string[];
+        return faltantes.length > 0 ? (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Ficha incompleta.</strong> Faltan: {faltantes.join(", ")}.
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       <SiguientePaso
         propietarioId={id}

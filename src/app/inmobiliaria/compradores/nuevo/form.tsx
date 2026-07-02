@@ -2,16 +2,6 @@
 
 import { useActionState } from "react";
 import { crearComprador } from "../actions";
-import {
-  TIPOS_INMUEBLE,
-  ETIQUETAS_TIPO_INMUEBLE,
-} from "@/app/asesor/propietarios/constantes";
-import {
-  NIVELES_URGENCIA,
-  ETIQUETAS_URGENCIA,
-  TIPOS_FINANCIACION,
-  ETIQUETAS_FINANCIACION,
-} from "@/app/asesor/compradores/constantes";
 
 export function NuevoCompradorForm({
   zonas,
@@ -27,6 +17,10 @@ export function NuevoCompradorForm({
           {state.error}
         </p>
       )}
+
+      <p className="text-sm text-muted-foreground">
+        Registra el comprador con los datos básicos. Podrás completar presupuesto, zona y preferencias desde la ficha.
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -48,38 +42,6 @@ export function NuevoCompradorForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Email</label>
-          <input
-            name="email"
-            type="email"
-            placeholder="correo@ejemplo.com"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Urgencia</label>
-          <select
-            name="urgencia"
-            defaultValue="media"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            {NIVELES_URGENCIA.map((u) => (
-              <option key={u} value={u}>{ETIQUETAS_URGENCIA[u]}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Presupuesto mínimo (€)</label>
-          <input
-            name="presupuesto_min"
-            type="number"
-            min="0"
-            step="1000"
-            placeholder="150000"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-        <div className="space-y-1.5">
           <label className="text-sm font-medium">Presupuesto máximo (€)</label>
           <input
             name="presupuesto_max"
@@ -89,30 +51,6 @@ export function NuevoCompradorForm({
             placeholder="300000"
             className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Tipo de inmueble buscado</label>
-          <select
-            name="tipo_inmueble"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">Cualquier tipo</option>
-            {TIPOS_INMUEBLE.map((t) => (
-              <option key={t} value={t}>{ETIQUETAS_TIPO_INMUEBLE[t]}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Financiación</label>
-          <select
-            name="financiacion"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">Sin especificar</option>
-            {TIPOS_FINANCIACION.map((f) => (
-              <option key={f} value={f}>{ETIQUETAS_FINANCIACION[f]}</option>
-            ))}
-          </select>
         </div>
         {zonas.length > 0 && (
           <div className="space-y-1.5">
@@ -131,12 +69,11 @@ export function NuevoCompradorForm({
           </div>
         )}
         <div className="space-y-1.5 sm:col-span-2">
-          <label className="text-sm font-medium">Notas</label>
-          <textarea
+          <label className="text-sm font-medium">Notas rápidas</label>
+          <input
             name="notas"
-            rows={3}
-            placeholder="Requisitos especiales, comentarios..."
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+            placeholder="Qué está buscando, observaciones..."
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
       </div>

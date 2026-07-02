@@ -72,6 +72,15 @@ const COL_DOT: Record<string, string> = {
   perdido: "bg-rose-500",
 };
 
+function camposIncompletos(p: Propietario): string[] {
+  const faltantes: string[] = [];
+  if (!p.telefono) faltantes.push("teléfono");
+  if (!p.direccion) faltantes.push("dirección");
+  if (!p.tipo_inmueble) faltantes.push("tipo inmueble");
+  if (!p.valor_estimado) faltantes.push("valor estimado");
+  return faltantes;
+}
+
 function fmtContacto(fecha: string | null): string {
   const dias = diasDesde(fecha);
   if (dias === null) return "Sin contactar";
@@ -109,6 +118,7 @@ function Tarjeta({
   const nombreAgente = propietario.agente_id ? (agentes[propietario.agente_id] ?? "").split(" ")[0] : null;
   const proxima = fmtProxima(propietario.fecha_proxima_accion);
   const esVencida = propietario.fecha_proxima_accion && new Date(propietario.fecha_proxima_accion) < new Date();
+  const incompletos = camposIncompletos(propietario);
 
   return (
     <div
@@ -132,13 +142,21 @@ function Tarjeta({
         <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
       </div>
 
-      <Link
-        href={`${basePath}/${propietario.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="block font-semibold leading-tight hover:text-primary hover:underline"
-      >
-        {propietario.nombre}
-      </Link>
+      <div className="flex items-start gap-1.5">
+        <Link
+          href={`${basePath}/${propietario.id}`}
+          onClick={(e) => isDragging && e.preventDefault()}
+          className="block font-semibold leading-tight hover:text-primary hover:underline flex-1"
+        >
+          {propietario.nombre}
+        </Link>
+        {incompletos.length > 0 && (
+          <span
+            title={`Faltan: ${incompletos.join(", ")}`}
+            className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500"
+          />
+        )}
+      </div>
 
       {propietario.direccion && (
         <p className="text-xs text-muted-foreground line-clamp-1">📍 {propietario.direccion}</p>

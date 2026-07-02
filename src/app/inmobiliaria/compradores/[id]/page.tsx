@@ -9,6 +9,7 @@ import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/compradores/actions";
 import type { Comprador } from "@/app/asesor/compradores/constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COLOR_PRIORIDAD: Record<string, string> = {
@@ -102,6 +103,25 @@ export default async function InmobiliariaCompradorPage({
           Score: {calcularCompraScore(comprador)}
         </span>
       </div>
+
+      {(() => {
+        const faltantes = [
+          !comprador.telefono && "Teléfono",
+          !comprador.presupuesto_max && "Presupuesto máximo",
+          !comprador.tipo_inmueble && "Tipo inmueble",
+          !comprador.zona_buscada_id && "Zona buscada",
+          !comprador.urgencia && "Urgencia",
+          !comprador.financiacion && "Financiación",
+        ].filter(Boolean) as string[];
+        return faltantes.length > 0 ? (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Ficha incompleta.</strong> Faltan: {faltantes.join(", ")}.
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       <FormularioComprador
         comprador={comprador as Comprador}
