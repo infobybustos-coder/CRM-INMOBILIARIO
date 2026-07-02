@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { FormularioPropietario } from "@/components/asesor/propietarios/formulario-propietario";
+import { FichaPropietario } from "@/components/inmobiliaria/propietarios/ficha-propietario";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { Documentos } from "@/components/asesor/propietarios/documentos";
@@ -137,7 +137,7 @@ export default async function InmobiliariaPropietarioPage({
         crearSiguientePasoAction={crearSiguientePaso}
       />
 
-      <FormularioPropietario
+      <FichaPropietario
         propietario={propietario as Propietario}
         agentes={gestor ? (agentes ?? []) : []}
       />

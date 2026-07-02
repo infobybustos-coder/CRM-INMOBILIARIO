@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
+import { FichaComprador } from "@/components/inmobiliaria/compradores/ficha-comprador";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/compradores/actions";
@@ -123,7 +123,7 @@ export default async function InmobiliariaCompradorPage({
         ) : null;
       })()}
 
-      <FormularioComprador
+      <FichaComprador
         comprador={comprador as Comprador}
         zonas={zonas ?? []}
         agentes={gestor ? (agentes ?? []) : []}

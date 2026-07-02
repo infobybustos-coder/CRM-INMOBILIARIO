@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { FormularioInmueble } from "@/components/asesor/inmuebles/formulario-inmueble";
+import { FichaInmueble } from "@/components/inmobiliaria/inmuebles/ficha-inmueble";
 import { Fotos } from "@/components/asesor/inmuebles/fotos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
@@ -108,7 +108,7 @@ export default async function InmobiliariaInmueblePage({
         ) : null;
       })()}
 
-      <FormularioInmueble
+      <FichaInmueble
         inmueble={inmueble as Inmueble}
         zonas={zonas ?? []}
         propietarios={propietarios ?? []}
