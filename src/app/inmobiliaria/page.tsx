@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   Home, Star, Building2, Users, Phone, Calendar,
   ArrowUpRight, ArrowDownRight, Trophy, AlertCircle,
-  CheckCircle2, Clock, TrendingUp, Plus, FileText,
+  CheckCircle2, Clock, TrendingUp, Plus,
   UserSearch, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -676,14 +676,12 @@ export default async function CentroControlPage() {
         {/* Acciones rápidas */}
         <div className="rounded-xl border bg-card p-5">
           <p className="mb-4 font-semibold">Acciones rápidas</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { href: "/inmobiliaria/propietarios/nuevo", icon: Plus, label: "Nuevo propietario", color: "bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/20 dark:text-violet-400" },
               { href: "/inmobiliaria/inmuebles/nuevo", icon: Building2, label: "Nuevo inmueble", color: "bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400" },
               { href: "/inmobiliaria/compradores/nuevo", icon: UserSearch, label: "Nuevo comprador", color: "bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-400" },
               { href: "/inmobiliaria/visitas", icon: CalendarDays, label: "Nueva visita", color: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400" },
-              { href: "/inmobiliaria/documentos", icon: FileText, label: "Documentos", color: "bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400" },
-              { href: "/inmobiliaria/mensajes", icon: Phone, label: "Mensajes", color: "bg-pink-50 text-pink-700 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-400" },
             ].map(({ href, icon: Icon, label, color }) => (
               <Link
                 key={href}
