@@ -125,54 +125,54 @@ function Tarjeta({
       {...attributes}
       style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
       className={cn(
-        "cursor-grab touch-none rounded-lg border bg-card p-3 space-y-1.5 shadow-sm transition-shadow active:cursor-grabbing",
-        "hover:shadow-md",
+        "cursor-grab touch-none rounded-lg border bg-card shadow-sm transition-shadow active:cursor-grabbing",
+        "hover:shadow-md hover:border-primary/40",
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <div className="flex items-center justify-between">
-        {prioridad ? (
+      <Link
+        href={`${basePath}/${comprador.id}`}
+        onClick={(e) => isDragging && e.preventDefault()}
+        className="block p-3 space-y-1.5"
+      >
+        <div className="flex items-center justify-between">
+          {prioridad ? (
+            <div className="flex items-center gap-1.5">
+              <span className={cn("size-2 rounded-full", PRIORIDAD_DOT[prioridad])} />
+              <span className="text-[11px] font-medium text-muted-foreground capitalize">{prioridad}</span>
+            </div>
+          ) : <span />}
           <div className="flex items-center gap-1.5">
-            <span className={cn("size-2 rounded-full", PRIORIDAD_DOT[prioridad])} />
-            <span className="text-[11px] font-medium text-muted-foreground capitalize">{prioridad}</span>
+            {incompletos.length > 0 && (
+              <span
+                title={`Faltan: ${incompletos.join(", ")}`}
+                className="size-2 rounded-full bg-red-500"
+              />
+            )}
+            <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
           </div>
-        ) : <span />}
-        <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
-      </div>
+        </div>
 
-      <div className="flex items-start gap-1.5">
-        <Link
-          href={`${basePath}/${comprador.id}`}
-          onClick={(e) => isDragging && e.preventDefault()}
-          className="block font-semibold leading-tight hover:text-primary hover:underline flex-1"
-        >
-          {comprador.nombre}
-        </Link>
-        {incompletos.length > 0 && (
-          <span
-            title={`Faltan: ${incompletos.join(", ")}`}
-            className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500"
-          />
+        <p className="font-semibold leading-tight">{comprador.nombre}</p>
+
+        {(comprador.presupuesto_max || comprador.presupuesto_min) && (
+          <p className="text-xs font-medium text-muted-foreground">
+            💰 {fmtEuro(comprador.presupuesto_max ?? comprador.presupuesto_min)}
+          </p>
         )}
-      </div>
 
-      {(comprador.presupuesto_max || comprador.presupuesto_min) && (
-        <p className="text-xs font-medium text-muted-foreground">
-          💰 {fmtEuro(comprador.presupuesto_max ?? comprador.presupuesto_min)}
-        </p>
-      )}
+        {zona && <p className="text-xs text-muted-foreground">📍 {zona}</p>}
 
-      {zona && <p className="text-xs text-muted-foreground">📍 {zona}</p>}
+        {proxima && (
+          <p className={cn("text-xs", esVencida ? "text-red-600 font-semibold dark:text-red-400" : "text-muted-foreground")}>
+            📅 {proxima}
+          </p>
+        )}
 
-      {proxima && (
-        <p className={cn("text-xs", esVencida ? "text-red-600 font-semibold dark:text-red-400" : "text-muted-foreground")}>
-          📅 {proxima}
-        </p>
-      )}
-
-      {nombreAgente && (
-        <p className="text-[11px] text-muted-foreground">👤 {nombreAgente}</p>
-      )}
+        {nombreAgente && (
+          <p className="text-[11px] text-muted-foreground">👤 {nombreAgente}</p>
+        )}
+      </Link>
     </div>
   );
 }
