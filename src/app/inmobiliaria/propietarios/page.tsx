@@ -27,7 +27,7 @@ export default async function InmobiliariaPropietariosPage({
   let query = supabase
     .from("propietarios")
     .select(
-      "id, nombre, telefono, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en, agente_id"
+      "id, nombre, telefono, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, notas, creado_en, agente_id"
     );
 
   if (!gestor) query = query.eq("agente_id", usuario.id);

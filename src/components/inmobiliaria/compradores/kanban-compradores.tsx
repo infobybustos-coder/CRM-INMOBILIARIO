@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
 import { ESTADOS_COMPRADOR, ETIQUETAS_ESTADO_COMPRADOR } from "@/app/asesor/compradores/constantes";
-import { actualizarEstadoComprador } from "@/app/asesor/compradores/actions";
+import { actualizarEstadoCompradorInmobiliaria } from "@/app/inmobiliaria/compradores/actions";
 import { cn } from "@/lib/utils";
 
 type Comprador = {
@@ -253,7 +253,7 @@ export function KanbanCompradores({
     const actual = items.find((c) => c.id === id);
     if (!actual || actual.estado === nuevoEstado) return;
     setItems((prev) => prev.map((c) => (c.id === id ? { ...c, estado: nuevoEstado } : c)));
-    actualizarEstadoComprador(id, nuevoEstado);
+    actualizarEstadoCompradorInmobiliaria(id, nuevoEstado);
   }
 
   const activo = activeId ? items.find((c) => c.id === activeId) ?? null : null;

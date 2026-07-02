@@ -18,7 +18,7 @@ import {
   ESTADOS_PROPIETARIO,
   ETIQUETAS_ESTADO,
 } from "@/app/asesor/propietarios/constantes";
-import { actualizarEstadoPropietario } from "@/app/asesor/propietarios/actions";
+import { actualizarEstadoPropietarioInmobiliaria } from "@/app/inmobiliaria/propietarios/actions";
 import { cn } from "@/lib/utils";
 
 type Propietario = {
@@ -33,7 +33,6 @@ type Propietario = {
   fecha_proxima_accion: string | null;
   fuente_lead: string | null;
   agente_id: string | null;
-  guion_captacion: unknown;
   notas: string | null;
 };
 
@@ -250,7 +249,7 @@ export function KanbanPropietarios({
     const actual = items.find((p) => p.id === id);
     if (!actual || actual.estado === nuevoEstado) return;
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p)));
-    actualizarEstadoPropietario(id, nuevoEstado);
+    actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado);
   }
 
   const activo = activeId ? items.find((p) => p.id === activeId) ?? null : null;

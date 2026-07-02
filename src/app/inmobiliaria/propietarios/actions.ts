@@ -93,6 +93,28 @@ export async function actualizarPropietarioInmobiliaria(
   return { ok: true };
 }
 
+export async function actualizarEstadoPropietarioInmobiliaria(id: string, estado: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase
+    .from("propietarios")
+    .update({ estado })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+
+  await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "propietario",
+    entidad_id: id,
+    usuario_id: usuario.id,
+    tipo: "cambio_estado",
+    contenido: `Estado actualizado a: ${estado}`,
+  });
+
+  revalidatePath("/inmobiliaria/propietarios");
+}
+
 export type NotaState = { error: string } | null;
 
 export async function crearNotaPropietario(

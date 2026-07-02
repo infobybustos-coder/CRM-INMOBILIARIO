@@ -102,6 +102,28 @@ export async function actualizarCompradorInmobiliaria(
   return { ok: true };
 }
 
+export async function actualizarEstadoCompradorInmobiliaria(id: string, estado: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase
+    .from("compradores")
+    .update({ estado })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+
+  await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "comprador",
+    entidad_id: id,
+    usuario_id: usuario.id,
+    tipo: "cambio_estado",
+    contenido: `Estado actualizado a: ${estado}`,
+  });
+
+  revalidatePath("/inmobiliaria/compradores");
+}
+
 export type NotaState = { error: string } | null;
 
 export async function crearNotaComprador(
