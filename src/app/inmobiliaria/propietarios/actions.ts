@@ -93,6 +93,33 @@ export async function actualizarPropietarioInmobiliaria(
   return { ok: true };
 }
 
+export async function cargarPropietarioPanel(id: string) {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) return null;
+  const supabase = await createClient();
+  const [{ data: propietario }, { data: documentos }] = await Promise.all([
+    supabase
+      .from("propietarios")
+      .select(
+        "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, notas, agente_id"
+      )
+      .eq("id", id)
+      .eq("tenant_id", usuario.tenant_id)
+      .single(),
+    supabase
+      .from("documentos")
+      .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
+      .eq("entidad_tipo", "propietario")
+      .eq("entidad_id", id)
+      .order("creado_en", { ascending: false }),
+  ]);
+  return {
+    propietario,
+    documentos: documentos ?? [],
+    tenantId: usuario.tenant_id,
+  };
+}
+
 export async function actualizarEstadoPropietarioInmobiliaria(id: string, estado: string) {
   const usuario = await requireUsuario();
   const supabase = await createClient();

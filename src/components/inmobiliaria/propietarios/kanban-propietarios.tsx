@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   DndContext,
   DragEndEvent,
@@ -19,6 +18,7 @@ import {
   ETIQUETAS_ESTADO,
 } from "@/app/asesor/propietarios/constantes";
 import { actualizarEstadoPropietarioInmobiliaria } from "@/app/inmobiliaria/propietarios/actions";
+import { PanelPropietario } from "./panel-propietario";
 import { cn } from "@/lib/utils";
 
 type Propietario = {
@@ -35,6 +35,8 @@ type Propietario = {
   agente_id: string | null;
   notas: string | null;
 };
+
+type Agente = { id: string; nombre_completo: string };
 
 const PRIORIDAD_DOT: Record<string, string> = {
   alta: "bg-red-500",
@@ -104,11 +106,11 @@ function fmtProxima(fecha: string | null): string | null {
 function Tarjeta({
   propietario,
   agentes,
-  basePath,
+  onAbrir,
 }: {
   propietario: Propietario;
   agentes: Record<string, string>;
-  basePath: string;
+  onAbrir: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: propietario.id,
@@ -133,10 +135,10 @@ function Tarjeta({
         isDragging && "z-10 rotate-1 opacity-70 shadow-lg"
       )}
     >
-      <Link
-        href={`${basePath}/${propietario.id}`}
-        onClick={(e) => isDragging && e.preventDefault()}
-        className="block p-3 space-y-1.5"
+      <button
+        type="button"
+        onClick={() => !isDragging && onAbrir(propietario.id)}
+        className="block w-full text-left p-3 space-y-1.5"
       >
         <div className="flex items-center justify-between">
           {prioridad ? (
@@ -172,7 +174,7 @@ function Tarjeta({
           {nombreAgente && <span>👤 {nombreAgente}</span>}
           <span className="ml-auto">⏱ {fmtContacto(propietario.fecha_ultimo_contacto)}</span>
         </div>
-      </Link>
+      </button>
     </div>
   );
 }
@@ -181,12 +183,12 @@ function Columna({
   estado,
   items,
   agentes,
-  basePath,
+  onAbrir,
 }: {
   estado: string;
   items: Propietario[];
   agentes: Record<string, string>;
-  basePath: string;
+  onAbrir: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: estado });
 
@@ -213,7 +215,7 @@ function Columna({
 
       <div className="flex-1 overflow-y-auto space-y-2 p-2">
         {items.map((p) => (
-          <Tarjeta key={p.id} propietario={p} agentes={agentes} basePath={basePath} />
+          <Tarjeta key={p.id} propietario={p} agentes={agentes} onAbrir={onAbrir} />
         ))}
         {items.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground/40">Sin registros</p>
@@ -226,14 +228,18 @@ function Columna({
 export function KanbanPropietarios({
   propietarios,
   agentes,
+  agentesArray = [],
   basePath = "/inmobiliaria/propietarios",
 }: {
   propietarios: Propietario[];
   agentes: Record<string, string>;
+  agentesArray?: Agente[];
   basePath?: string;
 }) {
   const [items, setItems] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [panelId, setPanelId] = useState<string | null>(null);
+  const [guardadoId, setGuardadoId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragStart(event: DragStartEvent) {
@@ -249,27 +255,44 @@ export function KanbanPropietarios({
     const actual = items.find((p) => p.id === id);
     if (!actual || actual.estado === nuevoEstado) return;
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p)));
-    actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado);
+    actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado).then(() => {
+      setGuardadoId(id);
+      setTimeout(() => setGuardadoId(null), 2000);
+    });
   }
 
   const activo = activeId ? items.find((p) => p.id === activeId) ?? null : null;
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4">
-        {ESTADOS_PROPIETARIO.map((estado) => (
-          <Columna
-            key={estado}
-            estado={estado}
-            items={items.filter((p) => p.estado === estado)}
-            agentes={agentes}
-            basePath={basePath}
-          />
-        ))}
-      </div>
-      <DragOverlay>
-        {activo ? <Tarjeta propietario={activo} agentes={agentes} basePath={basePath} /> : null}
-      </DragOverlay>
-    </DndContext>
+    <>
+      {guardadoId && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2">
+          ✓ Estado guardado
+        </div>
+      )}
+
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex gap-3 overflow-x-auto pb-4">
+          {ESTADOS_PROPIETARIO.map((estado) => (
+            <Columna
+              key={estado}
+              estado={estado}
+              items={items.filter((p) => p.estado === estado)}
+              agentes={agentes}
+              onAbrir={setPanelId}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activo ? <Tarjeta propietario={activo} agentes={agentes} onAbrir={() => {}} /> : null}
+        </DragOverlay>
+      </DndContext>
+
+      <PanelPropietario
+        propietarioId={panelId}
+        agentes={agentesArray}
+        onClose={() => setPanelId(null)}
+      />
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
 import { TablaPropietarios } from "@/components/inmobiliaria/propietarios/tabla-propietarios";
 import { KanbanPropietarios } from "@/components/inmobiliaria/propietarios/kanban-propietarios";
+import { RefreshButton } from "@/components/inmobiliaria/refresh-button";
 import { calcularPrioridad, diasDesde } from "@/lib/prioridad";
 
 const BASE = "/inmobiliaria/propietarios";
@@ -47,6 +48,7 @@ export default async function InmobiliariaPropietariosPage({
   const agentes: Record<string, string> = Object.fromEntries(
     (usuariosData ?? []).map((u) => [u.id, u.nombre_completo])
   );
+  const agentesArray = (usuariosData ?? []).map((u) => ({ id: u.id, nombre_completo: u.nombre_completo }));
 
   // KPIs
   const hoy = new Date();
@@ -85,6 +87,7 @@ export default async function InmobiliariaPropietariosPage({
             <Plus className="size-4" />
             Nueva captación
           </Link>
+          <RefreshButton />
           <VistaSwitcher vista={vista} />
         </div>
       </div>
@@ -108,9 +111,9 @@ export default async function InmobiliariaPropietariosPage({
           </Link>
         </div>
       ) : vista === "tabla" ? (
-        <TablaPropietarios propietarios={propietarios} agentes={agentes} basePath={BASE} />
+        <TablaPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} basePath={BASE} />
       ) : (
-        <KanbanPropietarios propietarios={propietarios} agentes={agentes} basePath={BASE} />
+        <KanbanPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} basePath={BASE} />
       )}
     </div>
   );
