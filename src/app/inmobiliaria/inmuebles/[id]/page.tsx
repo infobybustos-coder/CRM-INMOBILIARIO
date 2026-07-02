@@ -30,10 +30,7 @@ export default async function InmobiliariaInmueblePage({
       "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en"
     )
     .eq("id", id)
-    .eq(
-      gestor ? "tenant_id" : "agente_id",
-      gestor ? usuario.tenant_id : usuario.id
-    )
+    .eq("tenant_id", usuario.tenant_id)
     .single();
 
   if (!inmueble) notFound();

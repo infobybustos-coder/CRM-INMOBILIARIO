@@ -45,10 +45,7 @@ export default async function InmobiliariaPropietarioPage({
       "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, guion_captacion, notas, creado_en, agente_id"
     )
     .eq("id", id)
-    .eq(
-      gestor ? "tenant_id" : "agente_id",
-      gestor ? usuario.tenant_id : usuario.id
-    )
+    .eq("tenant_id", usuario.tenant_id)
     .single();
 
   if (!propietario) notFound();

@@ -38,10 +38,7 @@ export default async function InmobiliariaCompradorPage({
       "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en, agente_id"
     )
     .eq("id", id)
-    .eq(
-      gestor ? "tenant_id" : "agente_id",
-      gestor ? usuario.tenant_id : usuario.id
-    )
+    .eq("tenant_id", usuario.tenant_id)
     .single();
 
   if (!comprador) notFound();
