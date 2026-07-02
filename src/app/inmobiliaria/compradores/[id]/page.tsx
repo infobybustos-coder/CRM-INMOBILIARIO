@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FichaComprador } from "@/components/inmobiliaria/compradores/ficha-comprador";
+import { SubidaDocumentos } from "@/components/inmobiliaria/subida-documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/compradores/actions";
@@ -45,7 +46,7 @@ export default async function InmobiliariaCompradorPage({
 
   if (!comprador) notFound();
 
-  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] =
+  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }, { data: documentos }] =
     await Promise.all([
       supabase
         .from("actividades")
@@ -72,6 +73,12 @@ export default async function InmobiliariaCompradorPage({
             .eq("activo", true)
             .order("nombre_completo")
         : Promise.resolve({ data: [] }),
+      supabase
+        .from("documentos")
+        .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
     ]);
 
   return (
@@ -127,6 +134,13 @@ export default async function InmobiliariaCompradorPage({
         comprador={comprador as Comprador}
         zonas={zonas ?? []}
         agentes={gestor ? (agentes ?? []) : []}
+      />
+
+      <SubidaDocumentos
+        entidadTipo="comprador"
+        entidadId={id}
+        tenantId={usuario.tenant_id}
+        documentos={documentos ?? []}
       />
 
       <Tareas

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FichaPropietario } from "@/components/inmobiliaria/propietarios/ficha-propietario";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
-import { Documentos } from "@/components/asesor/propietarios/documentos";
+import { SubidaDocumentos } from "@/components/inmobiliaria/subida-documentos";
 import { SiguientePaso } from "@/components/asesor/propietarios/siguiente-paso";
 import { GuionCaptacion } from "@/components/asesor/propietarios/guion-captacion";
 import {
@@ -155,8 +155,9 @@ export default async function InmobiliariaPropietarioPage({
         sugeridas="propietario"
       />
 
-      <Documentos
-        propietarioId={id}
+      <SubidaDocumentos
+        entidadTipo="propietario"
+        entidadId={id}
         tenantId={usuario.tenant_id}
         documentos={documentos ?? []}
       />

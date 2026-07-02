@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FichaInmueble } from "@/components/inmobiliaria/inmuebles/ficha-inmueble";
-import { Fotos } from "@/components/asesor/inmuebles/fotos";
+import { SubidaDocumentos } from "@/components/inmobiliaria/subida-documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
 import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/inmuebles/actions";
@@ -64,7 +64,7 @@ export default async function InmobiliariaInmueblePage({
         .order("nombre", { ascending: true }),
       supabase
         .from("documentos")
-        .select("id, nombre_archivo, url_storage, creado_en")
+        .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
         .eq("entidad_tipo", "inmueble")
         .eq("entidad_id", id)
         .order("creado_en", { ascending: false }),
@@ -114,7 +114,12 @@ export default async function InmobiliariaInmueblePage({
         propietarios={propietarios ?? []}
       />
 
-      <Fotos inmuebleId={id} tenantId={usuario.tenant_id} fotos={fotos ?? []} />
+      <SubidaDocumentos
+        entidadTipo="inmueble"
+        entidadId={id}
+        tenantId={usuario.tenant_id}
+        documentos={fotos ?? []}
+      />
 
       <Tareas
         entidadId={id}
