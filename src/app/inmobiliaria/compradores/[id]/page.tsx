@@ -25,7 +25,6 @@ export default async function InmobiliariaCompradorPage({
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
-  if (usuario.rol === "captador") redirect("/inmobiliaria/propietarios");
 
   const { id } = await params;
   const supabase = await createClient();

@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
@@ -79,7 +81,16 @@ export default async function InmobiliariaInmueblesPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inmuebles</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Inmuebles</h1>
+        <Link
+          href="/inmobiliaria/inmuebles/nuevo"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="size-4" />
+          Nuevo inmueble
+        </Link>
+      </div>
 
       <Filtros />
 

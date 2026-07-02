@@ -18,7 +18,6 @@ export default async function InmobiliariaInmueblePage({
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
-  if (usuario.rol === "captador") redirect("/inmobiliaria/propietarios");
 
   const { id } = await params;
   const supabase = await createClient();

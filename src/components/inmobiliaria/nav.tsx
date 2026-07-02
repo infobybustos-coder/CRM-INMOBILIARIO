@@ -15,6 +15,7 @@ import {
   TrendingUp,
   FileText,
   ListTodo,
+  MessageSquare,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -35,7 +36,7 @@ type Grupo = {
 const GRUPOS: Grupo[] = [
   {
     enlaces: [
-      { href: "/inmobiliaria", label: "Panel general", icon: LayoutDashboard },
+      { href: "/inmobiliaria", label: "Centro de Control", icon: LayoutDashboard },
     ],
   },
   {
@@ -59,6 +60,7 @@ const GRUPOS: Grupo[] = [
     enlaces: [
       { href: "/inmobiliaria/agenda", label: "Agenda", icon: ListTodo },
       { href: "/inmobiliaria/documentos", label: "Documentos", icon: FileText },
+      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare },
     ],
   },
   {
