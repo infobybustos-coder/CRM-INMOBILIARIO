@@ -6,11 +6,29 @@ import {
   ETIQUETAS_ESTADO_INMUEBLE,
   TIPOS_INMUEBLE,
   ETIQUETAS_TIPO_INMUEBLE,
-  type Inmueble,
-  type Zona,
-  type PropietarioMini,
 } from "@/app/asesor/inmuebles/constantes";
 import { actualizarInmuebleInmobiliaria } from "@/app/inmobiliaria/inmuebles/actions";
+
+type InmuebleFicha = {
+  id: string;
+  referencia: string | null;
+  direccion: string;
+  zona_id: string | null;
+  propietario_id: string | null;
+  precio: number | null;
+  metros_cuadrados: number | null;
+  habitaciones: number | null;
+  banos: number | null;
+  tipo: string | null;
+  estado: string;
+  certificado_energetico: string | null;
+  descripcion: string | null;
+  fecha_publicacion: string | null;
+  agente_id?: string | null;
+};
+
+type Zona = { id: string; nombre: string; ciudad?: string | null };
+type PropietarioMini = { id: string; nombre: string };
 
 function aFechaInput(f: string | null) {
   return f ? f.slice(0, 10) : "";
@@ -44,7 +62,7 @@ export function FichaInmueble({
   zonas,
   propietarios,
 }: {
-  inmueble: Inmueble;
+  inmueble: InmuebleFicha;
   zonas: Zona[];
   propietarios: PropietarioMini[];
 }) {

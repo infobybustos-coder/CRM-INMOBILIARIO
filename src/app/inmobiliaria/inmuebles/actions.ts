@@ -104,7 +104,7 @@ export async function actualizarInmuebleInmobiliaria(
       fecha_publicacion: fechaPublicacion ? String(fechaPublicacion) : null,
     })
     .eq("id", id)
-    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+    .eq("tenant_id", usuario.tenant_id);
 
   if (error) {
     return error.code === "23505"
@@ -115,4 +115,78 @@ export async function actualizarInmuebleInmobiliaria(
   revalidatePath(`/inmobiliaria/inmuebles/${id}`);
   revalidatePath("/inmobiliaria/inmuebles");
   return { ok: true };
+}
+
+export type NotaState = { error: string } | null;
+
+export async function crearNotaInmueble(
+  inmuebleId: string,
+  _prevState: NotaState,
+  formData: FormData
+): Promise<NotaState> {
+  const usuario = await requireUsuario();
+  const contenido = String(formData.get("contenido") ?? "").trim();
+  if (!contenido) return { error: "Escribe algo antes de guardar." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "inmueble",
+    entidad_id: inmuebleId,
+    usuario_id: usuario.id,
+    tipo: "nota",
+    contenido,
+  });
+
+  if (error) return { error: "No se pudo guardar la nota." };
+
+  revalidatePath(`/inmobiliaria/inmuebles/${inmuebleId}`);
+  return null;
+}
+
+export type TareaState = { error: string } | null;
+
+export async function crearTareaInmueble(
+  inmuebleId: string,
+  _prevState: TareaState,
+  formData: FormData
+): Promise<TareaState> {
+  const usuario = await requireUsuario();
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  if (!titulo) return { error: "Pon un título a la tarea." };
+
+  const fechaVencimiento = formData.get("fecha_vencimiento");
+  const supabase = await createClient();
+  const { error } = await supabase.from("tareas").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "inmueble",
+    entidad_id: inmuebleId,
+    asignado_a: usuario.id,
+    titulo,
+    fecha_vencimiento: fechaVencimiento ? String(fechaVencimiento) : null,
+  });
+
+  if (error) return { error: "No se pudo crear la tarea." };
+
+  revalidatePath(`/inmobiliaria/inmuebles/${inmuebleId}`);
+  return null;
+}
+
+export async function alternarTareaInmueble(
+  tareaId: string,
+  inmuebleId: string,
+  completada: boolean
+) {
+  await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase
+    .from("tareas")
+    .update({
+      estado: completada ? "completada" : "pendiente",
+      completada_en: completada ? new Date().toISOString() : null,
+    })
+    .eq("id", tareaId);
+
+  revalidatePath(`/inmobiliaria/inmuebles/${inmuebleId}`);
 }

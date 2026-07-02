@@ -10,10 +10,28 @@ import {
   ETIQUETAS_FINANCIACION,
   NIVELES_URGENCIA,
   ETIQUETAS_URGENCIA,
-  type Comprador,
-  type Zona,
 } from "@/app/asesor/compradores/constantes";
 import { actualizarCompradorInmobiliaria } from "@/app/inmobiliaria/compradores/actions";
+
+type CompradorFicha = {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  email?: string | null;
+  presupuesto_min: number | null;
+  presupuesto_max: number | null;
+  financiacion: string | null;
+  tipo_inmueble: string | null;
+  zona_buscada_id: string | null;
+  urgencia: string | null;
+  estado: string;
+  fecha_ultimo_contacto: string | null;
+  fecha_proxima_accion: string | null;
+  notas: string | null;
+  agente_id?: string | null;
+};
+
+type Zona = { id: string; nombre: string; ciudad?: string | null };
 
 function aFechaInput(f: string | null) {
   return f ? f.slice(0, 10) : "";
@@ -49,7 +67,7 @@ export function FichaComprador({
   zonas,
   agentes = [],
 }: {
-  comprador: Comprador & { agente_id?: string };
+  comprador: CompradorFicha;
   zonas: Zona[];
   agentes?: Agente[];
 }) {
