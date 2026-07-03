@@ -18,87 +18,74 @@ import {
   ETIQUETAS_ESTADO_PROPIETARIO,
 } from "@/app/inmobiliaria/constantes";
 import { actualizarEstadoPropietarioInmobiliaria } from "@/app/inmobiliaria/propietarios/actions";
-import { PanelPropietario } from "./panel-propietario";
+import { PanelPropietario, type PropietarioPanel } from "./panel-propietario";
 import { cn } from "@/lib/utils";
 
-type Propietario = {
-  id: string;
-  nombre: string;
-  telefono: string | null;
+type Propietario = PropietarioPanel & {
   direccion: string | null;
-  tipo_inmueble: string | null;
-  estado: string;
-  valor_estimado: number | null;
   fecha_ultimo_contacto: string | null;
   fecha_proxima_accion: string | null;
-  fuente_lead: string | null;
-  agente_id: string | null;
-  notas: string | null;
 };
 
 type Agente = { id: string; nombre_completo: string };
 
-// ── Colores por estado ─────────────────────────────────────
 const COL_BORDER: Record<string, string> = {
-  nuevo_lead:         "border-sky-400/50",
-  contactado:         "border-cyan-400/50",
-  tasacion_programada:"border-amber-400/50",
-  tasacion_realizada: "border-orange-400/50",
-  negociacion:        "border-violet-400/50",
-  exclusiva_firmada:  "border-indigo-400/50",
-  captado:            "border-emerald-400/50",
-  perdido:            "border-rose-400/50",
+  nuevo_lead:          "border-sky-400/50",
+  contactado:          "border-cyan-400/50",
+  tasacion_programada: "border-amber-400/50",
+  tasacion_realizada:  "border-orange-400/50",
+  negociacion:         "border-violet-400/50",
+  exclusiva_firmada:   "border-indigo-400/50",
+  captado:             "border-emerald-400/50",
+  perdido:             "border-rose-400/50",
 };
 const COL_BG: Record<string, string> = {
-  nuevo_lead:         "bg-sky-50/60      dark:bg-sky-950/20",
-  contactado:         "bg-cyan-50/60     dark:bg-cyan-950/20",
-  tasacion_programada:"bg-amber-50/60    dark:bg-amber-950/20",
-  tasacion_realizada: "bg-orange-50/60   dark:bg-orange-950/20",
-  negociacion:        "bg-violet-50/60   dark:bg-violet-950/20",
-  exclusiva_firmada:  "bg-indigo-50/60   dark:bg-indigo-950/20",
-  captado:            "bg-emerald-50/60  dark:bg-emerald-950/20",
-  perdido:            "bg-rose-50/60     dark:bg-rose-950/20",
+  nuevo_lead:          "bg-sky-50/60      dark:bg-sky-950/20",
+  contactado:          "bg-cyan-50/60     dark:bg-cyan-950/20",
+  tasacion_programada: "bg-amber-50/60    dark:bg-amber-950/20",
+  tasacion_realizada:  "bg-orange-50/60   dark:bg-orange-950/20",
+  negociacion:         "bg-violet-50/60   dark:bg-violet-950/20",
+  exclusiva_firmada:   "bg-indigo-50/60   dark:bg-indigo-950/20",
+  captado:             "bg-emerald-50/60  dark:bg-emerald-950/20",
+  perdido:             "bg-rose-50/60     dark:bg-rose-950/20",
 };
 const COL_HEADER: Record<string, string> = {
-  nuevo_lead:         "text-sky-700      dark:text-sky-400",
-  contactado:         "text-cyan-700     dark:text-cyan-400",
-  tasacion_programada:"text-amber-700    dark:text-amber-400",
-  tasacion_realizada: "text-orange-700   dark:text-orange-400",
-  negociacion:        "text-violet-700   dark:text-violet-400",
-  exclusiva_firmada:  "text-indigo-700   dark:text-indigo-400",
-  captado:            "text-emerald-700  dark:text-emerald-400",
-  perdido:            "text-rose-700     dark:text-rose-400",
+  nuevo_lead:          "text-sky-700      dark:text-sky-400",
+  contactado:          "text-cyan-700     dark:text-cyan-400",
+  tasacion_programada: "text-amber-700    dark:text-amber-400",
+  tasacion_realizada:  "text-orange-700   dark:text-orange-400",
+  negociacion:         "text-violet-700   dark:text-violet-400",
+  exclusiva_firmada:   "text-indigo-700   dark:text-indigo-400",
+  captado:             "text-emerald-700  dark:text-emerald-400",
+  perdido:             "text-rose-700     dark:text-rose-400",
 };
 const COL_DOT: Record<string, string> = {
-  nuevo_lead:         "bg-sky-500",
-  contactado:         "bg-cyan-500",
-  tasacion_programada:"bg-amber-500",
-  tasacion_realizada: "bg-orange-500",
-  negociacion:        "bg-violet-500",
-  exclusiva_firmada:  "bg-indigo-500",
-  captado:            "bg-emerald-500",
-  perdido:            "bg-rose-500",
+  nuevo_lead:          "bg-sky-500",
+  contactado:          "bg-cyan-500",
+  tasacion_programada: "bg-amber-500",
+  tasacion_realizada:  "bg-orange-500",
+  negociacion:         "bg-violet-500",
+  exclusiva_firmada:   "bg-indigo-500",
+  captado:             "bg-emerald-500",
+  perdido:             "bg-rose-500",
 };
-
-// Fondo de tarjeta — mismo tinte que la columna
 const CARD_BG: Record<string, string> = {
-  nuevo_lead:         "bg-sky-100/80      dark:bg-sky-900/30   border-sky-200      dark:border-sky-800",
-  contactado:         "bg-cyan-100/80     dark:bg-cyan-900/30  border-cyan-200     dark:border-cyan-800",
-  tasacion_programada:"bg-amber-100/80    dark:bg-amber-900/30 border-amber-200    dark:border-amber-800",
-  tasacion_realizada: "bg-orange-100/80   dark:bg-orange-900/30 border-orange-200  dark:border-orange-800",
-  negociacion:        "bg-violet-100/80   dark:bg-violet-900/30 border-violet-200  dark:border-violet-800",
-  exclusiva_firmada:  "bg-indigo-100/80   dark:bg-indigo-900/30 border-indigo-200  dark:border-indigo-800",
-  captado:            "bg-emerald-100/80  dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800",
-  perdido:            "bg-rose-100/80     dark:bg-rose-900/30  border-rose-200     dark:border-rose-800",
+  nuevo_lead:          "bg-sky-100/80     dark:bg-sky-900/30  border-sky-200     dark:border-sky-800",
+  contactado:          "bg-cyan-100/80    dark:bg-cyan-900/30 border-cyan-200    dark:border-cyan-800",
+  tasacion_programada: "bg-amber-100/80   dark:bg-amber-900/30 border-amber-200  dark:border-amber-800",
+  tasacion_realizada:  "bg-orange-100/80  dark:bg-orange-900/30 border-orange-200 dark:border-orange-800",
+  negociacion:         "bg-violet-100/80  dark:bg-violet-900/30 border-violet-200 dark:border-violet-800",
+  exclusiva_firmada:   "bg-indigo-100/80  dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800",
+  captado:             "bg-emerald-100/80 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800",
+  perdido:             "bg-rose-100/80    dark:bg-rose-900/30  border-rose-200    dark:border-rose-800",
 };
-
 const PRIORIDAD_DOT: Record<string, string> = {
   alta:  "bg-red-500",
   media: "bg-amber-400",
   baja:  "bg-emerald-400",
 };
 
-function fmtContacto(fecha: string | null): string {
+function fmtContacto(fecha: string | null) {
   const dias = diasDesde(fecha);
   if (dias === null) return "Sin contactar";
   if (dias === 0) return "Hoy";
@@ -106,15 +93,15 @@ function fmtContacto(fecha: string | null): string {
   return `Hace ${dias}d`;
 }
 
-function fmtProxima(fecha: string | null): string | null {
+function fmtProxima(fecha: string | null) {
   if (!fecha) return null;
   const d = new Date(fecha);
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   const diff = Math.floor((d.getTime() - hoy.getTime()) / 86400000);
-  if (diff < 0) return `⚠ Hace ${Math.abs(diff)}d`;
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  if (diff < 0) return { txt: `⚠ Hace ${Math.abs(diff)}d`, vencida: true };
+  if (diff === 0) return { txt: "Hoy", vencida: false };
+  if (diff === 1) return { txt: "Mañana", vencida: false };
+  return { txt: d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }), vencida: false };
 }
 
 // ── Tarjeta ────────────────────────────────────────────────
@@ -126,14 +113,13 @@ function Tarjeta({
 }: {
   propietario: Propietario;
   agentes: Record<string, string>;
-  onAbrir: (id: string) => void;
+  onAbrir: (p: Propietario) => void;
   overlay?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: propietario.id,
   });
 
-  // Detectar si fue arrastre real o simple click
   const dragMovedRef = useRef(false);
 
   const prioridad = calcularPrioridad(propietario);
@@ -141,38 +127,26 @@ function Tarjeta({
   const nombreAgente = propietario.agente_id
     ? (agentes[propietario.agente_id] ?? "").split(" ")[0]
     : null;
-  const proxima = fmtProxima(propietario.fecha_proxima_accion);
-  const esVencida =
-    propietario.fecha_proxima_accion &&
-    new Date(propietario.fecha_proxima_accion) < new Date();
-
-  const cardColor = CARD_BG[propietario.estado] ?? "bg-card border-border";
+  const proxResult = fmtProxima(propietario.fecha_proxima_accion);
 
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={
-        transform
-          ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-          : undefined
-      }
+      style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
       onPointerDown={() => { dragMovedRef.current = false; }}
       onPointerMove={() => { dragMovedRef.current = true; }}
-      onClick={() => {
-        if (!dragMovedRef.current && !isDragging) onAbrir(propietario.id);
-      }}
+      onClick={() => { if (!dragMovedRef.current && !isDragging) onAbrir(propietario); }}
       className={cn(
         "select-none touch-none rounded-xl border shadow-sm transition-all duration-150",
         "cursor-pointer hover:shadow-md hover:brightness-95",
-        cardColor,
+        CARD_BG[propietario.estado] ?? "bg-card border-border",
         isDragging && !overlay && "opacity-40",
         overlay && "rotate-1 shadow-xl scale-105",
       )}
     >
       <div className="p-3 space-y-2">
-        {/* Prioridad + Score */}
         <div className="flex items-center justify-between">
           {prioridad ? (
             <div className="flex items-center gap-1.5">
@@ -185,29 +159,21 @@ function Tarjeta({
           <span className="text-[11px] font-bold text-primary">🎯 {score}</span>
         </div>
 
-        {/* Nombre */}
         <p className="font-semibold text-sm leading-tight">{propietario.nombre}</p>
 
-        {/* Dirección */}
         {propietario.direccion && (
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            📍 {propietario.direccion}
-          </p>
+          <p className="text-xs text-muted-foreground line-clamp-1">📍 {propietario.direccion}</p>
         )}
 
-        {/* Próxima acción */}
-        {proxima && (
-          <p className={cn(
-            "text-xs",
-            esVencida
-              ? "text-red-600 font-semibold dark:text-red-400"
-              : "text-muted-foreground"
+        {proxResult && (
+          <p className={cn("text-xs", proxResult.vencida
+            ? "text-red-600 font-semibold dark:text-red-400"
+            : "text-muted-foreground"
           )}>
-            📅 {proxima}
+            📅 {proxResult.txt}
           </p>
         )}
 
-        {/* Asesor + último contacto */}
         <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5 border-t border-black/5 dark:border-white/5">
           {nombreAgente ? <span>👤 {nombreAgente}</span> : <span />}
           <span>⏱ {fmtContacto(propietario.fecha_ultimo_contacto)}</span>
@@ -227,7 +193,7 @@ function Columna({
   estado: string;
   items: Propietario[];
   agentes: Record<string, string>;
-  onAbrir: (id: string) => void;
+  onAbrir: (p: Propietario) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: estado });
 
@@ -241,7 +207,6 @@ function Columna({
         isOver && "ring-2 ring-primary/40 brightness-95"
       )}
     >
-      {/* Cabecera columna */}
       <div className="px-3 py-2.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className={cn("size-2.5 rounded-full", COL_DOT[estado])} />
@@ -254,7 +219,6 @@ function Columna({
         </span>
       </div>
 
-      {/* Tarjetas */}
       <div className="flex-1 overflow-y-auto space-y-2 p-2">
         {items.map((p) => (
           <Tarjeta key={p.id} propietario={p} agentes={agentes} onAbrir={onAbrir} />
@@ -272,14 +236,16 @@ export function KanbanPropietarios({
   propietarios,
   agentes,
   agentesArray = [],
+  tenantId = "",
 }: {
   propietarios: Propietario[];
   agentes: Record<string, string>;
   agentesArray?: Agente[];
+  tenantId?: string;
 }) {
   const [items, setItems] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [panelId, setPanelId] = useState<string | null>(null);
+  const [panelPropietario, setPanelPropietario] = useState<Propietario | null>(null);
   const [toast, setToast] = useState<"guardado" | "error" | null>(null);
 
   const sensors = useSensors(
@@ -300,19 +266,13 @@ export function KanbanPropietarios({
     const actual = items.find((p) => p.id === id);
     if (!actual || actual.estado === nuevoEstado) return;
 
-    // Actualización optimista en UI
-    setItems((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p))
-    );
+    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p)));
 
     try {
       await actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado);
       setToast("guardado");
     } catch {
-      // Revertir si falla
-      setItems((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, estado: actual.estado } : p))
-      );
+      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: actual.estado } : p)));
       setToast("error");
     } finally {
       setTimeout(() => setToast(null), 2500);
@@ -323,21 +283,16 @@ export function KanbanPropietarios({
 
   return (
     <>
-      {/* Toast de confirmación */}
       {toast && (
         <div className={cn(
-          "fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-xl transition-all",
+          "fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-xl",
           toast === "guardado" ? "bg-emerald-600" : "bg-red-600"
         )}>
           {toast === "guardado" ? "✓ Estado guardado" : "✗ Error al guardar"}
         </div>
       )}
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-4">
           {ESTADOS_PROPIETARIO.map((estado) => (
             <Columna
@@ -345,27 +300,22 @@ export function KanbanPropietarios({
               estado={estado}
               items={items.filter((p) => p.estado === estado)}
               agentes={agentes}
-              onAbrir={setPanelId}
+              onAbrir={setPanelPropietario}
             />
           ))}
         </div>
-
         <DragOverlay dropAnimation={null}>
           {activo ? (
-            <Tarjeta
-              propietario={activo}
-              agentes={agentes}
-              onAbrir={() => {}}
-              overlay
-            />
+            <Tarjeta propietario={activo} agentes={agentes} onAbrir={() => {}} overlay />
           ) : null}
         </DragOverlay>
       </DndContext>
 
       <PanelPropietario
-        propietarioId={panelId}
+        propietario={panelPropietario}
         agentes={agentesArray}
-        onClose={() => setPanelId(null)}
+        tenantId={tenantId}
+        onClose={() => setPanelPropietario(null)}
       />
     </>
   );

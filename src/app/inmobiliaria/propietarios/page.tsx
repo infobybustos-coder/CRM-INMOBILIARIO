@@ -28,7 +28,7 @@ export default async function InmobiliariaPropietariosPage({
   let query = supabase
     .from("propietarios")
     .select(
-      "id, nombre, telefono, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, notas, creado_en, agente_id"
+      "id, nombre, telefono, email, whatsapp, direccion, tipo_inmueble, estado, valor_estimado, fecha_ultimo_contacto, fecha_proxima_accion, fuente_lead, notas, creado_en, agente_id"
     );
 
   if (!gestor) query = query.eq("agente_id", usuario.id);
@@ -111,9 +111,9 @@ export default async function InmobiliariaPropietariosPage({
           </Link>
         </div>
       ) : vista === "tabla" ? (
-        <TablaPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} basePath={BASE} />
+        <TablaPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} tenantId={usuario.tenant_id} />
       ) : (
-        <KanbanPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} basePath={BASE} />
+        <KanbanPropietarios propietarios={propietarios} agentes={agentes} agentesArray={agentesArray} tenantId={usuario.tenant_id} />
       )}
     </div>
   );

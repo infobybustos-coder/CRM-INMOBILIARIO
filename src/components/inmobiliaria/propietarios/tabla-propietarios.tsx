@@ -3,22 +3,13 @@
 import { useState } from "react";
 import { calcularPrioridad, calcularCaptacionScore, diasDesde } from "@/lib/prioridad";
 import { ETIQUETAS_ESTADO_PROPIETARIO, ETIQUETAS_FUENTE_LEAD } from "@/app/inmobiliaria/constantes";
-import { PanelPropietario } from "./panel-propietario";
+import { PanelPropietario, type PropietarioPanel } from "./panel-propietario";
 import { cn } from "@/lib/utils";
 
-type Propietario = {
-  id: string;
-  nombre: string;
-  telefono: string | null;
-  tipo_inmueble: string | null;
+type Propietario = PropietarioPanel & {
   direccion: string | null;
-  estado: string;
-  valor_estimado: number | null;
   fecha_ultimo_contacto: string | null;
   fecha_proxima_accion: string | null;
-  fuente_lead: string | null;
-  agente_id: string | null;
-  notas: string | null;
 };
 
 type Agente = { id: string; nombre_completo: string };
@@ -69,12 +60,14 @@ export function TablaPropietarios({
   propietarios,
   agentes,
   agentesArray = [],
+  tenantId = "",
 }: {
   propietarios: Propietario[];
   agentes: Record<string, string>;
   agentesArray?: Agente[];
+  tenantId?: string;
 }) {
-  const [panelId, setPanelId] = useState<string | null>(null);
+  const [panelPropietario, setPanelPropietario] = useState<Propietario | null>(null);
 
   if (propietarios.length === 0) {
     return (
@@ -109,7 +102,7 @@ export function TablaPropietarios({
               return (
                 <tr
                   key={p.id}
-                  onClick={() => setPanelId(p.id)}
+                  onClick={() => setPanelPropietario(p)}
                   className="group hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <td className="px-4 py-3">
@@ -167,9 +160,10 @@ export function TablaPropietarios({
       </div>
 
       <PanelPropietario
-        propietarioId={panelId}
+        propietario={panelPropietario}
         agentes={agentesArray}
-        onClose={() => setPanelId(null)}
+        tenantId={tenantId}
+        onClose={() => setPanelPropietario(null)}
       />
     </>
   );

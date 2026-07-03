@@ -93,6 +93,19 @@ export async function actualizarPropietarioInmobiliaria(
   return { ok: true };
 }
 
+export async function cargarDocumentosPropietario(id: string) {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("documentos")
+    .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
+    .eq("entidad_tipo", "propietario")
+    .eq("entidad_id", id)
+    .order("creado_en", { ascending: false });
+  return data ?? [];
+}
+
 export async function cargarPropietarioPanel(id: string) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) return null;
