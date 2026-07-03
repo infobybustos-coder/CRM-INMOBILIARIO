@@ -1,4 +1,5 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export function esGestor(rol: string): boolean {
@@ -16,5 +17,13 @@ export async function getUsuarioConTenant() {
     .eq("id", user.id)
     .single();
 
+  return usuario;
+}
+
+export async function requireAdminInmobiliaria() {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) redirect("/login");
+  if (usuario.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
+  if (usuario.rol !== "admin") redirect("/inmobiliaria");
   return usuario;
 }

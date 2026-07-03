@@ -3,11 +3,76 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Home,
+  UserSearch,
+  CalendarClock,
+  CalendarDays,
+  CheckSquare,
+  UserCog,
+  BarChart3,
+  MessageSquare,
+  Activity,
+  UsersRound,
+  Building2,
+  Lock,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ENLACE_DASHBOARD = { href: "/inmobiliaria", label: "Vista General", icon: LayoutDashboard };
-const ENLACE_ADMIN = { href: "/inmobiliaria/admin", label: "Centro de Control", icon: ShieldCheck };
+type Enlace = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  bloqueado?: boolean;
+};
+
+type Grupo = { titulo?: string; enlaces: Enlace[] };
+
+const GRUPOS_ADMIN: Grupo[] = [
+  { enlaces: [{ href: "/inmobiliaria", label: "Centro de Control", icon: LayoutDashboard }] },
+  {
+    titulo: "Captación",
+    enlaces: [
+      { href: "/inmobiliaria/propietarios", label: "Propietarios", icon: Users },
+      { href: "/inmobiliaria/inmuebles", label: "Inmuebles", icon: Home },
+      { href: "/inmobiliaria/compradores", label: "Compradores", icon: UserSearch },
+      { href: "/inmobiliaria/visitas", label: "Visitas", icon: CalendarClock },
+    ],
+  },
+  {
+    titulo: "Seguimiento",
+    enlaces: [
+      { href: "/inmobiliaria/agenda", label: "Agenda", icon: CalendarDays },
+      { href: "/inmobiliaria/tareas", label: "Tareas", icon: CheckSquare },
+    ],
+  },
+  {
+    titulo: "Equipo",
+    enlaces: [
+      { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
+      { href: "/inmobiliaria/rendimiento", label: "Rendimiento", icon: BarChart3 },
+      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, bloqueado: true },
+      { href: "/inmobiliaria/actividad", label: "Actividad", icon: Activity },
+    ],
+  },
+  {
+    titulo: "Configuración",
+    enlaces: [
+      { href: "/inmobiliaria/usuarios", label: "Usuarios", icon: UsersRound },
+      { href: "/inmobiliaria/empresa", label: "Empresa", icon: Building2 },
+    ],
+  },
+];
+
+const GRUPOS_EMPLEADO: Grupo[] = [
+  { enlaces: [{ href: "/inmobiliaria", label: "Vista General", icon: LayoutDashboard }] },
+];
 
 function aplicarColapso(colapsado: boolean) {
   document.documentElement
@@ -22,10 +87,89 @@ function colapsadoInicial() {
   return guardado;
 }
 
+function EnlaceItem({
+  enlace,
+  activo,
+  colapsado,
+  onClick,
+}: {
+  enlace: Enlace;
+  activo: boolean;
+  colapsado: boolean;
+  onClick?: () => void;
+}) {
+  const Icon = enlace.icon;
+  return (
+    <Link
+      href={enlace.href}
+      onClick={onClick}
+      title={colapsado ? enlace.label : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+        colapsado && "md:justify-center",
+        activo
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className={cn("flex-1", colapsado && "md:hidden")}>{enlace.label}</span>
+      {enlace.bloqueado && <Lock className={cn("size-3 shrink-0", colapsado && "md:hidden")} />}
+    </Link>
+  );
+}
+
+function ListaGrupos({
+  grupos,
+  pathname,
+  colapsado,
+  onNavegar,
+}: {
+  grupos: Grupo[];
+  pathname: string | null;
+  colapsado: boolean;
+  onNavegar?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {grupos.map((grupo, i) => (
+        <div key={grupo.titulo ?? i} className="flex flex-col gap-1">
+          {grupo.titulo && (
+            <span
+              className={cn(
+                "px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+                colapsado && "md:hidden"
+              )}
+            >
+              {grupo.titulo}
+            </span>
+          )}
+          {grupo.enlaces.map((enlace) => {
+            const activo =
+              enlace.href === "/inmobiliaria"
+                ? pathname === "/inmobiliaria"
+                : pathname?.startsWith(enlace.href) ?? false;
+            return (
+              <EnlaceItem
+                key={enlace.href}
+                enlace={enlace}
+                activo={activo}
+                colapsado={colapsado}
+                onClick={onNavegar}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
   const pathname = usePathname();
   const [colapsado, setColapsado] = useState(colapsadoInicial);
-  const enlaces = esAdmin ? [ENLACE_DASHBOARD, ENLACE_ADMIN] : [ENLACE_DASHBOARD];
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+  const grupos = esAdmin ? GRUPOS_ADMIN : GRUPOS_EMPLEADO;
 
   function alternar() {
     const nuevo = !colapsado;
@@ -35,45 +179,72 @@ export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
   }
 
   return (
-    <nav
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex border-t bg-card/95 backdrop-blur-sm",
-        "md:inset-y-0 md:right-auto md:bottom-0 md:flex-col md:gap-1 md:border-t-0 md:border-r md:p-2",
-        colapsado ? "md:w-16" : "md:w-56"
-      )}
-    >
-      <button
-        type="button"
-        onClick={alternar}
-        aria-label={colapsado ? "Expandir menú" : "Contraer menú"}
-        className="hidden items-center justify-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground md:flex"
-      >
-        {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
-      </button>
-
-      {enlaces.map(({ href, label, icon: Icon }) => {
-        const activo =
-          href === "/inmobiliaria" ? pathname === "/inmobiliaria" : pathname.startsWith(href);
-
-        return (
-          <Link
-            key={href}
-            href={href}
-            title={colapsado ? label : undefined}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground transition-colors",
-              "md:flex-row md:flex-none md:gap-3 md:rounded-md md:px-3 md:py-2 md:text-sm",
-              colapsado && "md:justify-center",
-              activo
-                ? "text-primary md:bg-primary/10 md:text-primary"
-                : "hover:text-foreground"
-            )}
+    <>
+      {/* Barra fija móvil */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between border-t bg-card/95 px-4 py-2 backdrop-blur-sm md:hidden">
+        <Link
+          href="/inmobiliaria"
+          className={cn(
+            "flex flex-col items-center gap-1 px-3 py-1 text-xs",
+            pathname === "/inmobiliaria" ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <LayoutDashboard className="size-5" />
+          {esAdmin ? "Control" : "Inicio"}
+        </Link>
+        {esAdmin && (
+          <button
+            type="button"
+            onClick={() => setMenuMovilAbierto(true)}
+            className="flex flex-col items-center gap-1 px-3 py-1 text-xs text-muted-foreground"
           >
-            <Icon className="size-5 md:size-5" />
-            <span className={cn(colapsado && "md:hidden")}>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+            <Menu className="size-5" />
+            Menú
+          </button>
+        )}
+      </div>
+
+      {menuMovilAbierto && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm md:hidden">
+          <div className="max-h-[80vh] w-full overflow-y-auto rounded-t-2xl border bg-card p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold">Menú</span>
+              <button
+                type="button"
+                onClick={() => setMenuMovilAbierto(false)}
+                aria-label="Cerrar menú"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <ListaGrupos
+              grupos={grupos}
+              pathname={pathname}
+              colapsado={false}
+              onNavegar={() => setMenuMovilAbierto(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar fijo desktop */}
+      <nav
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden flex-col gap-2 overflow-y-auto border-r bg-card/95 p-2 backdrop-blur-sm md:flex",
+          colapsado ? "md:w-16" : "md:w-56"
+        )}
+      >
+        <button
+          type="button"
+          onClick={alternar}
+          aria-label={colapsado ? "Expandir menú" : "Contraer menú"}
+          className="flex items-center justify-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        >
+          {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
+        </button>
+        <ListaGrupos grupos={grupos} pathname={pathname} colapsado={colapsado} />
+      </nav>
+    </>
   );
 }
