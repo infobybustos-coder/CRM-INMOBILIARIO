@@ -18,6 +18,7 @@ import {
   UserSearch,
   Building2,
   CalendarPlus,
+  Bell,
 } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -454,16 +455,40 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     month: "long",
     year: "numeric",
   });
+  const hora = ahora.getHours();
+  const saludo = hora < 12 ? "Buenos días" : hora < 20 ? "Buenas tardes" : "Buenas noches";
+  const primerNombre = (usuario.nombre_completo ?? usuario.email ?? "").split(" ")[0];
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Centro de Control</h1>
-        <p className="mt-1 text-muted-foreground capitalize">{hoyFormato}</p>
+    <div className="space-y-8">
+      {/* Encabezado */}
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl font-semibold tracking-tight">Centro de Control</h1>
+          <p className="text-lg text-muted-foreground">
+            {saludo}, {primerNombre}
+          </p>
+          <p className="text-sm text-muted-foreground/70 capitalize">{hoyFormato}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Notificaciones"
+            className="relative flex size-10 items-center justify-center rounded-full border text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Bell className="size-4" />
+            {alertas.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
+            )}
+          </button>
+          <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            {iniciales(usuario.nombre_completo ?? usuario.email ?? "") || "?"}
+          </div>
+        </div>
       </div>
 
       {/* Atención requerida */}
-      <div className="rounded-lg border bg-amber-500/5 p-4">
+      <div className="rounded-2xl border bg-amber-500/5 p-5 shadow-sm">
         <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
           <AlertTriangle className="size-4 text-amber-600" /> Atención requerida
         </h2>

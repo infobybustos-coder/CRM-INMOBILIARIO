@@ -10,6 +10,24 @@ async function requireUsuario() {
   return usuario;
 }
 
+// Este módulo lo usan tanto /asesor/propietarios como /inmobiliaria/propietarios
+// (el panel de equipo), así que hay que revalidar las dos rutas.
+const BASES_PROPIETARIOS = ["/asesor/propietarios", "/inmobiliaria/propietarios"];
+
+function revalidarPropietario(id?: string) {
+  for (const base of BASES_PROPIETARIOS) {
+    revalidatePath(base);
+    if (id) revalidatePath(`${base}/${id}`);
+  }
+}
+
+function revalidarAgendaYPanel() {
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/agenda");
+  revalidatePath("/inmobiliaria");
+  revalidatePath("/inmobiliaria/agenda");
+}
+
 export async function actualizarEstadoPropietario(id: string, estado: string) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
@@ -32,7 +50,7 @@ export async function actualizarEstadoPropietario(id: string, estado: string) {
     contenido: `Cambió el estado a "${estado}"`,
   });
 
-  revalidatePath("/asesor/propietarios");
+  revalidarPropietario();
 }
 
 export type GuardarPropietarioState = { error: string } | { ok: true } | null;
@@ -82,8 +100,7 @@ export async function actualizarPropietario(
 
   if (error) return { error: "No se pudo guardar." };
 
-  revalidatePath(`/asesor/propietarios/${id}`);
-  revalidatePath("/asesor/propietarios");
+  revalidarPropietario(id);
   return { ok: true };
 }
 
@@ -110,7 +127,7 @@ export async function crearNota(
 
   if (error) return { error: "No se pudo guardar la nota." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
   return null;
 }
 
@@ -139,9 +156,8 @@ export async function crearTarea(
 
   if (error) return { error: "No se pudo crear la tarea." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
   return null;
 }
 
@@ -161,10 +177,8 @@ export async function alternarTarea(
     })
     .eq("id", tareaId);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor/agenda");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
 }
 
 export async function registrarDocumento(
@@ -188,7 +202,7 @@ export async function registrarDocumento(
 
   if (error) throw new Error("No se pudo registrar el documento");
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
 }
 
 const SIGUIENTE_PASO: Record<
@@ -253,9 +267,8 @@ export async function crearSiguientePaso(
     }),
   ]);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
 }
 
 export type GuionState = { error: string } | { ok: true } | null;
@@ -276,15 +289,16 @@ export async function actualizarGuionCaptacion(
     acepta_exclusiva: String(formData.get("acepta_exclusiva") ?? "").trim(),
   };
 
+  const gestor = esGestor(usuario.rol);
   const { error } = await supabase
     .from("propietarios")
     .update({ guion_captacion: respuestas })
     .eq("id", propietarioId)
-    .eq("agente_id", usuario.id);
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
 
   if (error) return { error: "No se pudo guardar el guion." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
   return { ok: true };
 }
 
