@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { X, Loader2 } from "lucide-react";
 import {
   TIPOS_INMUEBLE,
@@ -69,9 +70,17 @@ function FormularioPanel({
   agentes: Agente[];
   tenantId: string;
 }) {
+  const router = useRouter();
   const accion = actualizarPropietarioInmobiliaria.bind(null, propietario.id);
   const [state, formAction, pending] = useActionState(accion, null);
   const prioridad = calcularPrioridad(propietario);
+
+  // Recargar datos del servidor al guardar correctamente
+  useEffect(() => {
+    if (state && "ok" in state) {
+      router.refresh();
+    }
+  }, [state, router]);
 
   // Documentos — se cargan en segundo plano
   const [documentos, setDocumentos] = useState<Documento[]>([]);

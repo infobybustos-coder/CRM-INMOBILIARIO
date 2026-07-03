@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragEndEvent,
@@ -245,6 +246,7 @@ export function KanbanPropietarios({
   agentesArray?: Agente[];
   tenantId?: string;
 }) {
+  const router = useRouter();
   const [items, setItems] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [panelPropietario, setPanelPropietario] = useState<Propietario | null>(null);
@@ -273,6 +275,7 @@ export function KanbanPropietarios({
     try {
       await actualizarEstadoPropietarioInmobiliaria(id, nuevoEstado);
       setToast("guardado");
+      router.refresh();
     } catch {
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, estado: actual.estado } : p)));
       setToast("error");
