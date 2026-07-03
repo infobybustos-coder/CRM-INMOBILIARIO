@@ -2,21 +2,19 @@
 
 import { useActionState } from "react";
 import { actualizarVisita } from "./actions";
-import { CheckCircle2, Clock, XCircle, MapPin, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ETIQUETAS_RESULTADO: Record<string, string> = {
-  interesado: "Interesado",
-  no_interesado: "No interesado",
-  oferta: "Quiere hacer oferta",
-  pendiente: "Pendiente evaluar",
+const ESTADO_CONFIG: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+  pendiente:  { label: "Pendiente",  dot: "bg-amber-400",   bg: "bg-amber-50  dark:bg-amber-950/30",  text: "text-amber-700  dark:text-amber-400"  },
+  completado: { label: "Realizada",  dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-700 dark:text-emerald-400" },
+  cancelado:  { label: "Cancelada",  dot: "bg-rose-500",    bg: "bg-rose-50   dark:bg-rose-950/30",   text: "text-rose-700   dark:text-rose-400"   },
 };
 
-const COLORES_RESULTADO: Record<string, string> = {
-  interesado: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  no_interesado: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  oferta: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  pendiente: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+const RESULTADO_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  interesado:    { label: "Interesado",       bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400" },
+  no_interesado: { label: "No interesado",    bg: "bg-rose-100    dark:bg-rose-900/30",    text: "text-rose-700    dark:text-rose-400"    },
+  oferta:        { label: "Quiere hacer oferta", bg: "bg-blue-100  dark:bg-blue-900/30",   text: "text-blue-700    dark:text-blue-400"    },
+  pendiente:     { label: "Por evaluar",      bg: "bg-amber-100   dark:bg-amber-900/30",   text: "text-amber-700   dark:text-amber-400"   },
 };
 
 type Visita = {
@@ -30,150 +28,165 @@ type Visita = {
   nota_resultado: string | null;
   entidad_tipo: string | null;
   entidad_id: string | null;
+  usuario_id: string | null;
 };
+
+function fmtFecha(iso: string) {
+  const d = new Date(iso);
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const manana = new Date(hoy); manana.setDate(hoy.getDate() + 1);
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+  const dia = new Date(d); dia.setHours(0, 0, 0, 0);
+
+  let prefijo = d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+  if (dia.getTime() === hoy.getTime()) prefijo = "Hoy";
+  else if (dia.getTime() === manana.getTime()) prefijo = "Mañana";
+  else if (dia.getTime() === ayer.getTime()) prefijo = "Ayer";
+
+  const hora = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  return { prefijo, hora, esHoy: dia.getTime() === hoy.getTime(), esPasada: d < new Date() };
+}
 
 export function FilaVisita({
   visita,
-  nombreEntidad,
+  nombreInmueble,
+  nombreCliente,
+  nombreAgente,
 }: {
   visita: Visita;
-  nombreEntidad: string | null;
+  nombreInmueble: string | null;
+  nombreCliente: string | null;
+  nombreAgente: string | null;
 }) {
   const [, formAction, pending] = useActionState(
     (_: unknown, fd: FormData) => actualizarVisita(fd),
     null
   );
 
-  const fecha = new Date(visita.fecha_hora);
-  const hoy = new Date();
-  const esHoy = fecha.toDateString() === hoy.toDateString();
-  const esPasada = fecha < hoy;
+  const { prefijo, hora, esHoy, esPasada } = fmtFecha(visita.fecha_hora);
+  const estadoCfg = ESTADO_CONFIG[visita.estado] ?? ESTADO_CONFIG.pendiente;
+  const esPendiente = visita.estado === "pendiente";
+  const esCompletada = visita.estado === "completado";
+  const vencida = esPendiente && esPasada;
 
   return (
-    <div className="bg-card px-4 py-3">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">
-          {visita.estado === "completado" ? (
-            <CheckCircle2 className="size-5 text-emerald-500" />
-          ) : visita.estado === "cancelado" ? (
-            <XCircle className="size-5 text-red-500" />
-          ) : (
-            <Clock className={cn("size-5", esPasada ? "text-red-400" : "text-amber-500")} />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="font-medium">{visita.titulo}</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="size-3.5" />
-              <span className={cn(esHoy && "font-semibold text-primary")}>
-                {esHoy ? "Hoy · " : ""}
-                {fecha.toLocaleDateString("es-ES", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}{" "}
-                {fecha.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+    <div className={cn(
+      "group flex gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30",
+      vencida && "border-l-2 border-rose-400"
+    )}>
+      {/* Columna fecha — ancho fijo */}
+      <div className="w-24 shrink-0 text-right">
+        <p className={cn(
+          "text-sm font-semibold leading-tight",
+          esHoy ? "text-primary" : vencida ? "text-rose-600 dark:text-rose-400" : "text-foreground"
+        )}>
+          {prefijo}
+        </p>
+        <p className="text-xs text-muted-foreground">{hora}</p>
+      </div>
+
+      {/* Separador vertical */}
+      <div className="flex flex-col items-center">
+        <span className={cn("mt-1.5 size-2.5 rounded-full shrink-0", estadoCfg.dot)} />
+        <span className="mt-1 w-px flex-1 bg-border" />
+      </div>
+
+      {/* Contenido principal */}
+      <div className="flex-1 min-w-0 pb-1">
+        {/* Fila 1 — título + estado */}
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="font-semibold text-sm leading-tight">{visita.titulo}</p>
+          <div className="flex items-center gap-2">
+            {visita.confirmado && esPendiente && (
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                ✓ Confirmada
               </span>
-            </div>
+            )}
+            <span className={cn(
+              "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+              estadoCfg.bg, estadoCfg.text
+            )}>
+              {estadoCfg.label}
+            </span>
           </div>
+        </div>
 
-          {nombreEntidad && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="size-3" />
-              {nombreEntidad}
-            </p>
+        {/* Fila 2 — inmueble + cliente + agente */}
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          {nombreInmueble && (
+            <span>🏡 {nombreInmueble}</span>
           )}
-
-          {visita.descripcion && (
-            <p className="mt-1 text-sm text-muted-foreground">{visita.descripcion}</p>
+          {nombreCliente && (
+            <span>👤 {nombreCliente}</span>
           )}
-
-          {/* Confirmation + result for pending */}
-          {visita.estado === "pendiente" && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <form action={formAction} className="inline">
-                <input type="hidden" name="id" value={visita.id} />
-                <input type="hidden" name="confirmado" value={String(!visita.confirmado)} />
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className={cn(
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-                    visita.confirmado
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  )}
-                >
-                  {visita.confirmado ? "✓ Confirmada" : "Confirmar visita"}
-                </button>
-              </form>
-
-              <form action={formAction} className="inline">
-                <input type="hidden" name="id" value={visita.id} />
-                <input type="hidden" name="estado" value="completado" />
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
-                >
-                  Marcar realizada
-                </button>
-              </form>
-
-              <form action={formAction} className="inline">
-                <input type="hidden" name="id" value={visita.id} />
-                <input type="hidden" name="estado" value="cancelado" />
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"
-                >
-                  Cancelar
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* Result for completed */}
-          {visita.estado === "completado" && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {visita.resultado ? (
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    COLORES_RESULTADO[visita.resultado] ?? "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {ETIQUETAS_RESULTADO[visita.resultado] ?? visita.resultado}
-                </span>
-              ) : (
-                <form action={formAction} className="flex flex-wrap gap-1">
-                  <input type="hidden" name="id" value={visita.id} />
-                  <p className="w-full text-xs text-muted-foreground mb-1">Resultado de la visita:</p>
-                  {Object.entries(ETIQUETAS_RESULTADO).map(([val, label]) => (
-                    <button
-                      key={val}
-                      type="submit"
-                      name="resultado"
-                      value={val}
-                      disabled={pending}
-                      className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-medium border hover:opacity-80",
-                        COLORES_RESULTADO[val]
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </form>
-              )}
-              {visita.nota_resultado && (
-                <p className="w-full text-xs text-muted-foreground mt-1">{visita.nota_resultado}</p>
-              )}
-            </div>
+          {nombreAgente && (
+            <span>👨‍💼 {nombreAgente}</span>
           )}
         </div>
+
+        {visita.descripcion && (
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{visita.descripcion}</p>
+        )}
+
+        {/* Resultado si está completada */}
+        {esCompletada && visita.resultado && (
+          <span className={cn(
+            "mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+            RESULTADO_CONFIG[visita.resultado]?.bg,
+            RESULTADO_CONFIG[visita.resultado]?.text
+          )}>
+            {RESULTADO_CONFIG[visita.resultado]?.label ?? visita.resultado}
+          </span>
+        )}
+
+        {/* Acciones inline — solo pendientes */}
+        {esPendiente && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {!visita.confirmado && (
+              <form action={formAction}>
+                <input type="hidden" name="id" value={visita.id} />
+                <input type="hidden" name="confirmado" value="true" />
+                <button disabled={pending} className="rounded-full border px-2.5 py-0.5 text-[11px] font-medium hover:bg-accent transition-colors">
+                  Confirmar
+                </button>
+              </form>
+            )}
+            <form action={formAction}>
+              <input type="hidden" name="id" value={visita.id} />
+              <input type="hidden" name="estado" value="completado" />
+              <button disabled={pending} className="rounded-full border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors">
+                Marcar realizada
+              </button>
+            </form>
+            <form action={formAction}>
+              <input type="hidden" name="id" value={visita.id} />
+              <input type="hidden" name="estado" value="cancelado" />
+              <button disabled={pending} className="rounded-full border border-rose-300 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors">
+                Cancelar
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Registrar resultado — completada sin resultado aún */}
+        {esCompletada && !visita.resultado && (
+          <form action={formAction} className="mt-1.5 flex flex-wrap gap-1">
+            <input type="hidden" name="id" value={visita.id} />
+            <p className="w-full text-[11px] text-muted-foreground">Resultado:</p>
+            {Object.entries(RESULTADO_CONFIG).map(([val, cfg]) => (
+              <button
+                key={val}
+                type="submit"
+                name="resultado"
+                value={val}
+                disabled={pending}
+                className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-medium hover:opacity-80 transition-opacity", cfg.bg, cfg.text)}
+              >
+                {cfg.label}
+              </button>
+            ))}
+          </form>
+        )}
       </div>
     </div>
   );
