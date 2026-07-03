@@ -48,8 +48,6 @@ DROP POLICY IF EXISTS agente_solo_sus_inmuebles ON inmuebles;
 DROP POLICY IF EXISTS invitaciones_gestion ON invitaciones;
 DROP POLICY IF EXISTS invitaciones_solo_admin ON invitaciones;
 DROP POLICY IF EXISTS usuarios_update_equipo ON usuarios;
-DROP POLICY IF EXISTS agente_solo_sus_ofertas ON ofertas;
-DROP POLICY IF EXISTS agente_solo_sus_ventas ON ventas;
 DROP FUNCTION IF EXISTS current_user_rol();
 
 -- =====================================================================
@@ -100,9 +98,3 @@ CREATE POLICY usuarios_update_equipo ON usuarios
   FOR UPDATE
   USING (tenant_id = current_tenant_id() AND current_user_rol() = 'admin')
   WITH CHECK (tenant_id = current_tenant_id() AND current_user_rol() = 'admin');
-
-CREATE POLICY agente_solo_sus_ofertas ON ofertas FOR SELECT
-  USING (current_user_rol() = 'admin' OR agente_id = auth.uid());
-
-CREATE POLICY agente_solo_sus_ventas ON ventas FOR SELECT
-  USING (current_user_rol() = 'admin' OR agente_id = auth.uid());
