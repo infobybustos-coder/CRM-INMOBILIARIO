@@ -8,7 +8,12 @@
 --   agente, captador                  -> empleado
 -- =====================================================================
 
+DROP TYPE IF EXISTS rol_usuario_nuevo;
 CREATE TYPE rol_usuario_nuevo AS ENUM ('admin', 'empleado');
+
+-- =====================================================================
+-- 1. Migrar los datos de las columnas que usan el tipo viejo
+-- =====================================================================
 
 ALTER TABLE usuarios ALTER COLUMN rol DROP DEFAULT;
 ALTER TABLE usuarios
@@ -32,16 +37,36 @@ ALTER TABLE invitaciones
     END
   )::rol_usuario_nuevo;
 
-DROP TYPE rol_usuario;
-ALTER TYPE rol_usuario_nuevo RENAME TO rol_usuario;
-
--- current_user_rol() no cambia: referencia el tipo por nombre, sigue válida.
-
 -- =====================================================================
--- Recrear políticas que citaban los roles antiguos
+-- 2. Quitar todo lo que todavía depende del tipo viejo (políticas + función)
+--    Tiene que ir ANTES de poder borrar el tipo viejo.
 -- =====================================================================
 
 DROP POLICY IF EXISTS agente_solo_sus_propietarios ON propietarios;
+DROP POLICY IF EXISTS agente_solo_sus_compradores ON compradores;
+DROP POLICY IF EXISTS agente_solo_sus_inmuebles ON inmuebles;
+DROP POLICY IF EXISTS invitaciones_gestion ON invitaciones;
+DROP POLICY IF EXISTS invitaciones_solo_admin ON invitaciones;
+DROP POLICY IF EXISTS usuarios_update_equipo ON usuarios;
+DROP POLICY IF EXISTS agente_solo_sus_ofertas ON ofertas;
+DROP POLICY IF EXISTS agente_solo_sus_ventas ON ventas;
+DROP FUNCTION IF EXISTS current_user_rol();
+
+-- =====================================================================
+-- 3. Reemplazar el tipo viejo por el nuevo
+-- =====================================================================
+
+DROP TYPE rol_usuario;
+ALTER TYPE rol_usuario_nuevo RENAME TO rol_usuario;
+
+-- =====================================================================
+-- 4. Recrear la función y las políticas, ya con los roles nuevos
+-- =====================================================================
+
+CREATE FUNCTION current_user_rol() RETURNS rol_usuario AS $$
+  SELECT rol FROM usuarios WHERE id = auth.uid()
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
 CREATE POLICY agente_solo_sus_propietarios ON propietarios
   FOR SELECT
   USING (
@@ -50,7 +75,6 @@ CREATE POLICY agente_solo_sus_propietarios ON propietarios
     OR (SELECT tipo_plan FROM tenants WHERE id = tenant_id) = 'asesor'
   );
 
-DROP POLICY IF EXISTS agente_solo_sus_compradores ON compradores;
 CREATE POLICY agente_solo_sus_compradores ON compradores
   FOR SELECT
   USING (
@@ -59,7 +83,6 @@ CREATE POLICY agente_solo_sus_compradores ON compradores
     OR (SELECT tipo_plan FROM tenants WHERE id = tenant_id) = 'asesor'
   );
 
-DROP POLICY IF EXISTS agente_solo_sus_inmuebles ON inmuebles;
 CREATE POLICY agente_solo_sus_inmuebles ON inmuebles
   FOR SELECT
   USING (
@@ -68,23 +91,18 @@ CREATE POLICY agente_solo_sus_inmuebles ON inmuebles
     OR (SELECT tipo_plan FROM tenants WHERE id = tenant_id) = 'asesor'
   );
 
-DROP POLICY IF EXISTS invitaciones_gestion ON invitaciones;
-DROP POLICY IF EXISTS invitaciones_solo_admin ON invitaciones;
 CREATE POLICY invitaciones_gestion ON invitaciones
   FOR ALL
   USING (tenant_id = current_tenant_id() AND current_user_rol() = 'admin')
   WITH CHECK (tenant_id = current_tenant_id() AND current_user_rol() = 'admin');
 
-DROP POLICY IF EXISTS usuarios_update_equipo ON usuarios;
 CREATE POLICY usuarios_update_equipo ON usuarios
   FOR UPDATE
   USING (tenant_id = current_tenant_id() AND current_user_rol() = 'admin')
   WITH CHECK (tenant_id = current_tenant_id() AND current_user_rol() = 'admin');
 
-DROP POLICY IF EXISTS agente_solo_sus_ofertas ON ofertas;
 CREATE POLICY agente_solo_sus_ofertas ON ofertas FOR SELECT
   USING (current_user_rol() = 'admin' OR agente_id = auth.uid());
 
-DROP POLICY IF EXISTS agente_solo_sus_ventas ON ventas;
 CREATE POLICY agente_solo_sus_ventas ON ventas FOR SELECT
   USING (current_user_rol() = 'admin' OR agente_id = auth.uid());
