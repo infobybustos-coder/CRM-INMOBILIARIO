@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
@@ -18,7 +19,7 @@ export async function crearPropietario(
   formData: FormData
 ): Promise<CrearPropietarioState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
@@ -28,7 +29,7 @@ export async function crearPropietario(
   const gestor = esGestor(usuario.rol);
   const agenteId = gestor && formData.get("agente_id") ? String(formData.get("agente_id")) : usuario.id;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("propietarios")
     .insert({
       tenant_id: usuario.tenant_id,
@@ -57,7 +58,7 @@ export async function actualizarPropietarioInmobiliaria(
   formData: FormData
 ): Promise<ActualizarPropietarioState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
@@ -67,7 +68,7 @@ export async function actualizarPropietarioInmobiliaria(
   const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
   const gestor = esGestor(usuario.rol);
 
-  const { error } = await supabase
+  const { error } = await db
     .from("propietarios")
     .update({
       nombre,
@@ -86,7 +87,7 @@ export async function actualizarPropietarioInmobiliaria(
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
 
-  if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  if (error) return { error: `Error al guardar: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/propietarios/${id}`);
   revalidatePath("/inmobiliaria/propietarios");
@@ -135,22 +136,24 @@ export async function cargarPropietarioPanel(id: string) {
 
 export async function actualizarEstadoPropietarioInmobiliaria(id: string, estado: string) {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  await supabase
+  const { error } = await db
     .from("propietarios")
     .update({ estado })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
 
-  await supabase.from("actividades").insert({
-    tenant_id: usuario.tenant_id,
-    entidad_tipo: "propietario",
-    entidad_id: id,
-    usuario_id: usuario.id,
-    tipo: "cambio_estado",
-    contenido: `Estado actualizado a: ${estado}`,
-  });
+  if (!error) {
+    await db.from("actividades").insert({
+      tenant_id: usuario.tenant_id,
+      entidad_tipo: "propietario",
+      entidad_id: id,
+      usuario_id: usuario.id,
+      tipo: "cambio_estado",
+      contenido: `Estado actualizado a: ${estado}`,
+    });
+  }
 
   revalidatePath("/inmobiliaria/propietarios");
 }
@@ -166,8 +169,8 @@ export async function crearNotaPropietario(
   const contenido = String(formData.get("contenido") ?? "").trim();
   if (!contenido) return { error: "Escribe algo antes de guardar." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("actividades").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("actividades").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "propietario",
     entidad_id: propietarioId,
@@ -194,8 +197,8 @@ export async function crearTareaPropietario(
   if (!titulo) return { error: "Pon un título a la tarea." };
 
   const fechaVencimiento = formData.get("fecha_vencimiento");
-  const supabase = await createClient();
-  const { error } = await supabase.from("tareas").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("tareas").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "propietario",
     entidad_id: propietarioId,
@@ -216,9 +219,9 @@ export async function alternarTareaPropietario(
   completada: boolean
 ) {
   await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  await supabase
+  await db
     .from("tareas")
     .update({
       estado: completada ? "completada" : "pendiente",
