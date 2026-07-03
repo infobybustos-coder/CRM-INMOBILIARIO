@@ -86,7 +86,7 @@ function FormularioPanel({
   }, [propietario.id]);
 
   return (
-    <form action={formAction} className="flex flex-col h-full">
+    <form action={formAction} className="flex flex-col h-full min-h-0">
       <div className="flex-1 overflow-y-auto space-y-5 px-5 py-4">
 
         {/* ── Información ─────────────────────────────── */}
@@ -366,13 +366,15 @@ export function PanelPropietario({
         </div>
 
         {/* Contenido */}
-        {abierto && propietario && (
-          <FormularioPanel
-            propietario={propietario}
-            agentes={agentes}
-            tenantId={tenantId}
-          />
-        )}
+        <div className="flex-1 min-h-0">
+          {abierto && propietario && (
+            <FormularioPanel
+              propietario={propietario}
+              agentes={agentes}
+              tenantId={tenantId}
+            />
+          )}
+        </div>
       </div>
     </>
   );

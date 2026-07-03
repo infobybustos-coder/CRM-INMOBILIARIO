@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -116,11 +116,9 @@ function Tarjeta({
   onAbrir: (p: Propietario) => void;
   overlay?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
     id: propietario.id,
   });
-
-  const dragMovedRef = useRef(false);
 
   const prioridad = calcularPrioridad(propietario);
   const score = calcularCaptacionScore(propietario);
@@ -132,21 +130,25 @@ function Tarjeta({
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
-      onPointerDown={() => { dragMovedRef.current = false; }}
-      onPointerMove={() => { dragMovedRef.current = true; }}
-      onClick={() => { if (!dragMovedRef.current && !isDragging) onAbrir(propietario); }}
+      onClick={() => { if (!isDragging) onAbrir(propietario); }}
       className={cn(
-        "select-none touch-none rounded-xl border shadow-sm transition-all duration-150",
+        "relative select-none touch-none rounded-xl border shadow-sm transition-all duration-150",
         "cursor-pointer hover:shadow-md hover:brightness-95",
         CARD_BG[propietario.estado] ?? "bg-card border-border",
         isDragging && !overlay && "opacity-40",
         overlay && "rotate-1 shadow-xl scale-105",
       )}
     >
-      <div className="p-3 space-y-2">
+      {/* Área de arrastre — cubre toda la tarjeta, debajo del contenido */}
+      <div
+        ref={setActivatorNodeRef}
+        {...listeners}
+        {...attributes}
+        className="absolute inset-0 cursor-grab active:cursor-grabbing rounded-xl"
+      />
+      {/* Contenido — encima del área de arrastre */}
+      <div className="relative p-3 space-y-2 pointer-events-none">
         <div className="flex items-center justify-between">
           {prioridad ? (
             <div className="flex items-center gap-1.5">
