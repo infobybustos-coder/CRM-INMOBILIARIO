@@ -7,7 +7,7 @@ import { LayoutDashboard, ShieldCheck, ChevronLeft, ChevronRight } from "lucide-
 import { cn } from "@/lib/utils";
 
 const ENLACE_DASHBOARD = { href: "/inmobiliaria", label: "Vista General", icon: LayoutDashboard };
-const ENLACE_ADMIN = { href: "/inmobiliaria/admin", label: "Administración", icon: ShieldCheck };
+const ENLACE_ADMIN = { href: "/inmobiliaria/admin", label: "Centro de Control", icon: ShieldCheck };
 
 function aplicarColapso(colapsado: boolean) {
   document.documentElement
