@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
 export function esGestor(rol: string): boolean {
-  return rol === "administrador" || rol === "director_comercial";
+  return rol === "admin";
 }
 
 export async function getUsuarioConTenant() {

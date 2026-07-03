@@ -84,7 +84,7 @@ export async function signUp(
     nombre_completo: nombre,
     email,
     telefono,
-    rol: tipoPlan === "inmobiliaria" ? "administrador" : "agente",
+    rol: tipoPlan === "inmobiliaria" ? "admin" : "empleado",
   });
 
   if (usuarioError) {
