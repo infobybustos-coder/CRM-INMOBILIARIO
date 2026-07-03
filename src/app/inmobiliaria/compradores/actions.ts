@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
@@ -18,7 +18,7 @@ export async function crearComprador(
   formData: FormData
 ): Promise<CrearCompradorState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
@@ -27,7 +27,7 @@ export async function crearComprador(
   const presupuestoMax = formData.get("presupuesto_max");
   const zonaBuscadaId = String(formData.get("zona_buscada_id") ?? "");
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("compradores")
     .insert({
       tenant_id: usuario.tenant_id,
@@ -47,7 +47,7 @@ export async function crearComprador(
     .select("id")
     .single();
 
-  if (error || !data) return { error: "No se pudo crear el comprador." };
+  if (error || !data) return { error: `No se pudo crear el comprador: ${error?.message}` };
 
   revalidatePath("/inmobiliaria/compradores");
   redirect(`/inmobiliaria/compradores/${data.id}`);
@@ -61,7 +61,7 @@ export async function actualizarCompradorInmobiliaria(
   formData: FormData
 ): Promise<ActualizarCompradorState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
@@ -74,7 +74,7 @@ export async function actualizarCompradorInmobiliaria(
   const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
   const zonaBuscadaId = String(formData.get("zona_buscada_id") ?? "");
 
-  const { error } = await supabase
+  const { error } = await db
     .from("compradores")
     .update({
       nombre,
@@ -95,7 +95,7 @@ export async function actualizarCompradorInmobiliaria(
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
 
-  if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  if (error) return { error: `No se pudo guardar: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/compradores/${id}`);
   revalidatePath("/inmobiliaria/compradores");
@@ -104,15 +104,15 @@ export async function actualizarCompradorInmobiliaria(
 
 export async function actualizarEstadoCompradorInmobiliaria(id: string, estado: string) {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  await supabase
+  await db
     .from("compradores")
     .update({ estado })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
 
-  await supabase.from("actividades").insert({
+  await db.from("actividades").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "comprador",
     entidad_id: id,
@@ -135,8 +135,8 @@ export async function crearNotaComprador(
   const contenido = String(formData.get("contenido") ?? "").trim();
   if (!contenido) return { error: "Escribe algo antes de guardar." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("actividades").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("actividades").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "comprador",
     entidad_id: compradorId,
@@ -145,7 +145,7 @@ export async function crearNotaComprador(
     contenido,
   });
 
-  if (error) return { error: "No se pudo guardar la nota." };
+  if (error) return { error: `No se pudo guardar la nota: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/compradores/${compradorId}`);
   return null;
@@ -163,8 +163,8 @@ export async function crearTareaComprador(
   if (!titulo) return { error: "Pon un título a la tarea." };
 
   const fechaVencimiento = formData.get("fecha_vencimiento");
-  const supabase = await createClient();
-  const { error } = await supabase.from("tareas").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("tareas").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "comprador",
     entidad_id: compradorId,
@@ -173,7 +173,7 @@ export async function crearTareaComprador(
     fecha_vencimiento: fechaVencimiento ? String(fechaVencimiento) : null,
   });
 
-  if (error) return { error: "No se pudo crear la tarea." };
+  if (error) return { error: `No se pudo crear la tarea: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/compradores/${compradorId}`);
   return null;
@@ -185,9 +185,9 @@ export async function alternarTareaComprador(
   completada: boolean
 ) {
   await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  await supabase
+  await db
     .from("tareas")
     .update({
       estado: completada ? "completada" : "pendiente",

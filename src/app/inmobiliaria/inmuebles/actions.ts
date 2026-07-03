@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
@@ -18,7 +18,7 @@ export async function crearInmueble(
   formData: FormData
 ): Promise<CrearInmuebleState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const direccion = String(formData.get("direccion") ?? "").trim();
   if (!direccion) return { error: "La dirección es obligatoria." };
@@ -31,7 +31,7 @@ export async function crearInmueble(
   const zonaId = String(formData.get("zona_id") ?? "");
   const propietarioId = String(formData.get("propietario_id") ?? "");
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("inmuebles")
     .insert({
       tenant_id: usuario.tenant_id,
@@ -56,7 +56,7 @@ export async function crearInmueble(
   if (error) {
     return error.code === "23505"
       ? { error: "Esa referencia ya existe." }
-      : { error: "No se pudo crear el inmueble." };
+      : { error: `No se pudo crear el inmueble: ${error.message}` };
   }
 
   revalidatePath("/inmobiliaria/inmuebles");
@@ -71,12 +71,11 @@ export async function actualizarInmuebleInmobiliaria(
   formData: FormData
 ): Promise<ActualizarInmuebleState> {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
   const direccion = String(formData.get("direccion") ?? "").trim();
   if (!direccion) return { error: "La dirección es obligatoria." };
 
-  const gestor = esGestor(usuario.rol);
   const precio = formData.get("precio");
   const metrosCuadrados = formData.get("metros_cuadrados");
   const habitaciones = formData.get("habitaciones");
@@ -86,7 +85,7 @@ export async function actualizarInmuebleInmobiliaria(
   const propietarioId = String(formData.get("propietario_id") ?? "");
   const estado = String(formData.get("estado") ?? "").trim();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("inmuebles")
     .update({
       direccion,
@@ -109,7 +108,7 @@ export async function actualizarInmuebleInmobiliaria(
   if (error) {
     return error.code === "23505"
       ? { error: "Esa referencia ya existe." }
-      : { error: "No se pudo guardar. Inténtalo de nuevo." };
+      : { error: `No se pudo guardar: ${error.message}` };
   }
 
   revalidatePath(`/inmobiliaria/inmuebles/${id}`);
@@ -128,8 +127,8 @@ export async function crearNotaInmueble(
   const contenido = String(formData.get("contenido") ?? "").trim();
   if (!contenido) return { error: "Escribe algo antes de guardar." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("actividades").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("actividades").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "inmueble",
     entidad_id: inmuebleId,
@@ -138,7 +137,7 @@ export async function crearNotaInmueble(
     contenido,
   });
 
-  if (error) return { error: "No se pudo guardar la nota." };
+  if (error) return { error: `No se pudo guardar la nota: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/inmuebles/${inmuebleId}`);
   return null;
@@ -156,8 +155,8 @@ export async function crearTareaInmueble(
   if (!titulo) return { error: "Pon un título a la tarea." };
 
   const fechaVencimiento = formData.get("fecha_vencimiento");
-  const supabase = await createClient();
-  const { error } = await supabase.from("tareas").insert({
+  const db = createAdminClient();
+  const { error } = await db.from("tareas").insert({
     tenant_id: usuario.tenant_id,
     entidad_tipo: "inmueble",
     entidad_id: inmuebleId,
@@ -166,7 +165,7 @@ export async function crearTareaInmueble(
     fecha_vencimiento: fechaVencimiento ? String(fechaVencimiento) : null,
   });
 
-  if (error) return { error: "No se pudo crear la tarea." };
+  if (error) return { error: `No se pudo crear la tarea: ${error.message}` };
 
   revalidatePath(`/inmobiliaria/inmuebles/${inmuebleId}`);
   return null;
@@ -178,9 +177,9 @@ export async function alternarTareaInmueble(
   completada: boolean
 ) {
   await requireUsuario();
-  const supabase = await createClient();
+  const db = createAdminClient();
 
-  await supabase
+  await db
     .from("tareas")
     .update({
       estado: completada ? "completada" : "pendiente",
