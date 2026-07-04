@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ETIQUETAS_ESTADO_INMUEBLE,
   ETIQUETAS_TIPO_INMUEBLE,
@@ -9,8 +9,11 @@ import {
 } from "@/app/asesor/inmuebles/constantes";
 import { FotoMiniatura } from "@/components/asesor/inmuebles/foto-miniatura";
 import { useMoneda } from "@/lib/preferencias";
+import { cn } from "@/lib/utils";
 
 type InmuebleConAgente = Inmueble & { agente_id: string | null };
+
+type Orden = "direccion" | "precio" | "visitas" | "metros_cuadrados";
 
 const COLOR_ESTADO: Record<string, string> = {
   captacion: "bg-sky-500/15 text-sky-600",
@@ -22,8 +25,6 @@ const COLOR_ESTADO: Record<string, string> = {
   vendido: "bg-emerald-500/15 text-emerald-600",
 };
 
-type Columna = "direccion" | "poblacion" | "estado" | "precio" | "visitas" | "metros_cuadrados" | "agente";
-
 export function Tabla({
   inmuebles,
   agentesPorId,
@@ -33,101 +34,79 @@ export function Tabla({
   agentesPorId: Map<string, string>;
   basePath?: string;
 }) {
-  const router = useRouter();
   const { formatear } = useMoneda();
-  const [orden, setOrden] = useState<{ columna: Columna; asc: boolean }>({
-    columna: "direccion",
-    asc: true,
-  });
-
-  const valorColumna = (i: InmuebleConAgente, columna: Columna) => {
-    if (columna === "agente") return agentesPorId.get(i.agente_id ?? "") ?? "";
-    return i[columna as keyof Inmueble];
-  };
+  const [orden, setOrden] = useState<Orden>("direccion");
 
   const ordenados = useMemo(() => {
     const copia = [...inmuebles];
     copia.sort((a, b) => {
-      const va = valorColumna(a, orden.columna);
-      const vb = valorColumna(b, orden.columna);
-      if (va == null || va === "") return 1;
-      if (vb == null || vb === "") return -1;
-      if (typeof va === "number" && typeof vb === "number") {
-        return orden.asc ? va - vb : vb - va;
-      }
-      return orden.asc
-        ? String(va).localeCompare(String(vb))
-        : String(vb).localeCompare(String(va));
+      const va = a[orden];
+      const vb = b[orden];
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === "number" && typeof vb === "number") return vb - va;
+      return String(va).localeCompare(String(vb));
     });
     return copia;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inmuebles, orden, agentesPorId]);
+  }, [inmuebles, orden]);
 
-  function cambiarOrden(columna: Columna) {
-    setOrden((prev) =>
-      prev.columna === columna ? { columna, asc: !prev.asc } : { columna, asc: true }
-    );
-  }
-
-  function encabezado(columna: Columna, etiqueta: string) {
-    return (
-      <th
-        className="cursor-pointer px-4 py-2 text-left font-medium"
-        onClick={() => cambiarOrden(columna)}
-      >
-        {etiqueta} {orden.columna === columna && (orden.asc ? "↑" : "↓")}
-      </th>
-    );
+  if (inmuebles.length === 0) {
+    return <p className="text-sm text-muted-foreground">No hay inmuebles que coincidan.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-max text-sm">
-        <thead className="border-b bg-muted/50">
-          <tr>
-            <th className="px-4 py-2 text-left font-medium">Foto</th>
-            <th className="px-4 py-2 text-left font-medium">Ref.</th>
-            {encabezado("direccion", "Dirección")}
-            <th className="px-4 py-2 text-left font-medium">Tipo</th>
-            {encabezado("poblacion", "Población")}
-            {encabezado("precio", "Precio")}
-            {encabezado("agente", "Asesor")}
-            {encabezado("visitas", "Visitas")}
-            {encabezado("metros_cuadrados", "m²")}
-            {encabezado("estado", "Estado")}
-          </tr>
-        </thead>
-        <tbody>
-          {ordenados.map((i) => (
-            <tr
-              key={i.id}
-              onClick={() => router.push(`${basePath}/${i.id}`)}
-              className="cursor-pointer border-b last:border-0 hover:bg-accent/50"
-            >
-              <td className="px-4 py-2">
-                <FotoMiniatura rutaStorage={i.foto} className="size-20" />
-              </td>
-              <td className="px-4 py-2 text-muted-foreground">{i.referencia ?? "—"}</td>
-              <td className="px-4 py-2 font-medium">{i.direccion}</td>
-              <td className="px-4 py-2">
-                {i.tipo ? ETIQUETAS_TIPO_INMUEBLE[i.tipo] ?? i.tipo : "—"}
-              </td>
-              <td className="px-4 py-2">{i.poblacion ?? "—"}</td>
-              <td className="px-4 py-2">{formatear(i.precio)}</td>
-              <td className="px-4 py-2">{agentesPorId.get(i.agente_id ?? "") ?? "Sin asignar"}</td>
-              <td className="px-4 py-2">{i.visitas}</td>
-              <td className="px-4 py-2">{i.metros_cuadrados ? `${i.metros_cuadrados} m²` : "—"}</td>
-              <td className="px-4 py-2">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLOR_ESTADO[i.estado] ?? "bg-muted text-muted-foreground"}`}
-                >
-                  {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-2">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>Ordenar por</span>
+        <select
+          value={orden}
+          onChange={(e) => setOrden(e.target.value as Orden)}
+          className="rounded-md border bg-background px-2 py-1"
+        >
+          <option value="direccion">Dirección</option>
+          <option value="precio">Precio</option>
+          <option value="visitas">Visitas</option>
+          <option value="metros_cuadrados">m²</option>
+        </select>
+      </div>
+
+      {ordenados.map((i) => (
+        <Link
+          key={i.id}
+          href={`${basePath}/${i.id}`}
+          className="flex items-start gap-3 rounded-xl border p-4 transition-colors hover:bg-accent/40"
+        >
+          <FotoMiniatura rutaStorage={i.foto} className="size-16 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">{i.direccion}</p>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium",
+                  COLOR_ESTADO[i.estado] ?? "bg-muted text-muted-foreground"
+                )}
+              >
+                {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {i.tipo ? ETIQUETAS_TIPO_INMUEBLE[i.tipo] ?? i.tipo : "Sin tipo"}
+              {i.poblacion ? ` · ${i.poblacion}` : ""}
+              {i.referencia ? ` · Ref. ${i.referencia}` : ""}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className="font-medium">{formatear(i.precio)}</span>
+              <span className="text-xs text-muted-foreground">
+                {agentesPorId.get(i.agente_id ?? "") ?? "Sin asignar"}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 text-xs text-muted-foreground">
+              <span>👀 {i.visitas} visitas</span>
+              <span>{i.metros_cuadrados ? `${i.metros_cuadrados} m²` : "Sin m²"}</span>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

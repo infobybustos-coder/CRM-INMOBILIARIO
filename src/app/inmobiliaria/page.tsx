@@ -901,15 +901,14 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
             { href: "/inmobiliaria/propietarios", icono: Plus, label: "Nuevo propietario", color: "bg-violet-500/10 text-violet-600" },
             { href: "/inmobiliaria/inmuebles", icono: Building2, label: "Nuevo inmueble", color: "bg-sky-500/10 text-sky-600" },
             { href: "/inmobiliaria/compradores", icono: UserSearch, label: "Nuevo comprador", color: "bg-emerald-500/10 text-emerald-600" },
-            { href: "/inmobiliaria/visitas", icono: CalendarPlus, label: "Nueva visita", color: "bg-amber-500/10 text-amber-600", deshabilitado: true },
-          ].map(({ href, icono: Icono, label, color, deshabilitado }) => (
+            { href: "/inmobiliaria/visitas", icono: CalendarPlus, label: "Nueva visita", color: "bg-amber-500/10 text-amber-600" },
+          ].map(({ href, icono: Icono, label, color }) => (
             <Link
               key={label}
               href={href}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-opacity",
-                color,
-                deshabilitado ? "pointer-events-none opacity-60" : "hover:opacity-80"
+                "flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-opacity hover:opacity-80",
+                color
               )}
             >
               <Icono className="size-5" />
@@ -917,9 +916,6 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
             </Link>
           ))}
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          &ldquo;Nueva visita&rdquo; se activa cuando construyamos el módulo de Visitas.
-        </p>
       </div>
     </div>
   );
