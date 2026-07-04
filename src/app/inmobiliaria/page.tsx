@@ -517,7 +517,7 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       </div>
 
       {/* Atención requerida */}
-      <div className="rounded-2xl border bg-muted/40 p-6 shadow-sm">
+      <div className="rounded-2xl border border-rose-500/15 bg-rose-500/5 p-6 shadow-sm">
         <h2 className="mb-4 text-base font-semibold">🎯 Atención requerida</h2>
         {alertas.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
