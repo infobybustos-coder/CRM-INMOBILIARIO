@@ -51,7 +51,7 @@ export default async function InmobiliariaLayout({
         </div>
       </header>
       <main className="p-4 pb-24 md:pb-6">{children}</main>
-      <InmobiliariaNav esAdmin={esAdmin} avisos={hayTareasHoy ? { "/inmobiliaria/tareas": true } : {}} />
+      <InmobiliariaNav esAdmin={esAdmin} avisos={hayTareasHoy ? { "/inmobiliaria/seguimiento": true } : {}} />
     </div>
   );
 }

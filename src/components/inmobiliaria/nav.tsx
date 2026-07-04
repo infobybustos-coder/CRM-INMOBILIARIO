@@ -10,7 +10,6 @@ import {
   UserSearch,
   CalendarClock,
   CalendarDays,
-  CheckSquare,
   UserCog,
   BarChart3,
   MessageSquare,
@@ -30,6 +29,7 @@ type Enlace = {
   label: string;
   icon: typeof LayoutDashboard;
   bloqueado?: boolean;
+  activoTambien?: string[];
 };
 
 type Grupo = { titulo?: string; enlaces: Enlace[] };
@@ -48,8 +48,12 @@ const GRUPOS_ADMIN: Grupo[] = [
   {
     titulo: "Seguimiento",
     enlaces: [
-      { href: "/inmobiliaria/agenda", label: "Agenda", icon: CalendarDays },
-      { href: "/inmobiliaria/tareas", label: "Tareas", icon: CheckSquare },
+      {
+        href: "/inmobiliaria/seguimiento",
+        label: "Seguimiento",
+        icon: CalendarDays,
+        activoTambien: ["/inmobiliaria/agenda", "/inmobiliaria/tareas"],
+      },
     ],
   },
   {
@@ -166,7 +170,8 @@ function ListaGrupos({
             const activo =
               enlace.href === "/inmobiliaria"
                 ? pathname === "/inmobiliaria"
-                : pathname?.startsWith(enlace.href) ?? false;
+                : (pathname?.startsWith(enlace.href) ?? false) ||
+                  (enlace.activoTambien?.some((p) => pathname?.startsWith(p)) ?? false);
             return (
               <EnlaceItem
                 key={enlace.href}

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 function revalidarAgenda(id?: string) {
   revalidatePath("/inmobiliaria/agenda");
   if (id) revalidatePath(`/inmobiliaria/agenda/${id}`);
+  revalidatePath("/inmobiliaria/seguimiento");
   revalidatePath("/inmobiliaria");
   revalidatePath("/inmobiliaria/visitas");
 }

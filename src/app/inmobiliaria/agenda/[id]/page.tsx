@@ -67,10 +67,10 @@ export default async function EventoPage({
   return (
     <div className="max-w-2xl space-y-5">
       <Link
-        href="/inmobiliaria/agenda"
+        href="/inmobiliaria/seguimiento"
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Volver a la agenda
+        <ArrowLeft className="size-4" /> Volver a seguimiento
       </Link>
 
       <div>

@@ -68,10 +68,10 @@ export default async function TareaPage({
   return (
     <div className="max-w-2xl space-y-5">
       <Link
-        href="/inmobiliaria/tareas"
+        href="/inmobiliaria/seguimiento"
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Volver a tareas
+        <ArrowLeft className="size-4" /> Volver a seguimiento
       </Link>
 
       <div>
