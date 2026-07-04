@@ -315,84 +315,83 @@ export default async function SeguimientoPage({
   const ahoraMesInicial = { year: ahora.getFullYear(), month: ahora.getMonth() };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Seguimiento</h1>
+    <div className="space-y-4">
+      <div className="flex justify-end">
         <FiltroDia dia={dia} />
       </div>
 
-      {/* Bloque Agenda */}
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-1.5 text-lg font-semibold">📅 Agenda</h2>
-          <VistaSwitcher vista={vista} />
-        </div>
-
-        {errorEventos && (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
-            <p className="font-medium">No se pudieron cargar los eventos de la agenda.</p>
-            <p className="mt-1 text-xs">{errorEventos.message}</p>
+      <div className="grid gap-6 lg:grid-cols-2 lg:divide-x lg:divide-border">
+        {/* Columna Agenda */}
+        <section className="space-y-4 lg:pr-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-1.5 text-lg font-semibold">📅 Agenda</h2>
+            <VistaSwitcher vista={vista} />
           </div>
-        )}
 
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
-          {kpisAgenda.map(({ label, valor, icono: Icono, color }) => (
-            <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
-              <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
-                <Icono className="size-4" />
-              </span>
-              <span className="text-xl font-semibold">{valor}</span>
-              <span className="text-xs text-muted-foreground">{label}</span>
+          {errorEventos && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
+              <p className="font-medium">No se pudieron cargar los eventos de la agenda.</p>
+              <p className="mt-1 text-xs">{errorEventos.message}</p>
             </div>
-          ))}
-        </div>
+          )}
 
-        {vista === "calendario" ? (
-          <CalendarioMensual itemsPorDia={agendaPorDia} mesInicial={ahoraMesInicial} />
-        ) : (
-          <TablaAgenda eventos={filasAgenda} />
-        )}
-      </section>
+          <div className="grid grid-cols-3 gap-2">
+            {kpisAgenda.map(({ label, valor, icono: Icono, color }) => (
+              <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
+                <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
+                  <Icono className="size-4" />
+                </span>
+                <span className="text-xl font-semibold">{valor}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
 
-      <div className="border-t" />
+          {vista === "calendario" ? (
+            <CalendarioMensual itemsPorDia={agendaPorDia} mesInicial={ahoraMesInicial} />
+          ) : (
+            <TablaAgenda eventos={filasAgenda} />
+          )}
+        </section>
 
-      {/* Bloque Tareas */}
-      <section className="space-y-4">
-        <h2 className="flex items-center gap-1.5 text-lg font-semibold">✅ Tareas</h2>
+        {/* Columna Tareas */}
+        <section className="space-y-4 lg:pl-6">
+          <h2 className="flex items-center gap-1.5 text-lg font-semibold">✅ Tareas</h2>
 
-        {errorTareas && (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
-            <p className="font-medium">No se pudieron cargar las tareas.</p>
-            <p className="mt-1 text-xs">
-              {errorTareas.message}
-              {errorTareas.message?.includes("column") &&
-                " — probablemente falta correr la migración 0016_tareas_prioridad.sql en Supabase."}
+          {errorTareas && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
+              <p className="font-medium">No se pudieron cargar las tareas.</p>
+              <p className="mt-1 text-xs">
+                {errorTareas.message}
+                {errorTareas.message?.includes("column") &&
+                  " — probablemente falta correr la migración 0016_tareas_prioridad.sql en Supabase."}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-2">
+            {kpisTareas.map(({ label, valor, icono: Icono, color }) => (
+              <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
+                <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
+                  <Icono className="size-4" />
+                </span>
+                <span className="text-xl font-semibold">{valor}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-sm text-muted-foreground">
+            <Info className="mt-0.5 size-4 shrink-0 text-sky-600" />
+            <p>
+              Las tareas no se crean desde aquí: nacen automáticamente desde la ficha de un
+              Propietario, Comprador o Inmueble.
             </p>
           </div>
-        )}
 
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
-          {kpisTareas.map(({ label, valor, icono: Icono, color }) => (
-            <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
-              <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
-                <Icono className="size-4" />
-              </span>
-              <span className="text-xl font-semibold">{valor}</span>
-              <span className="text-xs text-muted-foreground">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-sm text-muted-foreground">
-          <Info className="mt-0.5 size-4 shrink-0 text-sky-600" />
-          <p>
-            Las tareas no se crean desde aquí: nacen automáticamente desde la ficha de un
-            Propietario, Comprador o Inmueble.
-          </p>
-        </div>
-
-        <TablaTareas tareas={filasTareas} />
-      </section>
+          <TablaTareas tareas={filasTareas} />
+        </section>
+      </div>
     </div>
   );
 }
