@@ -228,6 +228,40 @@ export async function eliminarFoto(fotoId: string, inmuebleId: string, urlStorag
   revalidarInmueble(inmuebleId);
 }
 
+export async function registrarDocumento(
+  inmuebleId: string,
+  nombreArchivo: string,
+  urlStorage: string,
+  tipoDocumento: string | null
+) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("documentos").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "inmueble",
+    entidad_id: inmuebleId,
+    tipo_documento: tipoDocumento,
+    nombre_archivo: nombreArchivo,
+    url_storage: urlStorage,
+    subido_por: usuario.id,
+  });
+
+  if (error) throw new Error("No se pudo registrar el documento");
+
+  revalidarInmueble(inmuebleId);
+}
+
+export async function eliminarDocumento(documentoId: string, inmuebleId: string, urlStorage: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase.storage.from("documentos").remove([urlStorage]);
+  await supabase.from("documentos").delete().eq("id", documentoId).eq("tenant_id", usuario.tenant_id);
+
+  revalidarInmueble(inmuebleId);
+}
+
 export type CrearInmuebleRapidoState = { error: string } | { ok: true } | null;
 
 export async function crearInmuebleRapido(

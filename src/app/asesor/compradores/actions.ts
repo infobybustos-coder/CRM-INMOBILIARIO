@@ -241,3 +241,37 @@ export async function crearCompradorRapido(
   revalidarComprador();
   return { ok: true };
 }
+
+export async function registrarDocumento(
+  compradorId: string,
+  nombreArchivo: string,
+  urlStorage: string,
+  tipoDocumento: string | null
+) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("documentos").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "comprador",
+    entidad_id: compradorId,
+    tipo_documento: tipoDocumento,
+    nombre_archivo: nombreArchivo,
+    url_storage: urlStorage,
+    subido_por: usuario.id,
+  });
+
+  if (error) throw new Error("No se pudo registrar el documento");
+
+  revalidarComprador(compradorId);
+}
+
+export async function eliminarDocumento(documentoId: string, compradorId: string, urlStorage: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase.storage.from("documentos").remove([urlStorage]);
+  await supabase.from("documentos").delete().eq("id", documentoId).eq("tenant_id", usuario.tenant_id);
+
+  revalidarComprador(compradorId);
+}

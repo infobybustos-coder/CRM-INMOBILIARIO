@@ -4,10 +4,6 @@ import { useRef, useState } from "react";
 import { FileText, Trash2, UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  registrarDocumento,
-  eliminarDocumento,
-} from "@/app/asesor/propietarios/actions";
-import {
   TIPOS_DOCUMENTO,
   ETIQUETAS_TIPO_DOCUMENTO,
 } from "@/app/asesor/propietarios/constantes";
@@ -23,13 +19,24 @@ type Documento = {
 };
 
 export function Documentos({
-  propietarioId,
+  entidadId,
   tenantId,
   documentos,
+  carpeta,
+  registrarDocumentoAction,
+  eliminarDocumentoAction,
 }: {
-  propietarioId: string;
+  entidadId: string;
   tenantId: string;
   documentos: Documento[];
+  carpeta: string;
+  registrarDocumentoAction: (
+    entidadId: string,
+    nombreArchivo: string,
+    urlStorage: string,
+    tipoDocumento: string | null
+  ) => Promise<void>;
+  eliminarDocumentoAction: (documentoId: string, entidadId: string, urlStorage: string) => Promise<void>;
 }) {
   const [lista, setLista] = useState(documentos);
   const [tipo, setTipo] = useState("");
@@ -40,7 +47,7 @@ export function Documentos({
 
   async function subirArchivo(file: File) {
     const supabase = createClient();
-    const ruta = `${tenantId}/propietario/${propietarioId}/${Date.now()}_${file.name}`;
+    const ruta = `${tenantId}/${carpeta}/${entidadId}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage
       .from("documentos")
@@ -52,7 +59,7 @@ export function Documentos({
     }
 
     try {
-      await registrarDocumento(propietarioId, file.name, ruta, tipo || null);
+      await registrarDocumentoAction(entidadId, file.name, ruta, tipo || null);
       setLista((prev) => [
         {
           id: ruta,
@@ -83,7 +90,7 @@ export function Documentos({
 
   async function borrar(documento: Documento) {
     setLista((prev) => prev.filter((d) => d.id !== documento.id));
-    await eliminarDocumento(documento.id, propietarioId, documento.url_storage);
+    await eliminarDocumentoAction(documento.id, entidadId, documento.url_storage);
   }
 
   async function abrir(urlStorage: string) {

@@ -4,9 +4,16 @@ import { ArrowLeft } from "lucide-react";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
+import { Documentos } from "@/components/asesor/documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
-import { crearNota, crearTarea, alternarTarea } from "../actions";
+import {
+  crearNota,
+  crearTarea,
+  alternarTarea,
+  registrarDocumento,
+  eliminarDocumento,
+} from "../actions";
 import type { Comprador } from "../constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
@@ -43,33 +50,40 @@ export default async function CompradorPage({
   if (!comprador) notFound();
 
   const gestor = esGestor(usuario.rol);
-  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] = await Promise.all([
-    supabase
-      .from("actividades")
-      .select("id, tipo, contenido, creado_en")
-      .eq("entidad_tipo", "comprador")
-      .eq("entidad_id", id)
-      .order("creado_en", { ascending: false }),
-    supabase
-      .from("tareas")
-      .select("id, titulo, descripcion, fecha_vencimiento, estado")
-      .eq("entidad_tipo", "comprador")
-      .eq("entidad_id", id)
-      .order("creado_en", { ascending: false }),
-    supabase
-      .from("zonas")
-      .select("id, nombre, ciudad")
-      .eq("tenant_id", usuario.tenant_id)
-      .order("nombre", { ascending: true }),
-    gestor
-      ? supabase
-          .from("usuarios")
-          .select("id, nombre_completo")
-          .eq("tenant_id", usuario.tenant_id)
-          .eq("activo", true)
-          .order("nombre_completo")
-      : Promise.resolve({ data: [] }),
-  ]);
+  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }, { data: documentos }] =
+    await Promise.all([
+      supabase
+        .from("actividades")
+        .select("id, tipo, contenido, creado_en")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
+      supabase
+        .from("tareas")
+        .select("id, titulo, descripcion, fecha_vencimiento, estado")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
+      supabase
+        .from("zonas")
+        .select("id, nombre, ciudad")
+        .eq("tenant_id", usuario.tenant_id)
+        .order("nombre", { ascending: true }),
+      gestor
+        ? supabase
+            .from("usuarios")
+            .select("id, nombre_completo")
+            .eq("tenant_id", usuario.tenant_id)
+            .eq("activo", true)
+            .order("nombre_completo")
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from("documentos")
+        .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -105,6 +119,15 @@ export default async function CompradorPage({
         comprador={comprador as Comprador}
         zonas={zonas ?? []}
         agentes={gestor ? (agentes ?? []) : []}
+      />
+
+      <Documentos
+        entidadId={id}
+        tenantId={usuario.tenant_id}
+        documentos={documentos ?? []}
+        carpeta="comprador"
+        registrarDocumentoAction={registrarDocumento}
+        eliminarDocumentoAction={eliminarDocumento}
       />
 
       <Tareas

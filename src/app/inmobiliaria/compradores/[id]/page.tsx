@@ -4,9 +4,16 @@ import { ArrowLeft } from "lucide-react";
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
+import { Documentos } from "@/components/asesor/documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
-import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/compradores/actions";
+import {
+  crearNota,
+  crearTarea,
+  alternarTarea,
+  registrarDocumento,
+  eliminarDocumento,
+} from "@/app/asesor/compradores/actions";
 import type { Comprador } from "@/app/asesor/compradores/constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
@@ -37,7 +44,7 @@ export default async function CompradorPage({
 
   if (!comprador) notFound();
 
-  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] =
+  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }, { data: documentos }] =
     await Promise.all([
       supabase
         .from("actividades")
@@ -62,6 +69,12 @@ export default async function CompradorPage({
         .eq("tenant_id", usuario.tenant_id)
         .eq("activo", true)
         .order("nombre_completo"),
+      supabase
+        .from("documentos")
+        .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
     ]);
 
   return (
@@ -98,6 +111,15 @@ export default async function CompradorPage({
         comprador={comprador as Comprador}
         zonas={zonas ?? []}
         agentes={agentes ?? []}
+      />
+
+      <Documentos
+        entidadId={id}
+        tenantId={usuario.tenant_id}
+        documentos={documentos ?? []}
+        carpeta="comprador"
+        registrarDocumentoAction={registrarDocumento}
+        eliminarDocumentoAction={eliminarDocumento}
       />
 
       <Tareas

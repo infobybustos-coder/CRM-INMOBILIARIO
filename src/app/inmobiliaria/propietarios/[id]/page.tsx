@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FormularioPropietario } from "@/components/asesor/propietarios/formulario-propietario";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
-import { Documentos } from "@/components/asesor/propietarios/documentos";
+import { Documentos } from "@/components/asesor/documentos";
 import { SiguientePaso } from "@/components/asesor/propietarios/siguiente-paso";
 import { GuionCaptacion } from "@/components/asesor/propietarios/guion-captacion";
 import {
@@ -15,6 +15,8 @@ import {
   alternarTarea,
   crearSiguientePaso,
   actualizarGuionCaptacion,
+  registrarDocumento,
+  eliminarDocumento,
 } from "@/app/asesor/propietarios/actions";
 import type { Propietario } from "@/app/asesor/propietarios/constantes";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
@@ -129,9 +131,12 @@ export default async function PropietarioPage({
       />
 
       <Documentos
-        propietarioId={id}
+        entidadId={id}
         tenantId={usuario.tenant_id}
         documentos={documentos ?? []}
+        carpeta="propietario"
+        registrarDocumentoAction={registrarDocumento}
+        eliminarDocumentoAction={eliminarDocumento}
       />
 
       <Notas actividades={actividades ?? []} crearNotaAction={crearNota.bind(null, id)} />
