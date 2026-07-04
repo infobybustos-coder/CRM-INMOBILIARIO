@@ -333,8 +333,6 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     saludScore >= 85 ? "Excelente" : saludScore >= 70 ? "Buena" : saludScore >= 50 ? "Regular" : "Necesita atención";
   const saludColor =
     saludScore >= 85 ? "text-emerald-600" : saludScore >= 70 ? "text-sky-600" : saludScore >= 50 ? "text-amber-600" : "text-rose-600";
-  const saludBarra =
-    saludScore >= 85 ? "bg-emerald-500" : saludScore >= 70 ? "bg-sky-500" : saludScore >= 50 ? "bg-amber-500" : "bg-rose-500";
 
   // --- Captaciones últimos 6 meses ---------------------------------------
   const meses: Date[] = [];
@@ -585,8 +583,11 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
           <p className="mt-1 text-sm text-muted-foreground">
             Estado: <span className={cn("font-medium", saludColor)}>{saludLabel}</span>
           </p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-            <div className={cn("h-full rounded-full", saludBarra)} style={{ width: `${saludScore}%` }} />
+          <div className="mt-5 h-5 overflow-hidden rounded-full bg-emerald-500/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700"
+              style={{ width: `${saludScore}%` }}
+            />
           </div>
         </div>
         <div className="flex flex-col justify-center gap-2.5 text-sm">
