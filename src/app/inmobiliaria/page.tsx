@@ -142,7 +142,6 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     compradoresSeguimiento,
     { count: visitasHoy },
     { count: tasacionesPendientes },
-    { count: citasSinGestionar },
     usuariosEquipo,
     propietariosParaSalud,
     propietariosHistorico,
@@ -153,6 +152,9 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     actividadReciente,
     propietariosParaScore,
     inmueblesParaCartera,
+    propietariosDocRequeridos,
+    documentosExistentes,
+    actividadesHoy,
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -214,12 +216,6 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       .eq("tenant_id", tenantId)
       .eq("estado", "tasacion_programada"),
     supabase
-      .from("eventos_agenda")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
-      .eq("estado", "pendiente")
-      .lt("fecha_hora", ahora.toISOString()),
-    supabase
       .from("usuarios")
       .select("id, nombre_completo, rol")
       .eq("tenant_id", tenantId)
@@ -272,6 +268,22 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       .from("inmuebles")
       .select("id, estado, creado_en")
       .eq("tenant_id", tenantId),
+    supabase
+      .from("propietarios")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .in("estado", ["tasacion_realizada", "negociacion", "exclusiva_firmada"]),
+    supabase
+      .from("documentos")
+      .select("entidad_id")
+      .eq("tenant_id", tenantId)
+      .eq("entidad_tipo", "propietario"),
+    supabase
+      .from("actividades")
+      .select("usuario_id")
+      .eq("tenant_id", tenantId)
+      .gte("creado_en", inicioHoy.toISOString())
+      .lte("creado_en", finHoy.toISOString()),
   ]);
 
   const nombrePorUsuario = new Map(
@@ -384,11 +396,28 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
 
   // --- Atención requerida ------------------------------------------------
   const seguimientosVencidos = (propietariosSeguimiento.count ?? 0) + (compradoresSeguimiento.count ?? 0);
+
+  const idsConDocumento = new Set((documentosExistentes.data ?? []).map((d) => d.entidad_id));
+  const documentosPendientes = (propietariosDocRequeridos.data ?? []).filter(
+    (p) => !idsConDocumento.has(p.id)
+  ).length;
+
+  const idsActivosHoy = new Set(
+    (actividadesHoy.data ?? []).filter((a) => a.usuario_id).map((a) => a.usuario_id as string)
+  );
+  const asesoresSinActividad = (usuariosEquipo.data ?? []).filter(
+    (u) => u.rol === "empleado" && !idsActivosHoy.has(u.id)
+  ).length;
+
   const alertas = [
     seguimientosVencidos > 0 && { icono: "🔴", texto: `${seguimientosVencidos} seguimientos vencidos` },
-    (tasacionesPendientes ?? 0) > 0 && { icono: "🟡", texto: `${tasacionesPendientes} tasaciones pendientes` },
-    (citasSinGestionar ?? 0) > 0 && { icono: "🟠", texto: `${citasSinGestionar} citas sin gestionar` },
-    (propietariosNuevosMes ?? 0) > 0 && { icono: "🟢", texto: `${propietariosNuevosMes} nuevas captaciones este mes` },
+    (tasacionesPendientes ?? 0) > 0 && { icono: "🟠", texto: `${tasacionesPendientes} tasaciones pendientes` },
+    asesoresSinActividad > 0 && {
+      icono: "🟡",
+      texto: `${asesoresSinActividad} ${asesoresSinActividad === 1 ? "asesor" : "asesores"} sin actividad hoy`,
+    },
+    (propietariosNuevosMes ?? 0) > 0 && { icono: "🟢", texto: `${propietariosNuevosMes} nuevas captaciones` },
+    documentosPendientes > 0 && { icono: "⚠️", texto: `${documentosPendientes} documentos pendientes` },
   ].filter(Boolean) as { icono: string; texto: string }[];
 
   // --- KPIs ------------------------------------------------------------
@@ -488,19 +517,18 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       </div>
 
       {/* Atención requerida */}
-      <div className="rounded-2xl border bg-amber-500/5 p-5 shadow-sm">
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <AlertTriangle className="size-4 text-amber-600" /> Atención requerida
-        </h2>
+      <div className="rounded-2xl border bg-muted/40 p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold">🎯 Atención requerida</h2>
         {alertas.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-emerald-600">
-            <CheckCircle2 className="size-4" /> Todo al día, no hay nada urgente ahora mismo.
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CheckCircle2 className="size-4 text-emerald-600" /> Todo al día, no hay nada urgente ahora mismo.
           </p>
         ) : (
-          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+          <div className="flex flex-wrap gap-x-10 gap-y-3 text-sm">
             {alertas.map((a) => (
-              <span key={a.texto}>
-                {a.icono} {a.texto}
+              <span key={a.texto} className="flex items-center gap-2">
+                <span>{a.icono}</span>
+                <span>{a.texto}</span>
               </span>
             ))}
           </div>
