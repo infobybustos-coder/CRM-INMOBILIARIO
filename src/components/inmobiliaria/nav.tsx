@@ -121,7 +121,16 @@ function EnlaceItem({
         )}
       </span>
       <span className={cn("flex-1", colapsado && "md:hidden")}>{enlace.label}</span>
-      {enlace.bloqueado && <Lock className={cn("size-3 shrink-0", colapsado && "md:hidden")} />}
+      {enlace.bloqueado && (
+        <span
+          className={cn(
+            "flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground",
+            colapsado && "md:hidden"
+          )}
+        >
+          <Lock className="size-2.5" /> Próximamente
+        </span>
+      )}
     </Link>
   );
 }
