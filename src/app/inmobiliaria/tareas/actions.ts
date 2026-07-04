@@ -54,6 +54,15 @@ export async function reprogramarTarea(id: string, nuevaFecha: string) {
   revalidarTareas(id);
 }
 
+export async function eliminarTarea(id: string) {
+  const usuario = await requireAdminInmobiliaria();
+  const supabase = await createClient();
+
+  await supabase.from("tareas").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
+
+  revalidarTareas();
+}
+
 export type ActualizarTareaState = { error: string } | { ok: true } | null;
 
 export async function actualizarTarea(

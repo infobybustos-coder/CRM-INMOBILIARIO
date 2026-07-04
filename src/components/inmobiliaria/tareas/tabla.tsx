@@ -3,13 +3,17 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { CalendarClock, User, UserCog, Eye, CheckCheck, CalendarDays } from "lucide-react";
-import { completarTarea, reprogramarTarea } from "@/app/inmobiliaria/tareas/actions";
+import { completarTarea, reprogramarTarea, eliminarTarea } from "@/app/inmobiliaria/tareas/actions";
 import {
   ETIQUETA_PRIORIDAD,
   COLOR_PRIORIDAD,
   ETIQUETA_ESTADO_TAREA,
   COLOR_ESTADO_TAREA,
+  ETIQUETA_ENTIDAD,
+  COLOR_ENTIDAD,
+  BORDE_ENTIDAD,
 } from "@/app/inmobiliaria/tareas/constantes";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { cn } from "@/lib/utils";
 
 export type TareaFila = {
@@ -18,6 +22,7 @@ export type TareaFila = {
   prioridad: string;
   estado: string;
   fecha_vencimiento: string | null;
+  entidadTipo: string | null;
   relacionadoCon: string | null;
   hrefRelacionado: string | null;
   nombreResponsable: string | null;
@@ -42,12 +47,23 @@ function Fila({ tarea }: { tarea: TareaFila }) {
   return (
     <div
       className={cn(
-        "rounded-xl border p-4 transition-colors",
+        "rounded-xl border border-l-4 p-4 transition-colors",
+        tarea.entidadTipo ? BORDE_ENTIDAD[tarea.entidadTipo] : "border-l-transparent",
         vencida ? "border-red-500/40 bg-red-500/5" : "hover:bg-accent/40"
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {tarea.entidadTipo && (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-xs font-semibold",
+                COLOR_ENTIDAD[tarea.entidadTipo]
+              )}
+            >
+              {ETIQUETA_ENTIDAD[tarea.entidadTipo]}
+            </span>
+          )}
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",
@@ -65,15 +81,22 @@ function Fila({ tarea }: { tarea: TareaFila }) {
             {ETIQUETA_ESTADO_TAREA[tarea.estado] ?? tarea.estado}
           </span>
         </div>
-        {tarea.fecha_vencimiento && (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <CalendarDays className="size-3.5" />
-            {new Date(tarea.fecha_vencimiento).toLocaleDateString("es-ES", {
-              day: "numeric",
-              month: "short",
-            })}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {tarea.fecha_vencimiento && (
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <CalendarDays className="size-3.5" />
+              {new Date(tarea.fecha_vencimiento).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "short",
+              })}
+            </span>
+          )}
+          <BotonEliminar
+            id={tarea.id}
+            mensaje={`¿Eliminar la tarea "${tarea.titulo}"? Esta acción no se puede deshacer.`}
+            eliminarAction={eliminarTarea}
+          />
+        </div>
       </div>
 
       <div className="mt-2 font-medium">{tarea.titulo}</div>

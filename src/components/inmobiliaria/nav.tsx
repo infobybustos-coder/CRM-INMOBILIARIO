@@ -91,11 +91,13 @@ function EnlaceItem({
   enlace,
   activo,
   colapsado,
+  aviso,
   onClick,
 }: {
   enlace: Enlace;
   activo: boolean;
   colapsado: boolean;
+  aviso?: boolean;
   onClick?: () => void;
 }) {
   const Icon = enlace.icon;
@@ -112,7 +114,12 @@ function EnlaceItem({
           : "text-muted-foreground hover:bg-accent hover:text-foreground"
       )}
     >
-      <Icon className="size-4 shrink-0" />
+      <span className="relative shrink-0">
+        <Icon className="size-4" />
+        {aviso && (
+          <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
+        )}
+      </span>
       <span className={cn("flex-1", colapsado && "md:hidden")}>{enlace.label}</span>
       {enlace.bloqueado && <Lock className={cn("size-3 shrink-0", colapsado && "md:hidden")} />}
     </Link>
@@ -123,11 +130,13 @@ function ListaGrupos({
   grupos,
   pathname,
   colapsado,
+  avisos,
   onNavegar,
 }: {
   grupos: Grupo[];
   pathname: string | null;
   colapsado: boolean;
+  avisos?: Record<string, boolean>;
   onNavegar?: () => void;
 }) {
   return (
@@ -155,6 +164,7 @@ function ListaGrupos({
                 enlace={enlace}
                 activo={activo}
                 colapsado={colapsado}
+                aviso={avisos?.[enlace.href]}
                 onClick={onNavegar}
               />
             );
@@ -165,11 +175,18 @@ function ListaGrupos({
   );
 }
 
-export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
+export function InmobiliariaNav({
+  esAdmin,
+  avisos = {},
+}: {
+  esAdmin: boolean;
+  avisos?: Record<string, boolean>;
+}) {
   const pathname = usePathname();
   const [colapsado, setColapsado] = useState(colapsadoInicial);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const grupos = esAdmin ? GRUPOS_ADMIN : GRUPOS_EMPLEADO;
+  const hayAvisos = Object.values(avisos).some(Boolean);
 
   function alternar() {
     const nuevo = !colapsado;
@@ -198,7 +215,12 @@ export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
             onClick={() => setMenuMovilAbierto(true)}
             className="flex flex-col items-center gap-1 px-3 py-1 text-xs text-muted-foreground"
           >
-            <Menu className="size-5" />
+            <span className="relative">
+              <Menu className="size-5" />
+              {hayAvisos && (
+                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
+              )}
+            </span>
             Menú
           </button>
         )}
@@ -222,6 +244,7 @@ export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
               grupos={grupos}
               pathname={pathname}
               colapsado={false}
+              avisos={avisos}
               onNavegar={() => setMenuMovilAbierto(false)}
             />
           </div>
@@ -243,7 +266,7 @@ export function InmobiliariaNav({ esAdmin }: { esAdmin: boolean }) {
         >
           {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
         </button>
-        <ListaGrupos grupos={grupos} pathname={pathname} colapsado={colapsado} />
+        <ListaGrupos grupos={grupos} pathname={pathname} colapsado={colapsado} avisos={avisos} />
       </nav>
     </>
   );

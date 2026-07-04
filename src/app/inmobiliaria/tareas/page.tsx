@@ -1,4 +1,4 @@
-import { Clock, CalendarClock, AlertTriangle, CheckCheck, Flame, Users } from "lucide-react";
+import { Clock, CalendarClock, AlertTriangle, CheckCheck, Flame, Users, Info } from "lucide-react";
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla, type TareaFila } from "@/components/inmobiliaria/tareas/tabla";
@@ -89,6 +89,7 @@ export default async function TareasPage() {
       prioridad: t.prioridad,
       estado: t.estado,
       fecha_vencimiento: t.fecha_vencimiento,
+      entidadTipo: t.entidad_tipo,
       relacionadoCon,
       hrefRelacionado,
       nombreResponsable: nombreAgente.get(t.asignado_a ?? "") ?? null,
@@ -167,6 +168,14 @@ export default async function TareasPage() {
             <span className="text-xs text-muted-foreground">{label}</span>
           </div>
         ))}
+      </div>
+
+      <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-sm text-muted-foreground">
+        <Info className="mt-0.5 size-4 shrink-0 text-sky-600" />
+        <p>
+          Las tareas no se crean desde aquí: nacen automáticamente desde la ficha de un
+          Propietario, Comprador o Inmueble.
+        </p>
       </div>
 
       <Tabla tareas={filas} />
