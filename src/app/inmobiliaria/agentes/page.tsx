@@ -3,6 +3,8 @@ import { Users, AlertTriangle, UserPlus, Home, Award } from "lucide-react";
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/agentes/tabla";
+import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
+import { limiteEmpleados } from "@/lib/planes";
 import type { AgenteFila } from "./constantes";
 
 const MEDALLAS = ["🥇", "🥈", "🥉"];
@@ -161,6 +163,7 @@ export default async function AgentesPage() {
   const activosHoyCount = activos.filter((a) => idsActivosHoy.has(a.id)).length;
   const sinActividadCount = activos.length - activosHoyCount;
   const pctActivosHoy = activos.length > 0 ? (activosHoyCount / activos.length) * 100 : 0;
+  const limiteAgentes = limiteEmpleados(usuario.tenant ?? {});
 
   const kpis = [
     {
@@ -212,7 +215,15 @@ export default async function AgentesPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Agentes</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Agentes</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {activos.length} de {limiteAgentes} agentes incluidos en tu plan
+          </p>
+        </div>
+        <NuevoMiembro rol="empleado" etiqueta="agente" />
+      </div>
 
       {errorAgentes && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">

@@ -15,6 +15,17 @@ export const PRECIO_MENSUAL: Record<TipoPlan, number> = {
 export const ASESORES_INCLUIDOS_INMOBILIARIA = 2;
 export const PRECIO_ASESOR_EXTRA = 7.99;
 
+export const ADMINS_INCLUIDOS_INMOBILIARIA = 2;
+export const PRECIO_ADMIN_EXTRA = 9.99;
+
+export function limiteEmpleados(tenant: { agentes_extra?: number | null }) {
+  return ASESORES_INCLUIDOS_INMOBILIARIA + (tenant.agentes_extra ?? 0);
+}
+
+export function limiteAdmins(tenant: { admins_extra?: number | null }) {
+  return ADMINS_INCLUIDOS_INMOBILIARIA + (tenant.admins_extra ?? 0);
+}
+
 export function esIlimitado(tenant: { plan_tarifa?: string | null }) {
   return tenant.plan_tarifa === "pago";
 }

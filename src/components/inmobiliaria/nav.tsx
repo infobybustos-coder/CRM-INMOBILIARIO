@@ -11,6 +11,7 @@ import {
   CalendarClock,
   CalendarDays,
   UserCog,
+  ShieldCheck,
   MessageSquare,
   UsersRound,
   Building2,
@@ -58,6 +59,7 @@ const GRUPOS_ADMIN: Grupo[] = [
     titulo: "Equipo",
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
+      { href: "/inmobiliaria/administradores", label: "Administradores", icon: ShieldCheck },
       { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, bloqueado: true },
     ],
   },

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Eye, BarChart3 } from "lucide-react";
+import { eliminarMiembro } from "@/app/inmobiliaria/equipo/actions";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { cn } from "@/lib/utils";
 import type { AgenteFila } from "@/app/inmobiliaria/agentes/constantes";
 
@@ -77,6 +79,12 @@ function Fila({ agente }: { agente: AgenteFila }) {
         >
           <BarChart3 className="size-3.5" /> Ver rendimiento
         </Link>
+        <BotonEliminar
+          id={agente.id}
+          mensaje={`¿Eliminar a ${agente.nombreCompleto} del equipo? Dejará de tener acceso al CRM.`}
+          eliminarAction={eliminarMiembro}
+          className="ml-auto"
+        />
       </div>
     </div>
   );
