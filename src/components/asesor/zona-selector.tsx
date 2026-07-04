@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 type Zona = { id: string; nombre: string; ciudad: string | null };
@@ -24,6 +24,9 @@ export function ZonaSelector({
   const [seleccion, setSeleccion] = useState(zonaSeleccionada ?? "");
   const [state, formAction, pending] = useActionState<ZonaState, FormData>(crearZonaAction, null);
   const [stateProcesado, setStateProcesado] = useState(state);
+  const nombreRef = useRef<HTMLInputElement>(null);
+  const ciudadRef = useRef<HTMLInputElement>(null);
+  const provinciaRef = useRef<HTMLInputElement>(null);
 
   if (state !== stateProcesado) {
     setStateProcesado(state);
@@ -32,6 +35,14 @@ export function ZonaSelector({
       setSeleccion(state.zona.id);
       setMostrarForm(false);
     }
+  }
+
+  function crearZona() {
+    const formData = new FormData();
+    formData.set("nombre", nombreRef.current?.value ?? "");
+    formData.set("ciudad", ciudadRef.current?.value ?? "");
+    formData.set("provincia_estado", provinciaRef.current?.value ?? "");
+    formAction(formData);
   }
 
   return (
@@ -62,30 +73,32 @@ export function ZonaSelector({
 
       {mostrarForm && (
         <div className="space-y-2 rounded-md border p-3">
-          <form action={formAction} className="space-y-2">
-            <input
-              name="nombre"
-              placeholder="Nombre de la zona"
-              required
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            />
-            <input
-              name="ciudad"
-              placeholder="Ciudad (opcional)"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            />
-            <input
-              name="provincia_estado"
-              placeholder="Provincia (opcional)"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            />
-            {state && "error" in state && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
-            <Button type="submit" size="sm" disabled={pending}>
-              {pending ? "Creando..." : "Crear zona"}
-            </Button>
-          </form>
+          {/* No es un <form>: este selector vive dentro del formulario grande
+              de la ficha, y los formularios anidados no son válidos en HTML. */}
+          <input
+            ref={nombreRef}
+            name="nombre"
+            placeholder="Nombre de la zona"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+          <input
+            ref={ciudadRef}
+            name="ciudad"
+            placeholder="Ciudad (opcional)"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+          <input
+            ref={provinciaRef}
+            name="provincia_estado"
+            placeholder="Provincia (opcional)"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+          {state && "error" in state && (
+            <p className="text-sm text-destructive">{state.error}</p>
+          )}
+          <Button type="button" size="sm" onClick={crearZona} disabled={pending}>
+            {pending ? "Creando..." : "Crear zona"}
+          </Button>
         </div>
       )}
     </div>
