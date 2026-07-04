@@ -2,12 +2,9 @@ import {
   CalendarClock,
   CalendarRange,
   Clock,
-  CheckCircle2,
   CheckCheck,
-  XCircle,
   AlertTriangle,
   Flame,
-  Users,
   Info,
 } from "lucide-react";
 import { requireAdminInmobiliaria } from "@/lib/auth";
@@ -78,7 +75,7 @@ export default async function SeguimientoPage({
     supabase
       .from("tareas")
       .select(
-        "id, titulo, descripcion, fecha_vencimiento, estado, prioridad, asignado_a, entidad_tipo, entidad_id, creado_en"
+        "id, titulo, descripcion, fecha_vencimiento, estado, prioridad, asignado_a, entidad_tipo, entidad_id, creado_en, completada_en"
       )
       .eq("tenant_id", usuario.tenant_id)
       .order("fecha_vencimiento", { ascending: true, nullsFirst: false }),
@@ -210,17 +207,43 @@ export default async function SeguimientoPage({
 
   const tareasActivas = (tareas ?? []).filter((t) => t.estado === "pendiente" || t.estado === "en_progreso");
 
+  const eventosHoyCount = (eventos ?? []).filter(
+    (e) => new Date(e.fecha_hora) >= inicioHoy && new Date(e.fecha_hora) <= finHoy
+  ).length;
+  const tareasHoyCount = tareasActivas.filter(
+    (t) =>
+      t.fecha_vencimiento &&
+      new Date(t.fecha_vencimiento) >= inicioHoy &&
+      new Date(t.fecha_vencimiento) <= finHoy
+  ).length;
+
+  const eventosVencidosCount = (eventos ?? []).filter(
+    (e) => e.estado === "pendiente" && new Date(e.fecha_hora) < inicioHoy
+  ).length;
+  const tareasVencidasCount = tareasActivas.filter(
+    (t) => t.fecha_vencimiento && new Date(t.fecha_vencimiento) < inicioHoy
+  ).length;
+
+  const eventosCompletadosHoyCount = (eventos ?? []).filter(
+    (e) => e.estado === "completado" && new Date(e.fecha_hora) >= inicioHoy && new Date(e.fecha_hora) <= finHoy
+  ).length;
+  const tareasCompletadasHoyCount = (tareas ?? []).filter(
+    (t) =>
+      t.estado === "completada" &&
+      t.completada_en &&
+      new Date(t.completada_en) >= inicioHoy &&
+      new Date(t.completada_en) <= finHoy
+  ).length;
+
   const kpis = [
     {
-      label: "Eventos hoy",
-      valor: (eventos ?? []).filter(
-        (e) => new Date(e.fecha_hora) >= inicioHoy && new Date(e.fecha_hora) <= finHoy
-      ).length,
+      label: "Para hoy",
+      valor: eventosHoyCount + tareasHoyCount,
       icono: CalendarClock,
       color: "bg-sky-500/10 text-sky-600",
     },
     {
-      label: "Eventos esta semana",
+      label: "Esta semana",
       valor: (eventos ?? []).filter(
         (e) => new Date(e.fecha_hora) >= inicioSemana && new Date(e.fecha_hora) < finSemana
       ).length,
@@ -228,58 +251,16 @@ export default async function SeguimientoPage({
       color: "bg-violet-500/10 text-violet-600",
     },
     {
-      label: "Eventos pendientes",
-      valor: (eventos ?? []).filter((e) => e.estado === "pendiente").length,
+      label: "Pendientes",
+      valor: (eventos ?? []).filter((e) => e.estado === "pendiente").length + tareasActivas.length,
       icono: Clock,
       color: "bg-amber-500/10 text-amber-600",
     },
     {
-      label: "Confirmados",
-      valor: (eventos ?? []).filter((e) => e.estado === "pendiente" && e.confirmado).length,
-      icono: CheckCircle2,
-      color: "bg-cyan-500/10 text-cyan-600",
-    },
-    {
-      label: "Realizados",
-      valor: (eventos ?? []).filter((e) => e.estado === "completado").length,
-      icono: CheckCheck,
-      color: "bg-emerald-500/10 text-emerald-600",
-    },
-    {
-      label: "Cancelados",
-      valor: (eventos ?? []).filter((e) => e.estado === "cancelado").length,
-      icono: XCircle,
-      color: "bg-rose-500/10 text-rose-600",
-    },
-    {
-      label: "Tareas pendientes",
-      valor: tareasActivas.length,
-      icono: Clock,
-      color: "bg-amber-500/10 text-amber-600",
-    },
-    {
-      label: "Tareas para hoy",
-      valor: tareasActivas.filter(
-        (t) =>
-          t.fecha_vencimiento &&
-          new Date(t.fecha_vencimiento) >= inicioHoy &&
-          new Date(t.fecha_vencimiento) <= finHoy
-      ).length,
-      icono: CalendarClock,
-      color: "bg-sky-500/10 text-sky-600",
-    },
-    {
-      label: "Tareas vencidas",
-      valor: tareasActivas.filter((t) => t.fecha_vencimiento && new Date(t.fecha_vencimiento) < inicioHoy)
-        .length,
+      label: "Vencidas",
+      valor: eventosVencidosCount + tareasVencidasCount,
       icono: AlertTriangle,
       color: "bg-red-500/10 text-red-600",
-    },
-    {
-      label: "Tareas completadas",
-      valor: (tareas ?? []).filter((t) => t.estado === "completada").length,
-      icono: CheckCheck,
-      color: "bg-emerald-500/10 text-emerald-600",
     },
     {
       label: "Alta prioridad",
@@ -288,10 +269,10 @@ export default async function SeguimientoPage({
       color: "bg-rose-500/10 text-rose-600",
     },
     {
-      label: "Tareas asignadas",
-      valor: tareasActivas.filter((t) => t.asignado_a).length,
-      icono: Users,
-      color: "bg-violet-500/10 text-violet-600",
+      label: "Completadas hoy",
+      valor: eventosCompletadosHoyCount + tareasCompletadasHoyCount,
+      icono: CheckCheck,
+      color: "bg-emerald-500/10 text-emerald-600",
     },
   ];
 
@@ -337,7 +318,7 @@ export default async function SeguimientoPage({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
         {kpis.map(({ label, valor, icono: Icono, color }) => (
           <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
             <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
@@ -349,9 +330,7 @@ export default async function SeguimientoPage({
         ))}
       </div>
 
-      <div className="flex justify-center">
-        <CalendarioMensual itemsPorDia={calendarioPorDia} mesInicial={ahoraMesInicial} />
-      </div>
+      <CalendarioMensual itemsPorDia={calendarioPorDia} mesInicial={ahoraMesInicial} grande />
 
       <div className="grid gap-6 lg:grid-cols-2 lg:divide-x lg:divide-border">
         {/* Columna Agenda */}

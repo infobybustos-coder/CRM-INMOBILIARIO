@@ -33,11 +33,13 @@ function obtenerDiasMes(year: number, month: number): (Date | null)[] {
 export function CalendarioMensual({
   itemsPorDia,
   compacto = false,
+  grande = false,
   crearEventoAction,
   mesInicial,
 }: {
   itemsPorDia: Record<string, AgendaItem[]>;
   compacto?: boolean;
+  grande?: boolean;
   crearEventoAction?: (prevState: EventoState, formData: FormData) => Promise<EventoState>;
   mesInicial?: { year: number; month: number };
 }) {
@@ -67,9 +69,14 @@ export function CalendarioMensual({
   }
 
   return (
-    <div className={cn("rounded-lg border p-2", compacto ? "text-[10px]" : "max-w-sm text-xs")}>
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-medium">
+    <div
+      className={cn(
+        "rounded-lg border",
+        grande ? "w-full p-4 text-sm" : compacto ? "p-2 text-[10px]" : "max-w-sm p-2 text-xs"
+      )}
+    >
+      <div className={cn("flex items-center justify-between", grande ? "mb-3" : "mb-1.5")}>
+        <span className={cn("font-semibold", grande && "text-lg")}>
           {MESES[cursor.month]} {cursor.year}
         </span>
         {!compacto && (
@@ -77,26 +84,26 @@ export function CalendarioMensual({
             <button
               type="button"
               onClick={() => cambiarMes(-1)}
-              className="rounded-md p-0.5 hover:bg-accent"
+              className={cn("rounded-md hover:bg-accent", grande ? "p-1.5" : "p-0.5")}
               aria-label="Mes anterior"
             >
-              <ChevronLeft className="size-3.5" />
+              <ChevronLeft className={grande ? "size-5" : "size-3.5"} />
             </button>
             <button
               type="button"
               onClick={() => cambiarMes(1)}
-              className="rounded-md p-0.5 hover:bg-accent"
+              className={cn("rounded-md hover:bg-accent", grande ? "p-1.5" : "p-0.5")}
               aria-label="Mes siguiente"
             >
-              <ChevronRight className="size-3.5" />
+              <ChevronRight className={grande ? "size-5" : "size-3.5"} />
             </button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className={cn("grid grid-cols-7", grande ? "gap-1.5" : "gap-0.5")}>
         {DIAS_SEMANA.map((d) => (
-          <div key={d} className="text-center text-muted-foreground">
+          <div key={d} className={cn("text-center text-muted-foreground", grande && "pb-1 font-medium")}>
             {d}
           </div>
         ))}
@@ -113,20 +120,24 @@ export function CalendarioMensual({
               type="button"
               onClick={() => !compacto && setSeleccionado(clave)}
               className={cn(
-                "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-md border",
+                "flex aspect-square flex-col items-center justify-center rounded-md border",
+                grande ? "gap-1" : "gap-0.5",
                 esHoy && "border-primary",
                 seleccionadoActivo && !compacto && "bg-primary/10",
                 !compacto && "hover:bg-accent"
               )}
             >
-              <span className={cn(esHoy && "font-semibold text-primary")}>{dia.getDate()}</span>
+              <span className={cn(grande && "text-base", esHoy && "font-semibold text-primary")}>
+                {dia.getDate()}
+              </span>
               {items.length > 0 && (
-                <span className="flex gap-0.5">
+                <span className={cn("flex", grande ? "gap-1" : "gap-0.5")}>
                   {items.slice(0, 3).map((it, i) => (
                     <span
                       key={i}
                       className={cn(
-                        "size-1 rounded-full",
+                        grande ? "size-1.5" : "size-1",
+                        "rounded-full",
                         it.estado === "completado" || it.estado === "completada"
                           ? "bg-emerald-500"
                           : new Date(it.fecha) < hoy
@@ -143,8 +154,8 @@ export function CalendarioMensual({
       </div>
 
       {!compacto && (
-        <div className="mt-2 space-y-1 border-t pt-2">
-          <p className="text-xs font-medium text-muted-foreground">
+        <div className={cn("space-y-1 border-t", grande ? "mt-3 pt-3" : "mt-2 pt-2")}>
+          <p className={cn("font-medium text-muted-foreground", grande ? "text-sm" : "text-xs")}>
             {seleccionado
               ? new Date(`${seleccionado}T00:00:00`).toLocaleDateString("es-ES", {
                   weekday: "long",
@@ -154,12 +165,17 @@ export function CalendarioMensual({
               : "Selecciona un día"}
           </p>
           {itemsSeleccionado.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nada para este día.</p>
+            <p className={cn("text-muted-foreground", grande ? "text-sm" : "text-xs")}>
+              Nada para este día.
+            </p>
           ) : (
             itemsSeleccionado.map((it) => (
               <div
                 key={`${it.origen}-${it.id}`}
-                className="flex items-center justify-between rounded-md bg-muted/50 px-2 py-1 text-xs"
+                className={cn(
+                  "flex items-center justify-between rounded-md bg-muted/50",
+                  grande ? "px-3 py-1.5 text-sm" : "px-2 py-1 text-xs"
+                )}
               >
                 <span>{it.titulo}</span>
                 <span className="text-muted-foreground">
