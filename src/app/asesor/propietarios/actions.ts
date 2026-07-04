@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { limiteRecurso } from "@/lib/planes";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
@@ -309,5 +310,46 @@ export async function eliminarDocumento(documentoId: string, propietarioId: stri
   await supabase.storage.from("documentos").remove([urlStorage]);
   await supabase.from("documentos").delete().eq("id", documentoId).eq("tenant_id", usuario.tenant_id);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
+}
+
+export type CrearPropietarioRapidoState = { error: string } | { ok: true } | null;
+
+export async function crearPropietarioRapido(
+  _prevState: CrearPropietarioRapidoState,
+  formData: FormData
+): Promise<CrearPropietarioRapidoState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const telefono = String(formData.get("telefono") ?? "").trim();
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
+
+  if (!nombre || !telefono) {
+    return { error: "Pon al menos el nombre y el teléfono." };
+  }
+
+  const limite = limiteRecurso(usuario.tenant ?? {}, "propietarios");
+  if (limite !== null) {
+    const { count } = await supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id);
+    if ((count ?? 0) >= limite) {
+      return { error: `Has llegado al límite de ${limite} captaciones del plan Gratis.` };
+    }
+  }
+
+  const { error } = await supabase.from("propietarios").insert({
+    tenant_id: usuario.tenant_id,
+    nombre,
+    telefono,
+    direccion,
+  });
+
+  if (error) return { error: "No se pudo guardar el propietario." };
+
+  revalidarPropietario();
+  return { ok: true };
 }

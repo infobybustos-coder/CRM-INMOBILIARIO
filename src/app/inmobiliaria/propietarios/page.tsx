@@ -12,6 +12,7 @@ import { Filtros } from "@/components/asesor/propietarios/filtros";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
 import { Kanban } from "@/components/inmobiliaria/propietarios/kanban";
 import { Tabla } from "@/components/inmobiliaria/propietarios/tabla";
+import { NuevoPropietario } from "@/components/inmobiliaria/propietarios/nuevo-propietario";
 import { calcularPrioridad } from "@/lib/prioridad";
 import type { Propietario } from "@/app/asesor/propietarios/constantes";
 
@@ -94,7 +95,10 @@ export default async function PropietariosPage({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Propietarios</h1>
-        <VistaSwitcher vista={vista} />
+        <div className="flex items-center gap-2">
+          <VistaSwitcher vista={vista} />
+          <NuevoPropietario />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
