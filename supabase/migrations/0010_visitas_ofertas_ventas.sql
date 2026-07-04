@@ -33,13 +33,15 @@ CREATE INDEX IF NOT EXISTS idx_ofertas_agente   ON ofertas (agente_id);
 
 ALTER TABLE ofertas ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_isolation_ofertas ON ofertas;
 CREATE POLICY tenant_isolation_ofertas ON ofertas
   USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS agente_solo_sus_ofertas ON ofertas;
 CREATE POLICY agente_solo_sus_ofertas ON ofertas FOR SELECT
   USING (
-    current_user_rol() IN ('administrador','director_comercial')
+    current_user_rol() = 'admin'
     OR agente_id = auth.uid()
   );
 
@@ -72,12 +74,14 @@ CREATE INDEX IF NOT EXISTS idx_ventas_agente   ON ventas (agente_id);
 
 ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_isolation_ventas ON ventas;
 CREATE POLICY tenant_isolation_ventas ON ventas
   USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS agente_solo_sus_ventas ON ventas;
 CREATE POLICY agente_solo_sus_ventas ON ventas FOR SELECT
   USING (
-    current_user_rol() IN ('administrador','director_comercial')
+    current_user_rol() = 'admin'
     OR agente_id = auth.uid()
   );
