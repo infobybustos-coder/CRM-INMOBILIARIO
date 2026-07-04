@@ -34,15 +34,17 @@ export function CalendarioMensual({
   itemsPorDia,
   compacto = false,
   crearEventoAction,
+  mesInicial,
 }: {
   itemsPorDia: Record<string, AgendaItem[]>;
   compacto?: boolean;
   crearEventoAction?: (prevState: EventoState, formData: FormData) => Promise<EventoState>;
+  mesInicial?: { year: number; month: number };
 }) {
   const hoy = new Date();
-  const [cursor, setCursor] = useState({ year: hoy.getFullYear(), month: hoy.getMonth() });
+  const [cursor, setCursor] = useState(mesInicial ?? { year: hoy.getFullYear(), month: hoy.getMonth() });
   const [seleccionado, setSeleccionado] = useState<string | null>(
-    compacto ? null : claveDia(hoy)
+    compacto ? null : mesInicial ? null : claveDia(hoy)
   );
   const [state, formAction, pending] = useActionState(
     crearEventoAction ?? (async () => null),

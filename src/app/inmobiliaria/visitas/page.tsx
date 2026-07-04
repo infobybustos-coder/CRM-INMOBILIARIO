@@ -32,7 +32,7 @@ export default async function VisitasPage() {
     await Promise.all([
       supabase
         .from("eventos_agenda")
-        .select("id, fecha_hora, estado, confirmado, inmueble_id, comprador_id, usuario_id")
+        .select("id, fecha_hora, estado, confirmado, inmueble_id, comprador_id, usuario_id, creado_en")
         .eq("tenant_id", usuario.tenant_id)
         .eq("tipo", "visita")
         .order("fecha_hora", { ascending: true }),
@@ -67,6 +67,30 @@ export default async function VisitasPage() {
     nombreComprador: compradoresPorId.get(e.comprador_id ?? "") ?? "Comprador sin especificar",
     nombreAsesor: asesoresPorId.get(e.usuario_id ?? "") ?? null,
   }));
+
+  const ultimasCreadas: VisitaFila[] = [...(eventos ?? [])]
+    .sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime())
+    .slice(0, 5)
+    .map((e) => ({
+      id: e.id,
+      fecha_hora: e.fecha_hora,
+      estado: e.estado,
+      confirmado: e.confirmado,
+      direccionInmueble: inmueblesPorId.get(e.inmueble_id ?? "") ?? "Inmueble sin especificar",
+      nombreComprador: compradoresPorId.get(e.comprador_id ?? "") ?? "Comprador sin especificar",
+      nombreAsesor: asesoresPorId.get(e.usuario_id ?? "") ?? null,
+    }));
+
+  // La visita pendiente más próxima decide qué mes abre el calendario,
+  // para que una visita recién creada sea visible sin tener que navegar.
+  const proximaPendiente = (eventos ?? [])
+    .filter((e) => e.estado === "pendiente" && new Date(e.fecha_hora) >= inicioHoy)
+    .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())[0];
+  const fechaMesCalendario = proximaPendiente ? new Date(proximaPendiente.fecha_hora) : ahora;
+  const mesInicialCalendario = {
+    year: fechaMesCalendario.getFullYear(),
+    month: fechaMesCalendario.getMonth(),
+  };
 
   const kpis = [
     {
@@ -145,11 +169,37 @@ export default async function VisitasPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-5">
           <Tabla visitas={visitas} />
         </div>
-        <div>
-          <CalendarioMensual itemsPorDia={agendaPorDia} />
+        <div className="space-y-4">
+          <CalendarioMensual itemsPorDia={agendaPorDia} mesInicial={mesInicialCalendario} />
+
+          <div className="rounded-lg border p-3">
+            <h2 className="text-sm font-medium">Últimas visitas creadas</h2>
+            {ultimasCreadas.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">Todavía no se ha creado ninguna.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {ultimasCreadas.map((v) => (
+                  <li key={v.id} className="text-sm">
+                    <p className="font-medium">{v.direccionInmueble}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {v.nombreComprador} ·{" "}
+                      {new Date(v.fecha_hora).toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      {new Date(v.fecha_hora).toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>
