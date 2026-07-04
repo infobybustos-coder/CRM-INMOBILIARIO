@@ -573,24 +573,25 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       </div>
 
       {/* Fila 2 — Salud comercial */}
-      <div className="grid gap-6 rounded-2xl border p-6 shadow-sm md:grid-cols-3">
-        <div className="md:col-span-2">
+      <div className="grid gap-8 rounded-2xl border p-8 shadow-sm md:grid-cols-3">
+        <div className="flex flex-col items-center justify-center gap-3 md:items-start">
           <p className="text-sm font-medium text-muted-foreground">Puntuación</p>
-          <p className="flex items-baseline gap-2">
-            <span className={`text-4xl font-semibold ${saludColor}`}>{saludScore}</span>
-            <span className="text-sm text-muted-foreground">/100</span>
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Estado: <span className={cn("font-medium", saludColor)}>{saludLabel}</span>
-          </p>
-          <div className="mt-5 h-5 overflow-hidden rounded-full bg-emerald-500/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700"
-              style={{ width: `${saludScore}%` }}
-            />
+          <div
+            className="flex size-36 shrink-0 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(#10b981 ${saludScore * 3.6}deg, rgb(16 185 129 / 0.1) 0deg)`,
+            }}
+          >
+            <div className="flex size-28 flex-col items-center justify-center rounded-full bg-background">
+              <span className={`text-4xl font-semibold ${saludColor}`}>{saludScore}</span>
+              <span className="text-xs text-muted-foreground">/100</span>
+            </div>
           </div>
+          <span className={cn("rounded-full px-3 py-1 text-xs font-medium bg-current/10", saludColor)}>
+            {saludLabel}
+          </span>
         </div>
-        <div className="flex flex-col justify-center gap-2.5 text-sm">
+        <div className="flex flex-col justify-center gap-2.5 text-sm md:col-span-2">
           <span className="flex items-center gap-2">
             <span>{pctAlDia >= 90 ? "✔️" : "⚠️"}</span>
             <span>{pctAlDia >= 90 ? "Seguimientos al día" : `${pctAlDia}% de seguimientos al día`}</span>
