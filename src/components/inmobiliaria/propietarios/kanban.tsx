@@ -18,8 +18,9 @@ import {
   ETIQUETAS_ESTADO,
   type Propietario,
 } from "@/app/asesor/propietarios/constantes";
-import { actualizarEstadoPropietario } from "@/app/asesor/propietarios/actions";
+import { actualizarEstadoPropietario, eliminarPropietario } from "@/app/asesor/propietarios/actions";
 import { calcularPrioridad, calcularCaptacionScore, diasDesde } from "@/lib/prioridad";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { cn } from "@/lib/utils";
 
 type PropietarioConAgente = Propietario & { agente_id: string | null };
@@ -107,16 +108,24 @@ function Tarjeta({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium text-foreground">{propietario.nombre}</span>
-        {prioridad && (
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-              COLOR_PRIORIDAD[prioridad]
-            )}
-          >
-            {prioridad}
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {prioridad && (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                COLOR_PRIORIDAD[prioridad]
+              )}
+            >
+              {prioridad}
+            </span>
+          )}
+          <BotonEliminar
+            id={propietario.id}
+            mensaje={`¿Eliminar a ${propietario.nombre}? Esta acción no se puede deshacer.`}
+            eliminarAction={eliminarPropietario}
+            className="size-6"
+          />
+        </div>
       </div>
 
       {propietario.direccion && (

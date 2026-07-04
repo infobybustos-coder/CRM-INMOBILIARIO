@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ETIQUETAS_ESTADO_COMPRADOR, type Comprador } from "@/app/asesor/compradores/constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { eliminarComprador } from "@/app/asesor/compradores/actions";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +107,14 @@ export function Tabla({
                 )}
                 <span className="text-xs text-muted-foreground">Score {score}</span>
               </div>
-              {presupuesto && <span className="text-xs text-muted-foreground">{presupuesto}</span>}
+              <div className="flex items-center gap-2">
+                {presupuesto && <span className="text-xs text-muted-foreground">{presupuesto}</span>}
+                <BotonEliminar
+                  id={c.id}
+                  mensaje={`¿Eliminar a ${c.nombre}? Esta acción no se puede deshacer.`}
+                  eliminarAction={eliminarComprador}
+                />
+              </div>
             </div>
 
             <p className="mt-1.5 font-medium">{c.nombre}</p>

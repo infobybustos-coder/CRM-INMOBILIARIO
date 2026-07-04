@@ -306,3 +306,17 @@ export async function crearInmuebleRapido(
   revalidarInmueble();
   return { ok: true };
 }
+
+export async function eliminarInmueble(id: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
+
+  await supabase
+    .from("inmuebles")
+    .delete()
+    .eq("id", id)
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+
+  revalidarInmueble();
+}

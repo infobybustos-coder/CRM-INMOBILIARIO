@@ -8,6 +8,8 @@ import {
   type Inmueble,
 } from "@/app/asesor/inmuebles/constantes";
 import { FotoMiniatura } from "@/components/asesor/inmuebles/foto-miniatura";
+import { eliminarInmueble } from "@/app/asesor/inmuebles/actions";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
@@ -80,14 +82,21 @@ export function Tabla({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-medium">{i.direccion}</p>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-medium",
-                  COLOR_ESTADO[i.estado] ?? "bg-muted text-muted-foreground"
-                )}
-              >
-                {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-medium",
+                    COLOR_ESTADO[i.estado] ?? "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
+                </span>
+                <BotonEliminar
+                  id={i.id}
+                  mensaje={`¿Eliminar el inmueble en ${i.direccion}? Esta acción no se puede deshacer.`}
+                  eliminarAction={eliminarInmueble}
+                />
+              </div>
             </div>
             <p className="text-sm text-muted-foreground">
               {i.tipo ? ETIQUETAS_TIPO_INMUEBLE[i.tipo] ?? i.tipo : "Sin tipo"}

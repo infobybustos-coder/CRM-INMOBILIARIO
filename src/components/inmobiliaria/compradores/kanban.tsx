@@ -18,8 +18,9 @@ import {
   ETIQUETAS_ESTADO_COMPRADOR,
   type Comprador,
 } from "@/app/asesor/compradores/constantes";
-import { actualizarEstadoComprador } from "@/app/asesor/compradores/actions";
+import { actualizarEstadoComprador, eliminarComprador } from "@/app/asesor/compradores/actions";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
@@ -115,16 +116,24 @@ function Tarjeta({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium text-foreground">{comprador.nombre}</span>
-        {prioridad && (
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-              COLOR_PRIORIDAD[prioridad]
-            )}
-          >
-            {prioridad}
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {prioridad && (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                COLOR_PRIORIDAD[prioridad]
+              )}
+            >
+              {prioridad}
+            </span>
+          )}
+          <BotonEliminar
+            id={comprador.id}
+            mensaje={`¿Eliminar a ${comprador.nombre}? Esta acción no se puede deshacer.`}
+            eliminarAction={eliminarComprador}
+            className="size-6"
+          />
+        </div>
       </div>
 
       <p className="mt-1 text-xs text-muted-foreground">Score: {score}</p>

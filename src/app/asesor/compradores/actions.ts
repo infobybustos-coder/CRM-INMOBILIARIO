@@ -275,3 +275,17 @@ export async function eliminarDocumento(documentoId: string, compradorId: string
 
   revalidarComprador(compradorId);
 }
+
+export async function eliminarComprador(id: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
+
+  await supabase
+    .from("compradores")
+    .delete()
+    .eq("id", id)
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+
+  revalidarComprador();
+}

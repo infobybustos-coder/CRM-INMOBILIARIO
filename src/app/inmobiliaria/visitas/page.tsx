@@ -28,8 +28,12 @@ export default async function VisitasPage() {
   const finSemana = new Date(inicioSemana);
   finSemana.setDate(finSemana.getDate() + 7);
 
-  const [{ data: eventos }, { data: inmuebles }, { data: compradores }, { data: asesores }] =
-    await Promise.all([
+  const [
+    { data: eventos, error: errorEventos },
+    { data: inmuebles },
+    { data: compradores },
+    { data: asesores },
+  ] = await Promise.all([
       supabase
         .from("eventos_agenda")
         .select("id, fecha_hora, estado, confirmado, inmueble_id, comprador_id, usuario_id, creado_en")
@@ -155,6 +159,17 @@ export default async function VisitasPage() {
           asesores={(asesores ?? []).map((a) => ({ id: a.id, etiqueta: a.nombre_completo }))}
         />
       </div>
+
+      {errorEventos && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
+          <p className="font-medium">No se pudieron cargar las visitas.</p>
+          <p className="mt-1 text-xs">
+            {errorEventos.message}
+            {errorEventos.message?.includes("column") &&
+              " — probablemente falta correr la migración 0014_visitas_inmueble_comprador.sql en Supabase."}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
         {kpis.map(({ label, valor, icono: Icono, color }) => (

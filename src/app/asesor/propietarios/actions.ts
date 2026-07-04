@@ -353,3 +353,17 @@ export async function crearPropietarioRapido(
   revalidarPropietario();
   return { ok: true };
 }
+
+export async function eliminarPropietario(id: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
+
+  await supabase
+    .from("propietarios")
+    .delete()
+    .eq("id", id)
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+
+  revalidarPropietario();
+}

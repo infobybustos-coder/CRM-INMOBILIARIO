@@ -8,6 +8,8 @@ import {
   type Propietario,
 } from "@/app/asesor/propietarios/constantes";
 import { calcularPrioridad, calcularCaptacionScore } from "@/lib/prioridad";
+import { eliminarPropietario } from "@/app/asesor/propietarios/actions";
+import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { useMoneda } from "@/lib/preferencias";
 import { cn } from "@/lib/utils";
 
@@ -99,13 +101,20 @@ export function Tabla({
                 )}
                 <span className="text-xs text-muted-foreground">Score {score}</span>
               </div>
-              {(p.fuente_lead || p.valor_estimado) && (
-                <span className="text-xs text-muted-foreground">
-                  {p.fuente_lead && ETIQUETAS_FUENTE_LEAD[p.fuente_lead]}
-                  {p.fuente_lead && p.valor_estimado ? " · " : ""}
-                  {p.valor_estimado ? formatear(p.valor_estimado) : ""}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {(p.fuente_lead || p.valor_estimado) && (
+                  <span className="text-xs text-muted-foreground">
+                    {p.fuente_lead && ETIQUETAS_FUENTE_LEAD[p.fuente_lead]}
+                    {p.fuente_lead && p.valor_estimado ? " · " : ""}
+                    {p.valor_estimado ? formatear(p.valor_estimado) : ""}
+                  </span>
+                )}
+                <BotonEliminar
+                  id={p.id}
+                  mensaje={`¿Eliminar a ${p.nombre}? Esta acción no se puede deshacer.`}
+                  eliminarAction={eliminarPropietario}
+                />
+              </div>
             </div>
 
             <p className="mt-1.5 font-medium">{p.nombre}</p>
