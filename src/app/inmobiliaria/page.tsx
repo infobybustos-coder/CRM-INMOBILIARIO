@@ -6,12 +6,10 @@ import {
   Users,
   Phone,
   CalendarCheck,
-  HeartPulse,
   Flame,
   ArrowUp,
   ArrowDown,
   CheckCircle2,
-  AlertTriangle,
   Trophy,
   CalendarDays,
   Plus,
@@ -130,6 +128,8 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
   inicioHistorico.setMonth(inicioHistorico.getMonth() - 5);
   inicioHistorico.setDate(1);
   inicioHistorico.setHours(0, 0, 0, 0);
+  const inicio30dias = new Date();
+  inicio30dias.setDate(inicio30dias.getDate() - 30);
 
   const [
     { count: propietariosNuevosMes },
@@ -155,6 +155,8 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     propietariosDocRequeridos,
     documentosExistentes,
     actividadesHoy,
+    propietariosRecientes,
+    compradoresParaSalud,
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -284,6 +286,16 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       .eq("tenant_id", tenantId)
       .gte("creado_en", inicioHoy.toISOString())
       .lte("creado_en", finHoy.toISOString()),
+    supabase
+      .from("propietarios")
+      .select("id, fecha_ultimo_contacto")
+      .eq("tenant_id", tenantId)
+      .gte("creado_en", inicio30dias.toISOString()),
+    supabase
+      .from("compradores")
+      .select("id, fecha_proxima_accion")
+      .eq("tenant_id", tenantId)
+      .not("estado", "in", "(comprado,perdido)"),
   ]);
 
   const nombrePorUsuario = new Map(
@@ -299,11 +311,24 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     return dias === null || dias >= 10;
   }).length;
   const ritmoSubio = (propietariosNuevosMes ?? 0) >= (propietariosNuevosMesAnterior ?? 0);
-  const penalizacionInactivos = Math.min(30, sinContactoLargo * 5);
-  const saludScore = Math.max(
-    0,
-    Math.min(100, Math.round(pctAlDia * 0.6 + (ritmoSubio ? 30 : 10) - penalizacionInactivos + 10))
-  );
+
+  const leadsRecientes = propietariosRecientes.data ?? [];
+  const ratioRespuesta =
+    leadsRecientes.length > 0
+      ? Math.round(
+          (leadsRecientes.filter((p) => p.fecha_ultimo_contacto).length / leadsRecientes.length) * 100
+        )
+      : 100;
+  const buenRatioRespuesta = ratioRespuesta >= 80;
+
+  const compradoresSinSeguimiento = (compradoresParaSalud.data ?? []).filter(
+    (c) => !c.fecha_proxima_accion
+  ).length;
+
+  const ritmoScore = ritmoSubio ? 100 : 50;
+  const promedioSenales = Math.round((pctAlDia + ritmoScore + ratioRespuesta) / 3);
+  const penalizacion = Math.min(20, sinContactoLargo * 3) + Math.min(20, compradoresSinSeguimiento * 3);
+  const saludScore = Math.max(0, Math.min(100, promedioSenales - penalizacion));
   const saludLabel =
     saludScore >= 85 ? "Excelente" : saludScore >= 70 ? "Buena" : saludScore >= 50 ? "Regular" : "Necesita atención";
   const saludColor =
@@ -550,54 +575,48 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       </div>
 
       {/* Fila 2 — Salud comercial */}
-      <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-3">
+      <div className="grid gap-6 rounded-2xl border p-6 shadow-sm md:grid-cols-3">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3">
-            <HeartPulse className={`size-6 ${saludColor}`} />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Salud Comercial</p>
-              <p className="flex items-baseline gap-2">
-                <span className={`text-3xl font-semibold ${saludColor}`}>{saludScore}</span>
-                <span className="text-sm text-muted-foreground">/100</span>
-                <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", saludColor, "bg-current/10")}>
-                  {saludLabel}
-                </span>
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+          <p className="text-sm font-medium text-muted-foreground">Puntuación</p>
+          <p className="flex items-baseline gap-2">
+            <span className={`text-4xl font-semibold ${saludColor}`}>{saludScore}</span>
+            <span className="text-sm text-muted-foreground">/100</span>
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Estado: <span className={cn("font-medium", saludColor)}>{saludLabel}</span>
+          </p>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
             <div className={cn("h-full rounded-full", saludBarra)} style={{ width: `${saludScore}%` }} />
           </div>
         </div>
-        <div className="flex flex-col justify-center gap-2 text-sm">
-          <span
-            className={cn(
-              "inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1",
-              pctAlDia >= 90 ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
-            )}
-          >
-            {pctAlDia >= 90 ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
-            {pctAlDia}% de seguimientos al día
+        <div className="flex flex-col justify-center gap-2.5 text-sm">
+          <span className="flex items-center gap-2">
+            <span>{pctAlDia >= 90 ? "✔️" : "⚠️"}</span>
+            <span>{pctAlDia >= 90 ? "Seguimientos al día" : `${pctAlDia}% de seguimientos al día`}</span>
           </span>
-          <span
-            className={cn(
-              "inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1",
-              ritmoSubio ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
-            )}
-          >
-            {ritmoSubio ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
-            {ritmoSubio ? "Buen ritmo de captación" : "El ritmo de captación bajó"}
+          <span className="flex items-center gap-2">
+            <span>{ritmoSubio ? "✔️" : "⚠️"}</span>
+            <span>{ritmoSubio ? "Buen ritmo de captación" : "El ritmo de captación bajó"}</span>
           </span>
-          <span
-            className={cn(
-              "inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1",
-              sinContactoLargo === 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
-            )}
-          >
-            {sinContactoLargo === 0 ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
-            {sinContactoLargo === 0
-              ? "Nadie lleva más de 10 días sin contacto"
-              : `${sinContactoLargo} propietarios sin contacto hace +10 días`}
+          <span className="flex items-center gap-2">
+            <span>{buenRatioRespuesta ? "✔️" : "⚠️"}</span>
+            <span>{buenRatioRespuesta ? "Buen ratio de respuesta" : `Ratio de respuesta bajo (${ratioRespuesta}%)`}</span>
+          </span>
+          <span className="flex items-center gap-2">
+            <span>{sinContactoLargo === 0 ? "✔️" : "⚠️"}</span>
+            <span>
+              {sinContactoLargo === 0
+                ? "Nadie lleva más de 10 días sin contacto"
+                : `${sinContactoLargo} propietarios llevan más de 10 días sin contacto`}
+            </span>
+          </span>
+          <span className="flex items-center gap-2">
+            <span>{compradoresSinSeguimiento === 0 ? "✔️" : "⚠️"}</span>
+            <span>
+              {compradoresSinSeguimiento === 0
+                ? "Todos los compradores tienen seguimiento"
+                : `${compradoresSinSeguimiento} compradores sin seguimiento`}
+            </span>
           </span>
         </div>
       </div>
