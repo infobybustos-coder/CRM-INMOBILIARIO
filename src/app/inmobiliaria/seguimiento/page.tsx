@@ -13,7 +13,6 @@ import {
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarioMensual } from "@/components/asesor/calendario-mensual";
-import { VistaSwitcher } from "@/components/inmobiliaria/agenda/vista-switcher";
 import { Tabla as TablaAgenda, type EventoFila } from "@/components/inmobiliaria/agenda/tabla";
 import { Tabla as TablaTareas, type TareaFila } from "@/components/inmobiliaria/tareas/tabla";
 import { FiltroDia } from "@/components/inmobiliaria/seguimiento/filtro-dia";
@@ -48,12 +47,11 @@ function esMismoDia(fechaISO: string | null, diaISO: string) {
 export default async function SeguimientoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; dia?: string }>;
+  searchParams: Promise<{ dia?: string }>;
 }) {
   const usuario = await requireAdminInmobiliaria();
   const supabase = await createClient();
-  const { vista: vistaParam, dia: diaParam } = await searchParams;
-  const vista = vistaParam === "calendario" ? "calendario" : "lista";
+  const { dia: diaParam } = await searchParams;
   const dia = diaParam ?? aISO(new Date());
   const filtrandoPorDia = dia !== "todos";
 
@@ -210,9 +208,11 @@ export default async function SeguimientoPage({
     };
   });
 
-  const kpisAgenda = [
+  const tareasActivas = (tareas ?? []).filter((t) => t.estado === "pendiente" || t.estado === "en_progreso");
+
+  const kpis = [
     {
-      label: "Hoy",
+      label: "Eventos hoy",
       valor: (eventos ?? []).filter(
         (e) => new Date(e.fecha_hora) >= inicioHoy && new Date(e.fecha_hora) <= finHoy
       ).length,
@@ -220,7 +220,7 @@ export default async function SeguimientoPage({
       color: "bg-sky-500/10 text-sky-600",
     },
     {
-      label: "Esta semana",
+      label: "Eventos esta semana",
       valor: (eventos ?? []).filter(
         (e) => new Date(e.fecha_hora) >= inicioSemana && new Date(e.fecha_hora) < finSemana
       ).length,
@@ -228,42 +228,37 @@ export default async function SeguimientoPage({
       color: "bg-violet-500/10 text-violet-600",
     },
     {
-      label: "Pendientes",
+      label: "Eventos pendientes",
       valor: (eventos ?? []).filter((e) => e.estado === "pendiente").length,
       icono: Clock,
       color: "bg-amber-500/10 text-amber-600",
     },
     {
-      label: "Confirmadas",
+      label: "Confirmados",
       valor: (eventos ?? []).filter((e) => e.estado === "pendiente" && e.confirmado).length,
       icono: CheckCircle2,
       color: "bg-cyan-500/10 text-cyan-600",
     },
     {
-      label: "Realizadas",
+      label: "Realizados",
       valor: (eventos ?? []).filter((e) => e.estado === "completado").length,
       icono: CheckCheck,
       color: "bg-emerald-500/10 text-emerald-600",
     },
     {
-      label: "Canceladas",
+      label: "Cancelados",
       valor: (eventos ?? []).filter((e) => e.estado === "cancelado").length,
       icono: XCircle,
       color: "bg-rose-500/10 text-rose-600",
     },
-  ];
-
-  const tareasActivas = (tareas ?? []).filter((t) => t.estado === "pendiente" || t.estado === "en_progreso");
-
-  const kpisTareas = [
     {
-      label: "Pendientes",
+      label: "Tareas pendientes",
       valor: tareasActivas.length,
       icono: Clock,
       color: "bg-amber-500/10 text-amber-600",
     },
     {
-      label: "Para hoy",
+      label: "Tareas para hoy",
       valor: tareasActivas.filter(
         (t) =>
           t.fecha_vencimiento &&
@@ -274,14 +269,14 @@ export default async function SeguimientoPage({
       color: "bg-sky-500/10 text-sky-600",
     },
     {
-      label: "Vencidas",
+      label: "Tareas vencidas",
       valor: tareasActivas.filter((t) => t.fecha_vencimiento && new Date(t.fecha_vencimiento) < inicioHoy)
         .length,
       icono: AlertTriangle,
       color: "bg-red-500/10 text-red-600",
     },
     {
-      label: "Completadas",
+      label: "Tareas completadas",
       valor: (tareas ?? []).filter((t) => t.estado === "completada").length,
       icono: CheckCheck,
       color: "bg-emerald-500/10 text-emerald-600",
@@ -293,7 +288,7 @@ export default async function SeguimientoPage({
       color: "bg-rose-500/10 text-rose-600",
     },
     {
-      label: "Asignadas",
+      label: "Tareas asignadas",
       valor: tareasActivas.filter((t) => t.asignado_a).length,
       icono: Users,
       color: "bg-violet-500/10 text-violet-600",
@@ -311,75 +306,63 @@ export default async function SeguimientoPage({
       tipo: e.tipo,
     };
   });
-  const agendaPorDia = agruparPorDia(agendaItems);
+  const tareaItems: AgendaItem[] = (tareas ?? [])
+    .filter((t) => t.fecha_vencimiento)
+    .map((t) => ({
+      id: t.id,
+      origen: "tarea" as const,
+      titulo: `✅ ${t.titulo}`,
+      fecha: t.fecha_vencimiento as string,
+      estado: t.estado,
+    }));
+  const calendarioPorDia = agruparPorDia([...agendaItems, ...tareaItems]);
   const ahoraMesInicial = { year: ahora.getFullYear(), month: ahora.getMonth() };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-end">
         <FiltroDia dia={dia} />
+      </div>
+
+      {(errorEventos || errorTareas) && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
+          {errorEventos && <p className="font-medium">No se pudieron cargar los eventos de la agenda.</p>}
+          {errorTareas && (
+            <p className="font-medium">
+              No se pudieron cargar las tareas.
+              {errorTareas.message?.includes("column") &&
+                " Probablemente falta correr la migración 0016_tareas_prioridad.sql en Supabase."}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+        {kpis.map(({ label, valor, icono: Icono, color }) => (
+          <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
+            <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
+              <Icono className="size-4" />
+            </span>
+            <span className="text-xl font-semibold">{valor}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-center">
+        <CalendarioMensual itemsPorDia={calendarioPorDia} mesInicial={ahoraMesInicial} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:divide-x lg:divide-border">
         {/* Columna Agenda */}
         <section className="space-y-4 lg:pr-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-1.5 text-lg font-semibold">📅 Agenda</h2>
-            <VistaSwitcher vista={vista} />
-          </div>
-
-          {errorEventos && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
-              <p className="font-medium">No se pudieron cargar los eventos de la agenda.</p>
-              <p className="mt-1 text-xs">{errorEventos.message}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-2">
-            {kpisAgenda.map(({ label, valor, icono: Icono, color }) => (
-              <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
-                <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
-                  <Icono className="size-4" />
-                </span>
-                <span className="text-xl font-semibold">{valor}</span>
-                <span className="text-xs text-muted-foreground">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {vista === "calendario" ? (
-            <CalendarioMensual itemsPorDia={agendaPorDia} mesInicial={ahoraMesInicial} />
-          ) : (
-            <TablaAgenda eventos={filasAgenda} />
-          )}
+          <h2 className="flex items-center gap-1.5 text-lg font-semibold">📅 Agenda</h2>
+          <TablaAgenda eventos={filasAgenda} />
         </section>
 
         {/* Columna Tareas */}
         <section className="space-y-4 lg:pl-6">
           <h2 className="flex items-center gap-1.5 text-lg font-semibold">✅ Tareas</h2>
-
-          {errorTareas && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
-              <p className="font-medium">No se pudieron cargar las tareas.</p>
-              <p className="mt-1 text-xs">
-                {errorTareas.message}
-                {errorTareas.message?.includes("column") &&
-                  " — probablemente falta correr la migración 0016_tareas_prioridad.sql en Supabase."}
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-2">
-            {kpisTareas.map(({ label, valor, icono: Icono, color }) => (
-              <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
-                <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
-                  <Icono className="size-4" />
-                </span>
-                <span className="text-xl font-semibold">{valor}</span>
-                <span className="text-xs text-muted-foreground">{label}</span>
-              </div>
-            ))}
-          </div>
 
           <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-sm text-muted-foreground">
             <Info className="mt-0.5 size-4 shrink-0 text-sky-600" />
