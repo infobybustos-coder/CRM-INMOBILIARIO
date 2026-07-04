@@ -3,11 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { limiteRecurso } from "@/lib/planes";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
   if (!usuario) throw new Error("No autenticado");
   return usuario;
+}
+
+// Este módulo lo usan tanto /asesor/compradores como /inmobiliaria/compradores.
+const BASES_COMPRADORES = ["/asesor/compradores", "/inmobiliaria/compradores"];
+
+function revalidarComprador(id?: string) {
+  for (const base of BASES_COMPRADORES) {
+    revalidatePath(base);
+    if (id) revalidatePath(`${base}/${id}`);
+  }
+}
+
+function revalidarAgendaYPanel() {
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/agenda");
+  revalidatePath("/inmobiliaria");
+  revalidatePath("/inmobiliaria/agenda");
 }
 
 export async function actualizarEstadoComprador(id: string, estado: string) {
@@ -32,7 +50,7 @@ export async function actualizarEstadoComprador(id: string, estado: string) {
     contenido: `Cambió el estado a "${estado}"`,
   });
 
-  revalidatePath("/asesor/compradores");
+  revalidarComprador();
 }
 
 export type GuardarCompradorState = { error: string } | { ok: true } | null;
@@ -55,6 +73,7 @@ export async function actualizarComprador(
   const fechaProximaAccion = formData.get("fecha_proxima_accion");
   const fechaUltimoContacto = formData.get("fecha_ultimo_contacto");
   const zonaBuscadaId = String(formData.get("zona_buscada_id") ?? "");
+  const habitaciones = formData.get("habitaciones");
 
   const { error } = await supabase
     .from("compradores")
@@ -67,6 +86,7 @@ export async function actualizarComprador(
       financiacion: String(formData.get("financiacion") ?? "") || null,
       tipo_inmueble: String(formData.get("tipo_inmueble") ?? "") || null,
       zona_buscada_id: zonaBuscadaId || null,
+      habitaciones: habitaciones ? Number(habitaciones) : null,
       urgencia: String(formData.get("urgencia") ?? "media"),
       fecha_proxima_accion: fechaProximaAccion ? String(fechaProximaAccion) : null,
       fecha_ultimo_contacto: fechaUltimoContacto ? String(fechaUltimoContacto) : null,
@@ -81,8 +101,7 @@ export async function actualizarComprador(
 
   if (error) return { error: "No se pudo guardar." };
 
-  revalidatePath(`/asesor/compradores/${id}`);
-  revalidatePath("/asesor/compradores");
+  revalidarComprador(id);
   return { ok: true };
 }
 
@@ -109,7 +128,7 @@ export async function crearNota(
 
   if (error) return { error: "No se pudo guardar la nota." };
 
-  revalidatePath(`/asesor/compradores/${compradorId}`);
+  revalidarComprador(compradorId);
   return null;
 }
 
@@ -138,9 +157,8 @@ export async function crearTarea(
 
   if (error) return { error: "No se pudo crear la tarea." };
 
-  revalidatePath(`/asesor/compradores/${compradorId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
+  revalidarComprador(compradorId);
+  revalidarAgendaYPanel();
   return null;
 }
 
@@ -156,10 +174,8 @@ export async function alternarTarea(tareaId: string, compradorId: string, comple
     })
     .eq("id", tareaId);
 
-  revalidatePath(`/asesor/compradores/${compradorId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor/agenda");
+  revalidarComprador(compradorId);
+  revalidarAgendaYPanel();
 }
 
 export type ZonaState = { error: string } | { ok: true; zona: { id: string; nombre: string; ciudad: string | null } } | null;
@@ -185,4 +201,43 @@ export async function crearZona(
   if (error || !data) return { error: "No se pudo crear la zona." };
 
   return { ok: true, zona: data };
+}
+
+export type CrearCompradorRapidoState = { error: string } | { ok: true } | null;
+
+export async function crearCompradorRapido(
+  _prevState: CrearCompradorRapidoState,
+  formData: FormData
+): Promise<CrearCompradorRapidoState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const telefono = String(formData.get("telefono") ?? "").trim();
+
+  if (!nombre || !telefono) {
+    return { error: "Pon al menos el nombre y el teléfono." };
+  }
+
+  const limite = limiteRecurso(usuario.tenant ?? {}, "compradores");
+  if (limite !== null) {
+    const { count } = await supabase
+      .from("compradores")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id);
+    if ((count ?? 0) >= limite) {
+      return { error: `Has llegado al límite de ${limite} compradores del plan Gratis.` };
+    }
+  }
+
+  const { error } = await supabase.from("compradores").insert({
+    tenant_id: usuario.tenant_id,
+    nombre,
+    telefono,
+  });
+
+  if (error) return { error: "No se pudo guardar el comprador." };
+
+  revalidarComprador();
+  return { ok: true };
 }

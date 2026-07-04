@@ -166,6 +166,20 @@ export function FormularioComprador({
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="habitaciones" className="text-sm font-medium">
+            Habitaciones buscadas
+          </label>
+          <input
+            id="habitaciones"
+            name="habitaciones"
+            type="number"
+            min={0}
+            defaultValue={comprador.habitaciones ?? ""}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="urgencia" className="text-sm font-medium">
             Urgencia
           </label>

@@ -1,13 +1,13 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getUsuarioConTenant, esGestor } from "@/lib/auth";
+import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
-import { crearNota, crearTarea, alternarTarea } from "../actions";
-import type { Comprador } from "../constantes";
+import { crearNota, crearTarea, alternarTarea } from "@/app/asesor/compradores/actions";
+import type { Comprador } from "@/app/asesor/compradores/constantes";
 import { calcularPrioridadComprador, calcularCompraScore } from "@/lib/prioridad";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +22,7 @@ export default async function CompradorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await getUsuarioConTenant();
-  if (!usuario) redirect("/login");
-
+  const usuario = await requireAdminInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
 
@@ -34,47 +32,42 @@ export default async function CompradorPage({
       "id, nombre, telefono, email, presupuesto_min, presupuesto_max, financiacion, tipo_inmueble, zona_buscada_id, habitaciones, urgencia, estado, fecha_ultimo_contacto, fecha_proxima_accion, notas, creado_en, agente_id"
     )
     .eq("id", id)
-    .eq(
-      esGestor(usuario.rol) ? "tenant_id" : "agente_id",
-      esGestor(usuario.rol) ? usuario.tenant_id : usuario.id
-    )
+    .eq("tenant_id", usuario.tenant_id)
     .single();
 
   if (!comprador) notFound();
 
-  const gestor = esGestor(usuario.rol);
-  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] = await Promise.all([
-    supabase
-      .from("actividades")
-      .select("id, tipo, contenido, creado_en")
-      .eq("entidad_tipo", "comprador")
-      .eq("entidad_id", id)
-      .order("creado_en", { ascending: false }),
-    supabase
-      .from("tareas")
-      .select("id, titulo, descripcion, fecha_vencimiento, estado")
-      .eq("entidad_tipo", "comprador")
-      .eq("entidad_id", id)
-      .order("creado_en", { ascending: false }),
-    supabase
-      .from("zonas")
-      .select("id, nombre, ciudad")
-      .eq("tenant_id", usuario.tenant_id)
-      .order("nombre", { ascending: true }),
-    gestor
-      ? supabase
-          .from("usuarios")
-          .select("id, nombre_completo")
-          .eq("tenant_id", usuario.tenant_id)
-          .eq("activo", true)
-          .order("nombre_completo")
-      : Promise.resolve({ data: [] }),
-  ]);
+  const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }] =
+    await Promise.all([
+      supabase
+        .from("actividades")
+        .select("id, tipo, contenido, creado_en")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
+      supabase
+        .from("tareas")
+        .select("id, titulo, descripcion, fecha_vencimiento, estado")
+        .eq("entidad_tipo", "comprador")
+        .eq("entidad_id", id)
+        .order("creado_en", { ascending: false }),
+      supabase
+        .from("zonas")
+        .select("id, nombre, ciudad")
+        .eq("tenant_id", usuario.tenant_id)
+        .order("nombre", { ascending: true }),
+      supabase
+        .from("usuarios")
+        .select("id, nombre_completo")
+        .eq("tenant_id", usuario.tenant_id)
+        .eq("activo", true)
+        .order("nombre_completo"),
+    ]);
 
   return (
     <div className="space-y-6">
       <Link
-        href="/asesor/compradores"
+        href="/inmobiliaria/compradores"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />
@@ -104,7 +97,7 @@ export default async function CompradorPage({
       <FormularioComprador
         comprador={comprador as Comprador}
         zonas={zonas ?? []}
-        agentes={gestor ? (agentes ?? []) : []}
+        agentes={agentes ?? []}
       />
 
       <Tareas

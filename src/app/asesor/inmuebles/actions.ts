@@ -3,11 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { limiteRecurso } from "@/lib/planes";
 
 async function requireUsuario() {
   const usuario = await getUsuarioConTenant();
   if (!usuario) throw new Error("No autenticado");
   return usuario;
+}
+
+// Este módulo lo usan tanto /asesor/inmuebles como /inmobiliaria/inmuebles.
+const BASES_INMUEBLES = ["/asesor/inmuebles", "/inmobiliaria/inmuebles"];
+
+function revalidarInmueble(id?: string) {
+  for (const base of BASES_INMUEBLES) {
+    revalidatePath(base);
+    if (id) revalidatePath(`${base}/${id}`);
+  }
 }
 
 export type GuardarInmuebleState = { error: string } | { ok: true } | null;
@@ -36,6 +47,7 @@ export async function actualizarInmueble(
   const gestor = esGestor(usuario.rol);
   const filtroCol = gestor ? "tenant_id" : "agente_id";
   const filtroVal = gestor ? usuario.tenant_id : usuario.id;
+  const nuevoAgenteId = gestor ? String(formData.get("agente_id") ?? "").trim() || null : null;
 
   const { data: actual } = await supabase
     .from("inmuebles")
@@ -60,6 +72,7 @@ export async function actualizarInmueble(
       certificado_energetico: String(formData.get("certificado_energetico") ?? "").trim() || null,
       descripcion: String(formData.get("descripcion") ?? "").trim() || null,
       fecha_publicacion: fechaPublicacion ? String(fechaPublicacion) : null,
+      ...(nuevoAgenteId ? { agente_id: nuevoAgenteId } : {}),
     })
     .eq("id", id)
     .eq(filtroCol, filtroVal);
@@ -81,8 +94,7 @@ export async function actualizarInmueble(
     });
   }
 
-  revalidatePath(`/asesor/inmuebles/${id}`);
-  revalidatePath("/asesor/inmuebles");
+  revalidarInmueble(id);
   return { ok: true };
 }
 
@@ -109,7 +121,7 @@ export async function crearNota(
 
   if (error) return { error: "No se pudo guardar la nota." };
 
-  revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidarInmueble(inmuebleId);
   return null;
 }
 
@@ -138,9 +150,11 @@ export async function crearTarea(
 
   if (error) return { error: "No se pudo crear la tarea." };
 
-  revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidarInmueble(inmuebleId);
   revalidatePath("/asesor", "layout");
   revalidatePath("/asesor/agenda");
+  revalidatePath("/inmobiliaria");
+  revalidatePath("/inmobiliaria/agenda");
   return null;
 }
 
@@ -156,10 +170,11 @@ export async function alternarTarea(tareaId: string, inmuebleId: string, complet
     })
     .eq("id", tareaId);
 
-  revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidarInmueble(inmuebleId);
   revalidatePath("/asesor", "layout");
   revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor/agenda");
+  revalidatePath("/inmobiliaria");
+  revalidatePath("/inmobiliaria/agenda");
 }
 
 export type ZonaState = { error: string } | { ok: true; zona: { id: string; nombre: string; ciudad: string | null } } | null;
@@ -200,7 +215,7 @@ export async function registrarFoto(inmuebleId: string, nombreArchivo: string, u
 
   if (error) throw new Error("No se pudo registrar la foto");
 
-  revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidarInmueble(inmuebleId);
 }
 
 export async function eliminarFoto(fotoId: string, inmuebleId: string, urlStorage: string) {
@@ -210,5 +225,50 @@ export async function eliminarFoto(fotoId: string, inmuebleId: string, urlStorag
   await supabase.storage.from("documentos").remove([urlStorage]);
   await supabase.from("documentos").delete().eq("id", fotoId).eq("tenant_id", usuario.tenant_id);
 
-  revalidatePath(`/asesor/inmuebles/${inmuebleId}`);
+  revalidarInmueble(inmuebleId);
+}
+
+export type CrearInmuebleRapidoState = { error: string } | { ok: true } | null;
+
+export async function crearInmuebleRapido(
+  _prevState: CrearInmuebleRapidoState,
+  formData: FormData
+): Promise<CrearInmuebleRapidoState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const referencia = String(formData.get("referencia") ?? "").trim();
+  const direccion = String(formData.get("direccion") ?? "").trim();
+  const precio = formData.get("precio");
+
+  if (!referencia || !direccion) {
+    return { error: "Pon al menos la referencia y la dirección." };
+  }
+
+  const limite = limiteRecurso(usuario.tenant ?? {}, "inmuebles");
+  if (limite !== null) {
+    const { count } = await supabase
+      .from("inmuebles")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id);
+    if ((count ?? 0) >= limite) {
+      return { error: `Has llegado al límite de ${limite} inmuebles del plan Gratis.` };
+    }
+  }
+
+  const { error } = await supabase.from("inmuebles").insert({
+    tenant_id: usuario.tenant_id,
+    referencia,
+    direccion,
+    precio: precio ? Number(precio) : null,
+  });
+
+  if (error) {
+    return error.code === "23505"
+      ? { error: "Esa referencia ya existe." }
+      : { error: "No se pudo guardar el inmueble." };
+  }
+
+  revalidarInmueble();
+  return { ok: true };
 }

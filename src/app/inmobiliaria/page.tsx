@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   UserPlus,
   Award,
@@ -897,22 +898,27 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
         <h2 className="text-sm font-medium">Acciones rápidas</h2>
         <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
           {[
-            { icono: Plus, label: "Nuevo propietario", color: "bg-violet-500/10 text-violet-600" },
-            { icono: Building2, label: "Nuevo inmueble", color: "bg-sky-500/10 text-sky-600" },
-            { icono: UserSearch, label: "Nuevo comprador", color: "bg-emerald-500/10 text-emerald-600" },
-            { icono: CalendarPlus, label: "Nueva visita", color: "bg-amber-500/10 text-amber-600" },
-          ].map(({ icono: Icono, label, color }) => (
-            <div
+            { href: "/inmobiliaria/propietarios", icono: Plus, label: "Nuevo propietario", color: "bg-violet-500/10 text-violet-600" },
+            { href: "/inmobiliaria/inmuebles", icono: Building2, label: "Nuevo inmueble", color: "bg-sky-500/10 text-sky-600" },
+            { href: "/inmobiliaria/compradores", icono: UserSearch, label: "Nuevo comprador", color: "bg-emerald-500/10 text-emerald-600" },
+            { href: "/inmobiliaria/visitas", icono: CalendarPlus, label: "Nueva visita", color: "bg-amber-500/10 text-amber-600", deshabilitado: true },
+          ].map(({ href, icono: Icono, label, color, deshabilitado }) => (
+            <Link
               key={label}
-              className={cn("flex flex-col items-center gap-2 rounded-lg p-4 text-center opacity-60", color)}
+              href={href}
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-opacity",
+                color,
+                deshabilitado ? "pointer-events-none opacity-60" : "hover:opacity-80"
+              )}
             >
               <Icono className="size-5" />
               <span className="text-xs font-medium">{label}</span>
-            </div>
+            </Link>
           ))}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Se activan cuando construyamos los módulos de Propietarios, Inmuebles, Compradores y Visitas.
+          &ldquo;Nueva visita&rdquo; se activa cuando construyamos el módulo de Visitas.
         </p>
       </div>
     </div>

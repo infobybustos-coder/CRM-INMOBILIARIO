@@ -20,14 +20,18 @@ function aFechaInput(fecha: string | null) {
   return fecha.slice(0, 10);
 }
 
+type Agente = { id: string; nombre_completo: string };
+
 export function FormularioInmueble({
   inmueble,
   zonas,
   propietarios,
+  agentes = [],
 }: {
-  inmueble: Inmueble;
+  inmueble: Inmueble & { agente_id?: string };
   zonas: Zona[];
   propietarios: PropietarioMini[];
+  agentes?: Agente[];
 }) {
   const accion = actualizarInmueble.bind(null, inmueble.id);
   const [state, formAction, pending] = useActionState(accion, null);
@@ -193,6 +197,26 @@ export function FormularioInmueble({
             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        {agentes.length > 0 && (
+          <div className="space-y-2">
+            <label htmlFor="agente_id" className="text-sm font-medium">
+              Agente asignado
+            </label>
+            <select
+              id="agente_id"
+              name="agente_id"
+              defaultValue={inmueble.agente_id ?? ""}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              {agentes.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre_completo}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="space-y-2 sm:col-span-2">
           <ZonaSelector
