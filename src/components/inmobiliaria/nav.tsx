@@ -50,7 +50,7 @@ const GRUPOS_ADMIN: Grupo[] = [
     enlaces: [
       {
         href: "/inmobiliaria/seguimiento",
-        label: "Seguimiento",
+        label: "Agenda y Tareas",
         icon: CalendarDays,
         activoTambien: ["/inmobiliaria/agenda", "/inmobiliaria/tareas"],
       },
