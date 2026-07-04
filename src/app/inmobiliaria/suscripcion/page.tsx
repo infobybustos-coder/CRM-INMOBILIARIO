@@ -1,11 +1,13 @@
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
 import {
   ASESORES_INCLUIDOS_INMOBILIARIA,
   ADMINS_INCLUIDOS_INMOBILIARIA,
   PRECIO_ASESOR_EXTRA,
   PRECIO_ADMIN_EXTRA,
   etiquetaPlan,
+  type PlanTarifa,
 } from "@/lib/planes";
 
 const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
@@ -88,15 +90,12 @@ export default async function SuscripcionPage() {
         )}
       </div>
 
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold">Elige tu plan</h2>
+        <SelectorPlan planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"} />
+      </div>
+
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled
-          className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground opacity-50"
-          title="Próximamente"
-        >
-          Cambiar plan
-        </button>
         <button
           type="button"
           disabled
@@ -115,8 +114,8 @@ export default async function SuscripcionPage() {
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        La gestión de pagos todavía no está conectada a una pasarela real — estas acciones estarán
-        disponibles próximamente.
+        Cambiar de plan aquí no procesa ningún cobro real todavía — no hay pasarela de pago
+        conectada. La gestión de pago y las facturas estarán disponibles próximamente.
       </p>
     </div>
   );
