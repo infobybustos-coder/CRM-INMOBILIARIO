@@ -10,6 +10,7 @@ import {
   ArrowUp,
   ArrowDown,
   CheckCircle2,
+  AlertTriangle,
   Trophy,
   CalendarDays,
   Plus,
@@ -574,53 +575,73 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
 
       {/* Fila 2 — Salud comercial */}
       <div className="rounded-2xl border p-8 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground">Salud Comercial</p>
             <p className="mt-1 flex items-baseline gap-2">
               <span className={`text-5xl font-semibold ${saludColor}`}>{saludScore}</span>
               <span className="text-base text-muted-foreground">/100</span>
-              <span className={cn("ml-2 rounded-full px-3 py-1 text-xs font-medium bg-current/10", saludColor)}>
-                {saludLabel}
-              </span>
             </p>
           </div>
-          <div className="flex flex-col gap-2.5 text-sm">
-            <span className="flex items-center gap-2">
-              <span>{pctAlDia >= 90 ? "✔️" : "⚠️"}</span>
-              <span>{pctAlDia >= 90 ? "Seguimientos al día" : `${pctAlDia}% de seguimientos al día`}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span>{ritmoSubio ? "✔️" : "⚠️"}</span>
-              <span>{ritmoSubio ? "Buen ritmo de captación" : "El ritmo de captación bajó"}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span>{buenRatioRespuesta ? "✔️" : "⚠️"}</span>
-              <span>{buenRatioRespuesta ? "Buen ratio de respuesta" : `Ratio de respuesta bajo (${ratioRespuesta}%)`}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span>{sinContactoLargo === 0 ? "✔️" : "⚠️"}</span>
-              <span>
-                {sinContactoLargo === 0
-                  ? "Nadie lleva más de 10 días sin contacto"
-                  : `${sinContactoLargo} propietarios llevan más de 10 días sin contacto`}
-              </span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span>{compradoresSinSeguimiento === 0 ? "✔️" : "⚠️"}</span>
-              <span>
-                {compradoresSinSeguimiento === 0
-                  ? "Todos los compradores tienen seguimiento"
-                  : `${compradoresSinSeguimiento} compradores sin seguimiento`}
-              </span>
-            </span>
-          </div>
+          <span className={cn("rounded-full px-4 py-1.5 text-sm font-medium bg-current/10", saludColor)}>
+            {saludLabel}
+          </span>
         </div>
-        <div className="mt-6 h-5 overflow-hidden rounded-full bg-emerald-500/10">
+
+        <div className="mt-4 h-3 overflow-hidden rounded-full bg-emerald-500/10">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-700"
             style={{ width: `${saludScore}%` }}
           />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            {
+              ok: pctAlDia >= 90,
+              texto: pctAlDia >= 90 ? "Seguimientos al día" : `${pctAlDia}% de seguimientos al día`,
+            },
+            {
+              ok: ritmoSubio,
+              texto: ritmoSubio ? "Buen ritmo de captación" : "El ritmo de captación bajó",
+            },
+            {
+              ok: buenRatioRespuesta,
+              texto: buenRatioRespuesta ? "Buen ratio de respuesta" : `Ratio de respuesta bajo (${ratioRespuesta}%)`,
+            },
+            {
+              ok: sinContactoLargo === 0,
+              texto:
+                sinContactoLargo === 0
+                  ? "Nadie lleva +10 días sin contacto"
+                  : `${sinContactoLargo} propietarios sin contacto +10 días`,
+            },
+            {
+              ok: compradoresSinSeguimiento === 0,
+              texto:
+                compradoresSinSeguimiento === 0
+                  ? "Compradores con seguimiento"
+                  : `${compradoresSinSeguimiento} compradores sin seguimiento`,
+            },
+          ].map((s) => (
+            <div
+              key={s.texto}
+              className={cn(
+                "flex items-center gap-3 rounded-xl p-3",
+                s.ok ? "bg-emerald-500/8" : "bg-amber-500/8"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full",
+                  s.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"
+                )}
+              >
+                {s.ok ? <CheckCircle2 className="size-4" /> : <AlertTriangle className="size-4" />}
+              </span>
+              <span className="text-xs leading-tight">{s.texto}</span>
+            </div>
+          ))}
         </div>
       </div>
 
