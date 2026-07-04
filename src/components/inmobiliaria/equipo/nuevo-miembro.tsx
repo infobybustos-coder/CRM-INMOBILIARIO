@@ -4,12 +4,20 @@ import { useState, useTransition } from "react";
 import { Plus, X, Copy, Check } from "lucide-react";
 import { invitarMiembro, type InvitarState, type RolInvitable } from "@/app/inmobiliaria/equipo/actions";
 
-export function NuevoMiembro({ rol, etiqueta }: { rol: RolInvitable; etiqueta: string }) {
+export function NuevoMiembro({
+  rol: rolFijo,
+  etiqueta,
+}: {
+  rol?: RolInvitable;
+  etiqueta: string;
+}) {
   const [abierto, setAbierto] = useState(false);
   const [email, setEmail] = useState("");
+  const [rolElegido, setRolElegido] = useState<RolInvitable>("empleado");
   const [estado, setEstado] = useState<InvitarState>(null);
   const [pending, startTransition] = useTransition();
   const [copiado, setCopiado] = useState(false);
+  const rol = rolFijo ?? rolElegido;
 
   function enviar(confirmarExtra: boolean) {
     const formData = new FormData();
@@ -24,6 +32,7 @@ export function NuevoMiembro({ rol, etiqueta }: { rol: RolInvitable; etiqueta: s
   function cerrar() {
     setAbierto(false);
     setEmail("");
+    setRolElegido("empleado");
     setEstado(null);
     setCopiado(false);
   }
@@ -42,7 +51,7 @@ export function NuevoMiembro({ rol, etiqueta }: { rol: RolInvitable; etiqueta: s
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm space-y-4 rounded-xl border bg-card p-5 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Invitar {etiqueta}</h2>
+              <h2 className="font-semibold">Invitar {rolFijo ? etiqueta : "usuario"}</h2>
               <button
                 type="button"
                 onClick={cerrar}
@@ -87,7 +96,8 @@ export function NuevoMiembro({ rol, etiqueta }: { rol: RolInvitable; etiqueta: s
             ) : estado && "requierePago" in estado ? (
               <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
                 <p>
-                  Ya tienes el máximo de {etiqueta}s incluidos en tu plan. Añadir uno más cuesta{" "}
+                  Ya tienes el máximo de {rol === "admin" ? "administradores" : "asesores"} incluidos en tu
+                  plan. Añadir uno más cuesta{" "}
                   <span className="font-semibold">{estado.precio.toFixed(2).replace(".", ",")}€/mes</span>.
                 </p>
                 <div className="flex gap-2">
@@ -123,6 +133,22 @@ export function NuevoMiembro({ rol, etiqueta }: { rol: RolInvitable; etiqueta: s
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   />
                 </div>
+                {!rolFijo && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="rol-nuevo-miembro" className="text-sm font-medium">
+                      Rol
+                    </label>
+                    <select
+                      id="rol-nuevo-miembro"
+                      value={rolElegido}
+                      onChange={(e) => setRolElegido(e.target.value as RolInvitable)}
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="empleado">Asesor</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                )}
                 {estado && "error" in estado && <p className="text-sm text-destructive">{estado.error}</p>}
                 <button
                   type="button"

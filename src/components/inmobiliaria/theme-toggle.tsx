@@ -2,24 +2,7 @@
 
 import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
-
-type Tema = "claro" | "oscuro";
-
-function aplicarTema(tema: Tema) {
-  document.documentElement
-    .querySelector(".tema-inmobiliaria")
-    ?.setAttribute("data-tema", tema);
-}
-
-function temaInicial(): Tema {
-  if (typeof window === "undefined") return "claro";
-  const guardado = localStorage.getItem("tema-inmobiliaria") as Tema | null;
-  if (guardado === "claro" || guardado === "oscuro") {
-    aplicarTema(guardado);
-    return guardado;
-  }
-  return "claro";
-}
+import { temaInicial, guardarTema, type Tema } from "@/lib/tema";
 
 export function ThemeToggle() {
   const [tema, setTema] = useState<Tema>(temaInicial);
@@ -27,8 +10,7 @@ export function ThemeToggle() {
   function alternar() {
     const nuevo: Tema = tema === "claro" ? "oscuro" : "claro";
     setTema(nuevo);
-    localStorage.setItem("tema-inmobiliaria", nuevo);
-    aplicarTema(nuevo);
+    guardarTema(nuevo);
   }
 
   return (

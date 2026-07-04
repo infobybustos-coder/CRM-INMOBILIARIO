@@ -15,9 +15,11 @@ import {
 
 export type RolInvitable = "empleado" | "admin";
 
-function revalidarEquipo() {
+function revalidarEquipo(id?: string) {
   revalidatePath("/inmobiliaria/agentes");
   revalidatePath("/inmobiliaria/administradores");
+  revalidatePath("/inmobiliaria/usuarios");
+  if (id) revalidatePath(`/inmobiliaria/usuarios/${id}`);
 }
 
 export type InvitarState =
@@ -103,4 +105,57 @@ export async function eliminarMiembro(id: string) {
     .eq("tenant_id", usuario.tenant_id);
 
   revalidarEquipo();
+}
+
+export type ActualizarMiembroState = { error: string } | { ok: true } | null;
+
+export async function actualizarMiembro(
+  id: string,
+  _prevState: ActualizarMiembroState,
+  formData: FormData
+): Promise<ActualizarMiembroState> {
+  const usuario = await requireAdminInmobiliaria();
+  const nuevoRol = String(formData.get("rol") ?? "");
+  const activo = formData.get("activo") === "true";
+
+  if (nuevoRol !== "admin" && nuevoRol !== "empleado") return { error: "Rol no válido." };
+
+  if (id === usuario.id && (nuevoRol !== "admin" || !activo)) {
+    return { error: "No puedes cambiar tu propio rol ni desactivarte a ti mismo." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: actual } = await supabase
+    .from("usuarios")
+    .select("rol")
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id)
+    .single();
+
+  if (actual && actual.rol !== "admin" && nuevoRol === "admin") {
+    const { count: adminsActivos } = await supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "admin")
+      .eq("activo", true);
+    const limite = ADMINS_INCLUIDOS_INMOBILIARIA + (usuario.tenant?.admins_extra ?? 0);
+    if ((adminsActivos ?? 0) >= limite) {
+      return {
+        error: `Ya tienes el máximo de administradores incluidos en tu plan. Añade uno nuevo desde Administradores para ampliar el plan.`,
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ rol: nuevoRol, activo })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+
+  if (error) return { error: "No se pudo guardar." };
+
+  revalidarEquipo(id);
+  return { ok: true };
 }

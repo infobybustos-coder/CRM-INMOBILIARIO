@@ -1,14 +1,25 @@
-import { Building2 } from "lucide-react";
 import { requireAdminInmobiliaria } from "@/lib/auth";
-import { PaginaEnConstruccion } from "@/components/inmobiliaria/pagina-en-construccion";
+import { FormularioEmpresa } from "@/components/inmobiliaria/empresa/formulario-empresa";
 
 export default async function EmpresaPage() {
-  await requireAdminInmobiliaria();
+  const usuario = await requireAdminInmobiliaria();
+  const tenant = usuario.tenant ?? {};
+
   return (
-    <PaginaEnConstruccion
-      titulo="Empresa"
-      descripcion="Datos de la inmobiliaria: nombre, logo, color de marca y país."
-      icono={Building2}
-    />
+    <div className="space-y-5">
+      <h1 className="text-2xl font-semibold">Empresa</h1>
+
+      <FormularioEmpresa
+        tenantId={usuario.tenant_id}
+        nombre={tenant.nombre ?? ""}
+        cifNif={tenant.cif_nif ?? null}
+        telefono={tenant.telefono ?? null}
+        email={tenant.email ?? null}
+        direccion={tenant.direccion ?? null}
+        web={tenant.web ?? null}
+        zonaHoraria={tenant.zona_horaria ?? null}
+        logoUrl={tenant.logo_url ?? null}
+      />
+    </div>
   );
 }
