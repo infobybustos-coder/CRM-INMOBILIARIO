@@ -11,9 +11,7 @@ import {
   CalendarClock,
   CalendarDays,
   UserCog,
-  BarChart3,
   MessageSquare,
-  Activity,
   UsersRound,
   Building2,
   Lock,
@@ -60,9 +58,7 @@ const GRUPOS_ADMIN: Grupo[] = [
     titulo: "Equipo",
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
-      { href: "/inmobiliaria/rendimiento", label: "Rendimiento", icon: BarChart3 },
       { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, bloqueado: true },
-      { href: "/inmobiliaria/actividad", label: "Actividad", icon: Activity },
     ],
   },
   {
