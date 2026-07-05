@@ -313,7 +313,7 @@ export async function eliminarDocumento(documentoId: string, propietarioId: stri
   revalidarPropietario(propietarioId);
 }
 
-export type CrearPropietarioRapidoState = { error: string } | { ok: true } | null;
+export type CrearPropietarioRapidoState = { error: string; limite?: true } | { ok: true } | null;
 
 export async function crearPropietarioRapido(
   _prevState: CrearPropietarioRapidoState,
@@ -337,7 +337,10 @@ export async function crearPropietarioRapido(
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", usuario.tenant_id);
     if ((count ?? 0) >= limite) {
-      return { error: `Has llegado al límite de ${limite} captaciones del plan Gratis.` };
+      return {
+        error: `Has llegado al límite de ${limite} captaciones del plan Gratis.`,
+        limite: true,
+      };
     }
   }
 

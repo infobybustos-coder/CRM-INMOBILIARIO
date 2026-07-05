@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Plus, X, User, Phone } from "lucide-react";
 import { crearCompradorRapido } from "@/app/asesor/compradores/actions";
 import { Button } from "@/components/ui/button";
+import { LimitePlanAviso } from "@/components/limite-plan-aviso";
 
 export function NuevoComprador({
   children,
@@ -85,7 +86,11 @@ export function NuevoComprador({
               </div>
 
               {state && "error" in state && (
-                <p className="text-sm text-destructive">{state.error}</p>
+                state.limite ? (
+                  <LimitePlanAviso mensaje={state.error} />
+                ) : (
+                  <p className="text-sm text-destructive">{state.error}</p>
+                )
               )}
 
               <Button type="submit" className="w-full" disabled={pending}>

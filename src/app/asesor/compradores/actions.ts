@@ -203,7 +203,7 @@ export async function crearZona(
   return { ok: true, zona: data };
 }
 
-export type CrearCompradorRapidoState = { error: string } | { ok: true } | null;
+export type CrearCompradorRapidoState = { error: string; limite?: true } | { ok: true } | null;
 
 export async function crearCompradorRapido(
   _prevState: CrearCompradorRapidoState,
@@ -226,7 +226,10 @@ export async function crearCompradorRapido(
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", usuario.tenant_id);
     if ((count ?? 0) >= limite) {
-      return { error: `Has llegado al límite de ${limite} compradores del plan Gratis.` };
+      return {
+        error: `Has llegado al límite de ${limite} compradores del plan Gratis.`,
+        limite: true,
+      };
     }
   }
 

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Plus, X, User, Phone, MapPin } from "lucide-react";
 import { crearPropietarioRapido } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
+import { LimitePlanAviso } from "@/components/limite-plan-aviso";
 
 export function NuevoPropietario({
   children,
@@ -100,7 +101,11 @@ export function NuevoPropietario({
               </div>
 
               {state && "error" in state && (
-                <p className="text-sm text-destructive">{state.error}</p>
+                state.limite ? (
+                  <LimitePlanAviso mensaje={state.error} />
+                ) : (
+                  <p className="text-sm text-destructive">{state.error}</p>
+                )
               )}
 
               <Button type="submit" className="w-full" disabled={pending}>

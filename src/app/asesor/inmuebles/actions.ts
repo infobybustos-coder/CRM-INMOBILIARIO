@@ -263,7 +263,7 @@ export async function eliminarDocumento(documentoId: string, inmuebleId: string,
   revalidarInmueble(inmuebleId);
 }
 
-export type CrearInmuebleRapidoState = { error: string } | { ok: true } | null;
+export type CrearInmuebleRapidoState = { error: string; limite?: true } | { ok: true } | null;
 
 export async function crearInmuebleRapido(
   _prevState: CrearInmuebleRapidoState,
@@ -294,7 +294,10 @@ export async function crearInmuebleRapido(
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", usuario.tenant_id);
     if ((count ?? 0) >= limite) {
-      return { error: `Has llegado al límite de ${limite} inmuebles del plan Gratis.` };
+      return {
+        error: `Has llegado al límite de ${limite} inmuebles del plan Gratis.`,
+        limite: true,
+      };
     }
   }
 

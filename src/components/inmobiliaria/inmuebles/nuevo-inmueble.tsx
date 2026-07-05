@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Plus, X, Tag, MapPin } from "lucide-react";
 import { crearInmuebleRapido } from "@/app/asesor/inmuebles/actions";
 import { Button } from "@/components/ui/button";
+import { LimitePlanAviso } from "@/components/limite-plan-aviso";
 
 export function NuevoInmueble({
   children,
@@ -98,7 +99,11 @@ export function NuevoInmueble({
               </div>
 
               {state && "error" in state && (
-                <p className="text-sm text-destructive">{state.error}</p>
+                state.limite ? (
+                  <LimitePlanAviso mensaje={state.error} />
+                ) : (
+                  <p className="text-sm text-destructive">{state.error}</p>
+                )
               )}
 
               <Button type="submit" className="w-full" disabled={pending}>
