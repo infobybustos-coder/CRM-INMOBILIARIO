@@ -4,6 +4,7 @@ import {
   Award,
   Home,
   Users,
+  UserSearch,
   Phone,
   CalendarCheck,
   Flame,
@@ -93,21 +94,146 @@ export default async function InmobiliariaPage() {
   if (!usuario) redirect("/login");
 
   if (usuario.rol !== "admin") {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Vista General</h1>
-        <p className="text-muted-foreground">
-          Hola, {usuario.nombre_completo ?? usuario.email}.
-        </p>
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-          Tu vista de trabajo está en construcción — aquí verás tus captaciones, inmuebles y
-          compradores asignados.
-        </div>
-      </div>
-    );
+    return <InicioAsesor usuario={usuario} />;
   }
 
   return <CentroDeControl usuario={usuario} />;
+}
+
+async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnType<typeof getUsuarioConTenant>>> }) {
+  const supabase = await createClient();
+  const tenantId = usuario.tenant_id;
+
+  const ahora = new Date();
+  const inicioHoy = new Date();
+  inicioHoy.setHours(0, 0, 0, 0);
+  const finHoy = new Date();
+  finHoy.setHours(23, 59, 59, 999);
+
+  const [
+    { count: propietariosActivos },
+    { count: compradoresActivos },
+    { count: inmueblesActivos },
+    { count: tareasPendientes },
+    { data: eventosHoy },
+    { data: tareasHoy },
+  ] = await Promise.all([
+    supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("agente_id", usuario.id)
+      .not("estado", "in", "(captado,perdido)"),
+    supabase
+      .from("compradores")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("agente_id", usuario.id)
+      .not("estado", "in", "(comprado,perdido)"),
+    supabase
+      .from("inmuebles")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("agente_id", usuario.id)
+      .neq("estado", "vendido"),
+    supabase
+      .from("tareas")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("asignado_a", usuario.id)
+      .in("estado", ["pendiente", "en_progreso"]),
+    supabase
+      .from("eventos_agenda")
+      .select("id, tipo, titulo, fecha_hora")
+      .eq("tenant_id", tenantId)
+      .eq("usuario_id", usuario.id)
+      .eq("estado", "pendiente")
+      .gte("fecha_hora", inicioHoy.toISOString())
+      .lte("fecha_hora", finHoy.toISOString())
+      .order("fecha_hora"),
+    supabase
+      .from("tareas")
+      .select("id, titulo, fecha_vencimiento")
+      .eq("tenant_id", tenantId)
+      .eq("asignado_a", usuario.id)
+      .in("estado", ["pendiente", "en_progreso"])
+      .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
+      .limit(6),
+  ]);
+
+  const kpis = [
+    { label: "Mis propietarios", valor: propietariosActivos ?? 0, icono: Users, color: "bg-violet-500/10 text-violet-600" },
+    { label: "Mis inmuebles", valor: inmueblesActivos ?? 0, icono: Home, color: "bg-sky-500/10 text-sky-600" },
+    { label: "Mis compradores", valor: compradoresActivos ?? 0, icono: UserSearch, color: "bg-emerald-500/10 text-emerald-600" },
+    { label: "Tareas pendientes", valor: tareasPendientes ?? 0, icono: CheckCircle2, color: "bg-amber-500/10 text-amber-600" },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Inicio</h1>
+        <p className="mt-1 text-muted-foreground">Hola, {usuario.nombre_completo ?? usuario.email}.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {kpis.map(({ label, valor, icono: Icono, color }) => (
+          <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
+            <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
+              <Icono className="size-4" />
+            </span>
+            <span className="text-xl font-semibold">{valor}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border p-3">
+          <h2 className="flex items-center gap-1.5 text-sm font-medium">
+            <CalendarDays className="size-4" /> Agenda de hoy
+          </h2>
+          {(eventosHoy ?? []).length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Sin eventos programados hoy.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {(eventosHoy ?? []).map((e) => (
+                <li key={e.id} className="flex items-center justify-between text-sm">
+                  <span>{e.titulo}</span>
+                  <span className="text-muted-foreground">
+                    {new Date(e.fecha_hora).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-lg border p-3">
+          <h2 className="text-sm font-medium">Tareas pendientes</h2>
+          {(tareasHoy ?? []).length === 0 ? (
+            <p className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
+              <CheckCircle2 className="size-4" /> No tienes tareas pendientes.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {(tareasHoy ?? []).map((t) => {
+                const vencida = t.fecha_vencimiento && new Date(t.fecha_vencimiento) < ahora;
+                return (
+                  <li key={t.id} className="flex items-center justify-between text-sm">
+                    <span className={vencida ? "text-rose-600" : undefined}>{t.titulo}</span>
+                    {t.fecha_vencimiento && (
+                      <span className="text-muted-foreground">
+                        {new Date(t.fecha_vencimiento).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<ReturnType<typeof getUsuarioConTenant>>> }) {

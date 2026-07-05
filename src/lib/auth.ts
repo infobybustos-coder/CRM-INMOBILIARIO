@@ -27,3 +27,10 @@ export async function requireAdminInmobiliaria() {
   if (usuario.rol !== "admin") redirect("/inmobiliaria");
   return usuario;
 }
+
+export async function requireInmobiliaria() {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) redirect("/login");
+  if (usuario.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
+  return usuario;
+}

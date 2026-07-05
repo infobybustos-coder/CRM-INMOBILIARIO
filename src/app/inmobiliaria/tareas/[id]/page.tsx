@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Link2 } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioTarea } from "@/components/inmobiliaria/tareas/formulario-tarea";
 import { Notas } from "@/components/asesor/notas";
@@ -19,9 +19,10 @@ export default async function TareaPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
 
   const { data: tarea } = await supabase
     .from("tareas")
@@ -33,6 +34,7 @@ export default async function TareaPage({
     .single();
 
   if (!tarea) notFound();
+  if (!gestor && tarea.asignado_a !== usuario.id) notFound();
 
   const [{ data: agentes }, { data: actividades }, entidad] = await Promise.all([
     supabase
@@ -68,10 +70,10 @@ export default async function TareaPage({
   return (
     <div className="max-w-2xl space-y-5">
       <Link
-        href="/inmobiliaria/seguimiento"
+        href={gestor ? "/inmobiliaria/seguimiento" : "/inmobiliaria/mis-tareas"}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Volver a seguimiento
+        <ArrowLeft className="size-4" /> {gestor ? "Volver a seguimiento" : "Volver a tareas"}
       </Link>
 
       <div>

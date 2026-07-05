@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Clock, UserCog, Link2 } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ResultadoForm } from "@/components/inmobiliaria/agenda/resultado-form";
 import { actualizarResultado } from "../actions";
@@ -18,9 +18,10 @@ export default async function EventoPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
 
   const { data: evento } = await supabase
     .from("eventos_agenda")
@@ -32,6 +33,7 @@ export default async function EventoPage({
     .single();
 
   if (!evento) notFound();
+  if (!gestor && evento.usuario_id !== usuario.id) notFound();
 
   const [{ data: asesor }, { data: propietario }, { data: comprador }, { data: inmueble }] =
     await Promise.all([
@@ -67,10 +69,10 @@ export default async function EventoPage({
   return (
     <div className="max-w-2xl space-y-5">
       <Link
-        href="/inmobiliaria/seguimiento"
+        href={gestor ? "/inmobiliaria/seguimiento" : "/inmobiliaria/mi-agenda"}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Volver a seguimiento
+        <ArrowLeft className="size-4" /> {gestor ? "Volver a seguimiento" : "Volver a agenda"}
       </Link>
 
       <div>

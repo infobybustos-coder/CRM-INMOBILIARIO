@@ -343,6 +343,7 @@ export async function crearPropietarioRapido(
 
   const { error } = await supabase.from("propietarios").insert({
     tenant_id: usuario.tenant_id,
+    agente_id: usuario.id,
     nombre,
     telefono,
     direccion,

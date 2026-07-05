@@ -292,6 +292,7 @@ export async function crearInmuebleRapido(
 
   const { error } = await supabase.from("inmuebles").insert({
     tenant_id: usuario.tenant_id,
+    agente_id: usuario.id,
     referencia,
     direccion,
     precio: precio ? Number(precio) : null,

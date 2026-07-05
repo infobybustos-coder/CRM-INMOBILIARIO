@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioInmueble } from "@/components/asesor/inmuebles/formulario-inmueble";
 import { Fotos } from "@/components/asesor/inmuebles/fotos";
@@ -22,9 +22,10 @@ export default async function InmueblePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
 
   const { data: inmueble } = await supabase
     .from("inmuebles")
@@ -36,6 +37,7 @@ export default async function InmueblePage({
     .single();
 
   if (!inmueble) notFound();
+  if (!gestor && inmueble.agente_id !== usuario.id) notFound();
 
   const [
     { data: actividades },
@@ -75,12 +77,14 @@ export default async function InmueblePage({
         .eq("entidad_id", id)
         .eq("tipo_documento", "foto")
         .order("creado_en", { ascending: false }),
-      supabase
-        .from("usuarios")
-        .select("id, nombre_completo")
-        .eq("tenant_id", usuario.tenant_id)
-        .eq("activo", true)
-        .order("nombre_completo"),
+      gestor
+        ? supabase
+            .from("usuarios")
+            .select("id, nombre_completo")
+            .eq("tenant_id", usuario.tenant_id)
+            .eq("activo", true)
+            .order("nombre_completo")
+        : Promise.resolve({ data: [] as { id: string; nombre_completo: string }[] }),
       supabase
         .from("documentos")
         .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
@@ -93,7 +97,7 @@ export default async function InmueblePage({
   return (
     <div className="space-y-6">
       <Link
-        href="/inmobiliaria/inmuebles"
+        href={gestor ? "/inmobiliaria/inmuebles" : "/inmobiliaria/mis-inmuebles"}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />

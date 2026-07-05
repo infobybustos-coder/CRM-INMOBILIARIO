@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
 import { Documentos } from "@/components/asesor/documentos";
@@ -29,9 +29,10 @@ export default async function CompradorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
 
   const { data: comprador } = await supabase
     .from("compradores")
@@ -43,6 +44,7 @@ export default async function CompradorPage({
     .single();
 
   if (!comprador) notFound();
+  if (!gestor && comprador.agente_id !== usuario.id) notFound();
 
   const [{ data: actividades }, { data: tareas }, { data: zonas }, { data: agentes }, { data: documentos }] =
     await Promise.all([
@@ -63,12 +65,14 @@ export default async function CompradorPage({
         .select("id, nombre, ciudad")
         .eq("tenant_id", usuario.tenant_id)
         .order("nombre", { ascending: true }),
-      supabase
-        .from("usuarios")
-        .select("id, nombre_completo")
-        .eq("tenant_id", usuario.tenant_id)
-        .eq("activo", true)
-        .order("nombre_completo"),
+      gestor
+        ? supabase
+            .from("usuarios")
+            .select("id, nombre_completo")
+            .eq("tenant_id", usuario.tenant_id)
+            .eq("activo", true)
+            .order("nombre_completo")
+        : Promise.resolve({ data: [] as { id: string; nombre_completo: string }[] }),
       supabase
         .from("documentos")
         .select("id, tipo_documento, nombre_archivo, url_storage, creado_en")
@@ -80,7 +84,7 @@ export default async function CompradorPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/inmobiliaria/compradores"
+        href={gestor ? "/inmobiliaria/compradores" : "/inmobiliaria/mis-compradores"}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />

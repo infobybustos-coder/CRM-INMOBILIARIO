@@ -10,6 +10,7 @@ import {
   UserSearch,
   CalendarClock,
   CalendarDays,
+  CheckSquare,
   UserCog,
   ShieldCheck,
   MessageSquare,
@@ -18,6 +19,7 @@ import {
   Shield,
   CreditCard,
   SlidersHorizontal,
+  User,
   Lock,
   ChevronLeft,
   ChevronRight,
@@ -79,7 +81,27 @@ const GRUPOS_ADMIN: Grupo[] = [
 ];
 
 const GRUPOS_EMPLEADO: Grupo[] = [
-  { enlaces: [{ href: "/inmobiliaria", label: "Vista General", icon: LayoutDashboard }] },
+  { enlaces: [{ href: "/inmobiliaria", label: "Inicio", icon: LayoutDashboard }] },
+  {
+    titulo: "Mi Captación",
+    enlaces: [
+      { href: "/inmobiliaria/mis-propietarios", label: "Mis propietarios", icon: Users },
+      { href: "/inmobiliaria/mis-inmuebles", label: "Mis inmuebles", icon: Home },
+      { href: "/inmobiliaria/mis-compradores", label: "Mis compradores", icon: UserSearch },
+      { href: "/inmobiliaria/mis-visitas", label: "Mis visitas", icon: CalendarClock },
+    ],
+  },
+  {
+    titulo: "Mi Trabajo",
+    enlaces: [
+      { href: "/inmobiliaria/mi-agenda", label: "Agenda", icon: CalendarDays },
+      { href: "/inmobiliaria/mis-tareas", label: "Tareas", icon: CheckSquare },
+    ],
+  },
+  {
+    titulo: "Mi Perfil",
+    enlaces: [{ href: "/inmobiliaria/perfil", label: "Mi perfil", icon: User }],
+  },
 ];
 
 function aplicarColapso(colapsado: boolean) {
@@ -227,21 +249,19 @@ export function InmobiliariaNav({
           <LayoutDashboard className="size-5" />
           {esAdmin ? "Control" : "Inicio"}
         </Link>
-        {esAdmin && (
-          <button
-            type="button"
-            onClick={() => setMenuMovilAbierto(true)}
-            className="flex flex-col items-center gap-1 px-3 py-1 text-xs text-muted-foreground"
-          >
-            <span className="relative">
-              <Menu className="size-5" />
-              {hayAvisos && (
-                <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
-              )}
-            </span>
-            Menú
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setMenuMovilAbierto(true)}
+          className="flex flex-col items-center gap-1 px-3 py-1 text-xs text-muted-foreground"
+        >
+          <span className="relative">
+            <Menu className="size-5" />
+            {hayAvisos && (
+              <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />
+            )}
+          </span>
+          Menú
+        </button>
       </div>
 
       {menuMovilAbierto && (

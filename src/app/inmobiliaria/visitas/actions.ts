@@ -1,13 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidarVisitas() {
   revalidatePath("/inmobiliaria/visitas");
+  revalidatePath("/inmobiliaria/mis-visitas");
   revalidatePath("/inmobiliaria");
   revalidatePath("/inmobiliaria/agenda");
+  revalidatePath("/inmobiliaria/mi-agenda");
 }
 
 export type CrearVisitaState = { error: string } | { ok: true } | null;
@@ -16,7 +18,7 @@ export async function crearVisita(
   _prevState: CrearVisitaState,
   formData: FormData
 ): Promise<CrearVisitaState> {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const supabase = await createClient();
 
   const inmuebleId = String(formData.get("inmueble_id") ?? "").trim();
@@ -67,27 +69,31 @@ export async function crearVisita(
 }
 
 export async function confirmarVisita(id: string, confirmado: boolean) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const supabase = await createClient();
 
-  await supabase
+  let query = supabase
     .from("eventos_agenda")
     .update({ confirmado })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
+  if (!esGestor(usuario.rol)) query = query.eq("usuario_id", usuario.id);
+  await query;
 
   revalidarVisitas();
 }
 
 export async function actualizarEstadoVisita(id: string, estado: "completado" | "cancelado" | "pendiente") {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const supabase = await createClient();
 
-  await supabase
+  let query = supabase
     .from("eventos_agenda")
     .update({ estado })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
+  if (!esGestor(usuario.rol)) query = query.eq("usuario_id", usuario.id);
+  await query;
 
   revalidarVisitas();
 }

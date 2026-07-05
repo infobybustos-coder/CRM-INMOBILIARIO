@@ -232,6 +232,7 @@ export async function crearCompradorRapido(
 
   const { error } = await supabase.from("compradores").insert({
     tenant_id: usuario.tenant_id,
+    agente_id: usuario.id,
     nombre,
     telefono,
   });

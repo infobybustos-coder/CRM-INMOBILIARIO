@@ -28,6 +28,7 @@ export async function actualizarPerfil(
   if (error) return { error: "No se pudo guardar el perfil." };
 
   revalidatePath("/asesor", "layout");
+  revalidatePath("/inmobiliaria", "layout");
   return { ok: true };
 }
 
@@ -39,4 +40,5 @@ export async function actualizarAvatar(urlStorage: string) {
   await supabase.from("usuarios").update({ avatar_url: urlStorage }).eq("id", usuario.id);
 
   revalidatePath("/asesor", "layout");
+  revalidatePath("/inmobiliaria", "layout");
 }

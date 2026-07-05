@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliaria, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioPropietario } from "@/components/asesor/propietarios/formulario-propietario";
 import { Notas } from "@/components/asesor/notas";
@@ -33,9 +33,10 @@ export default async function PropietarioPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliaria();
   const { id } = await params;
   const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
 
   const { data: propietario } = await supabase
     .from("propietarios")
@@ -47,6 +48,7 @@ export default async function PropietarioPage({
     .single();
 
   if (!propietario) notFound();
+  if (!gestor && propietario.agente_id !== usuario.id) notFound();
 
   const [{ data: actividades }, { data: tareas }, { data: documentos }, { data: agentes }] =
     await Promise.all([
@@ -68,18 +70,20 @@ export default async function PropietarioPage({
         .eq("entidad_tipo", "propietario")
         .eq("entidad_id", id)
         .order("creado_en", { ascending: false }),
-      supabase
-        .from("usuarios")
-        .select("id, nombre_completo")
-        .eq("tenant_id", usuario.tenant_id)
-        .eq("activo", true)
-        .order("nombre_completo"),
+      gestor
+        ? supabase
+            .from("usuarios")
+            .select("id, nombre_completo")
+            .eq("tenant_id", usuario.tenant_id)
+            .eq("activo", true)
+            .order("nombre_completo")
+        : Promise.resolve({ data: [] as { id: string; nombre_completo: string }[] }),
     ]);
 
   return (
     <div className="space-y-6">
       <Link
-        href="/inmobiliaria/propietarios"
+        href={gestor ? "/inmobiliaria/propietarios" : "/inmobiliaria/mis-propietarios"}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />
