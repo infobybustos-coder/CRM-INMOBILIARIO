@@ -285,6 +285,7 @@ export default async function SeguimientoPage({
       fecha: e.fecha_hora,
       estado: e.estado,
       tipo: e.tipo,
+      href: `/inmobiliaria/agenda/${e.id}`,
     };
   });
   const tareaItems: AgendaItem[] = (tareas ?? [])
@@ -295,6 +296,7 @@ export default async function SeguimientoPage({
       titulo: `✅ ${t.titulo}`,
       fecha: t.fecha_vencimiento as string,
       estado: t.estado,
+      href: `/inmobiliaria/tareas/${t.id}`,
     }));
   const calendarioPorDia = agruparPorDia([...agendaItems, ...tareaItems]);
   const ahoraMesInicial = { year: ahora.getFullYear(), month: ahora.getMonth() };

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ChevronLeft, ChevronRight, Phone, Home, ClipboardCheck, Bell } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Phone, Home, ClipboardCheck, Bell, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { claveDia, type AgendaItem } from "@/lib/agenda";
 
@@ -173,17 +174,30 @@ export function CalendarioMensual({
               <div
                 key={`${it.origen}-${it.id}`}
                 className={cn(
-                  "flex items-center justify-between rounded-md bg-muted/50",
+                  "rounded-md bg-muted/50",
                   grande ? "px-3 py-1.5 text-sm" : "px-2 py-1 text-xs"
                 )}
               >
-                <span>{it.titulo}</span>
-                <span className="text-muted-foreground">
-                  {new Date(it.fecha).toLocaleTimeString("es-ES", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span>{it.titulo}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {new Date(it.fecha).toLocaleTimeString("es-ES", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                {it.href && (
+                  <Link
+                    href={it.href}
+                    className={cn(
+                      "mt-1 flex items-center gap-1 text-primary hover:underline",
+                      grande ? "text-xs" : "text-[11px]"
+                    )}
+                  >
+                    <Eye className="size-3" /> Abrir ficha
+                  </Link>
+                )}
               </div>
             ))
           )}
