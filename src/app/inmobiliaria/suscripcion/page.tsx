@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
 import {
   ASESORES_INCLUIDOS_INMOBILIARIA,
-  ADMINS_INCLUIDOS_INMOBILIARIA,
   PRECIO_ASESOR_EXTRA,
   PRECIO_ADMIN_EXTRA,
+  adminsIncluidos,
   etiquetaPlan,
   type PlanTarifa,
 } from "@/lib/planes";
@@ -38,7 +38,7 @@ export default async function SuscripcionPage() {
   const agentesExtra = tenant.agentes_extra ?? 0;
   const adminsExtra = tenant.admins_extra ?? 0;
   const usuariosIncluidos =
-    ASESORES_INCLUIDOS_INMOBILIARIA + ADMINS_INCLUIDOS_INMOBILIARIA + agentesExtra + adminsExtra;
+    ASESORES_INCLUIDOS_INMOBILIARIA + adminsIncluidos(tenant) + agentesExtra + adminsExtra;
 
   const costeExtra = agentesExtra * PRECIO_ASESOR_EXTRA + adminsExtra * PRECIO_ADMIN_EXTRA;
 

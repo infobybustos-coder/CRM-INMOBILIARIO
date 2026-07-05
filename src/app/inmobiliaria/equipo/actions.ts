@@ -8,9 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   ASESORES_INCLUIDOS_INMOBILIARIA,
-  ADMINS_INCLUIDOS_INMOBILIARIA,
   PRECIO_ASESOR_EXTRA,
   PRECIO_ADMIN_EXTRA,
+  adminsIncluidos,
+  limiteAdmins,
 } from "@/lib/planes";
 
 export type RolInvitable = "empleado" | "admin";
@@ -58,7 +59,7 @@ export async function invitarMiembro(
 
   const esAdmin = rol === "admin";
   const extra = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
-  const incluidos = esAdmin ? ADMINS_INCLUIDOS_INMOBILIARIA : ASESORES_INCLUIDOS_INMOBILIARIA;
+  const incluidos = esAdmin ? adminsIncluidos(usuario.tenant ?? {}) : ASESORES_INCLUIDOS_INMOBILIARIA;
   const limite = incluidos + extra;
   const precio = esAdmin ? PRECIO_ADMIN_EXTRA : PRECIO_ASESOR_EXTRA;
 
@@ -140,7 +141,7 @@ export async function actualizarMiembro(
       .eq("tenant_id", usuario.tenant_id)
       .eq("rol", "admin")
       .eq("activo", true);
-    const limite = ADMINS_INCLUIDOS_INMOBILIARIA + (usuario.tenant?.admins_extra ?? 0);
+    const limite = limiteAdmins(usuario.tenant ?? {});
     if ((adminsActivos ?? 0) >= limite) {
       return {
         error: `Ya tienes el máximo de administradores incluidos en tu plan. Añade uno nuevo desde Administradores para ampliar el plan.`,

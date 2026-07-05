@@ -7,10 +7,15 @@ import {
   LIMITES_GRATIS,
   PRECIO_MENSUAL,
   ASESORES_INCLUIDOS_INMOBILIARIA,
-  ADMINS_INCLUIDOS_INMOBILIARIA,
+  ADMINS_INCLUIDOS_GRATIS,
+  ADMINS_INCLUIDOS_PAGO,
+  PRECIO_ASESOR_EXTRA,
+  PRECIO_ADMIN_EXTRA,
   type PlanTarifa,
 } from "@/lib/planes";
 import { cn } from "@/lib/utils";
+
+const LIMITES_FREE = LIMITES_GRATIS.inmobiliaria;
 
 const PLANES: {
   valor: PlanTarifa;
@@ -20,24 +25,28 @@ const PLANES: {
 }[] = [
   {
     valor: "gratis",
-    nombre: "Gratis",
+    nombre: "Inmobiliaria Free",
     precio: 0,
     caracteristicas: [
-      `Hasta ${LIMITES_GRATIS.propietarios} propietarios`,
-      `Hasta ${LIMITES_GRATIS.inmuebles} inmuebles`,
-      `Hasta ${LIMITES_GRATIS.compradores} compradores`,
-      `${ASESORES_INCLUIDOS_INMOBILIARIA} agentes y ${ADMINS_INCLUIDOS_INMOBILIARIA} administradores incluidos`,
+      `Hasta ${LIMITES_FREE.propietarios} propietarios`,
+      `Hasta ${LIMITES_FREE.inmuebles} inmuebles`,
+      `Hasta ${LIMITES_FREE.compradores} compradores`,
+      `${ADMINS_INCLUIDOS_GRATIS} administrador incluido`,
+      `${ASESORES_INCLUIDOS_INMOBILIARIA} asesores incluidos`,
     ],
   },
   {
     valor: "pago",
-    nombre: "Inmobiliaria",
+    nombre: "Inmobiliaria PRO",
     precio: PRECIO_MENSUAL.inmobiliaria,
     caracteristicas: [
       "Propietarios ilimitados",
       "Inmuebles ilimitados",
       "Compradores ilimitados",
-      `${ASESORES_INCLUIDOS_INMOBILIARIA} agentes y ${ADMINS_INCLUIDOS_INMOBILIARIA} administradores incluidos`,
+      `${ADMINS_INCLUIDOS_PAGO} administradores incluidos`,
+      `${ASESORES_INCLUIDOS_INMOBILIARIA} asesores incluidos`,
+      `Administrador adicional: ${PRECIO_ADMIN_EXTRA.toFixed(2).replace(".", ",")}€/mes`,
+      `Asesor adicional: ${PRECIO_ASESOR_EXTRA.toFixed(2).replace(".", ",")}€/mes`,
     ],
   },
 ];

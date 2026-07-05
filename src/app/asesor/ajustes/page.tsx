@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AjustesForm } from "@/components/asesor/ajustes-form";
-import { LIMITES_GRATIS, esIlimitado, etiquetaPlan, precioPlan } from "@/lib/planes";
+import { LIMITES_GRATIS, esIlimitado, etiquetaPlan, precioPlan, type TipoPlan } from "@/lib/planes";
 
 export default async function AjustesPage() {
   const usuario = await getUsuarioConTenant();
@@ -10,6 +10,7 @@ export default async function AjustesPage() {
 
   const supabase = await createClient();
   const ilimitado = esIlimitado(usuario.tenant ?? {});
+  const limites = LIMITES_GRATIS[(usuario.tenant?.tipo_plan as TipoPlan) ?? "asesor"];
 
   const [{ count: propietarios }, { count: inmuebles }, { count: compradores }] = ilimitado
     ? [{ count: null }, { count: null }, { count: null }]
@@ -49,13 +50,13 @@ export default async function AjustesPage() {
         ) : (
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             <li>
-              Captaciones: {propietarios ?? 0} / {LIMITES_GRATIS.propietarios}
+              Captaciones: {propietarios ?? 0} / {limites.propietarios}
             </li>
             <li>
-              Inmuebles: {inmuebles ?? 0} / {LIMITES_GRATIS.inmuebles}
+              Inmuebles: {inmuebles ?? 0} / {limites.inmuebles}
             </li>
             <li>
-              Compradores: {compradores ?? 0} / {LIMITES_GRATIS.compradores}
+              Compradores: {compradores ?? 0} / {limites.compradores}
             </li>
           </ul>
         )}
