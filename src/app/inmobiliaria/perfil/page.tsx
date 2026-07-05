@@ -1,6 +1,7 @@
 import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PerfilForm } from "@/components/asesor/perfil-form";
+import { signOut } from "../../(auth)/actions";
 
 export default async function PerfilInmobiliariaPage() {
   const usuario = await requireInmobiliariaEfectivo();
@@ -20,6 +21,7 @@ export default async function PerfilInmobiliariaPage() {
         telefono={usuario.telefono}
         bio={usuario.bio}
         avatarUrl={avatarUrl}
+        cerrarSesionAction={signOut}
       />
     </div>
   );

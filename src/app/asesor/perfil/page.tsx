@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PerfilForm } from "@/components/asesor/perfil-form";
+import { signOut } from "../../(auth)/actions";
 
 export default async function PerfilPage() {
   const usuario = await getUsuarioConTenant();
@@ -22,6 +23,7 @@ export default async function PerfilPage() {
         telefono={usuario.telefono}
         bio={usuario.bio}
         avatarUrl={avatarUrl}
+        cerrarSesionAction={signOut}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   UserPlus,
@@ -10,6 +11,7 @@ import {
   Flame,
   ArrowUp,
   ArrowDown,
+  ArrowRight,
   CheckCircle2,
   AlertTriangle,
   Trophy,
@@ -18,8 +20,15 @@ import {
 } from "lucide-react";
 import { getUsuarioConTenant, obtenerImpersonacion } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { calcularCaptacionScore, diasDesde, estaVencida } from "@/lib/prioridad";
+import {
+  calcularCaptacionScore,
+  calcularPrioridad,
+  calcularPrioridadComprador,
+  diasDesde,
+  estaVencida,
+} from "@/lib/prioridad";
 import { ESTADOS_PROPIETARIO } from "../asesor/propietarios/constantes";
+import { ETIQUETA_TIPO_EVENTO, EMOJI_TIPO_EVENTO } from "./agenda/constantes";
 import { cn } from "@/lib/utils";
 import { AccionesRapidas } from "@/components/inmobiliaria/acciones-rapidas";
 
@@ -118,7 +127,9 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
     { count: inmueblesActivos },
     { count: tareasPendientes },
     { data: eventosHoy },
-    { data: tareasHoy },
+    { data: tareasProximas },
+    { data: propietariosPrioridad },
+    { data: compradoresPrioridad },
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -161,20 +172,124 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
       .in("estado", ["pendiente", "en_progreso"])
       .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
       .limit(6),
+    supabase
+      .from("propietarios")
+      .select("id, nombre, estado, fecha_ultimo_contacto, fecha_proxima_accion, valor_estimado, fuente_lead")
+      .eq("tenant_id", tenantId)
+      .eq("agente_id", usuario.id)
+      .not("estado", "in", "(captado,perdido)"),
+    supabase
+      .from("compradores")
+      .select("id, nombre, estado, fecha_ultimo_contacto, fecha_proxima_accion, urgencia, presupuesto_max")
+      .eq("tenant_id", tenantId)
+      .eq("agente_id", usuario.id)
+      .not("estado", "in", "(comprado,perdido)"),
   ]);
+
+  const hora = ahora.getHours();
+  const saludo = hora < 12 ? "Buenos días" : hora < 20 ? "Buenas tardes" : "Buenas noches";
+  const primerNombre = (usuario.nombre_completo ?? usuario.email ?? "").split(" ")[0];
+
+  const llamadasHoy = (eventosHoy ?? []).filter((e) => e.tipo === "llamada").length;
+  const visitasHoy = (eventosHoy ?? []).filter((e) => e.tipo === "visita").length;
+
+  const listaPropietarios = propietariosPrioridad ?? [];
+  const listaCompradores = compradoresPrioridad ?? [];
+  const propietariosUrgentes = listaPropietarios.filter((p) => estaVencida(p.fecha_proxima_accion));
+
+  type ItemProximo = { id: string; href: string; icono: string; titulo: string; horaTexto: string; fecha: number };
+
+  const eventosItems: ItemProximo[] = (eventosHoy ?? []).map((e) => ({
+    id: e.id,
+    href: `/inmobiliaria/agenda/${e.id}`,
+    icono: EMOJI_TIPO_EVENTO[e.tipo] ?? "🔔",
+    titulo: `${ETIQUETA_TIPO_EVENTO[e.tipo] ?? "Evento"} · ${e.titulo}`,
+    horaTexto: new Date(e.fecha_hora).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+    fecha: new Date(e.fecha_hora).getTime(),
+  }));
+
+  const tareasItems: ItemProximo[] = (tareasProximas ?? []).map((t) => ({
+    id: t.id,
+    href: `/inmobiliaria/tareas/${t.id}`,
+    icono: "📄",
+    titulo: t.titulo,
+    horaTexto: t.fecha_vencimiento
+      ? new Date(t.fecha_vencimiento).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+      : "Sin fecha",
+    fecha: t.fecha_vencimiento ? new Date(t.fecha_vencimiento).getTime() : Infinity,
+  }));
+
+  const proximas = [...eventosItems, ...tareasItems].sort((a, b) => a.fecha - b.fecha).slice(0, 5);
+  const comenzarHref = proximas[0]?.href ?? "/inmobiliaria/mis-tareas";
+
+  const propietarioUrgente = [...listaPropietarios]
+    .filter((p) => calcularPrioridad(p) === "alta")
+    .sort((a, b) => (diasDesde(b.fecha_ultimo_contacto) ?? 9999) - (diasDesde(a.fecha_ultimo_contacto) ?? 9999))[0];
+
+  const compradorUrgente = [...listaCompradores]
+    .filter((c) => calcularPrioridadComprador(c) === "alta")
+    .sort((a, b) => (diasDesde(b.fecha_ultimo_contacto) ?? 9999) - (diasDesde(a.fecha_ultimo_contacto) ?? 9999))[0];
+
+  const tareaVencida = (tareasProximas ?? []).find(
+    (t) => t.fecha_vencimiento && estaVencida(t.fecha_vencimiento)
+  );
+
+  const prioridades = [
+    propietarioUrgente && {
+      id: `prop-${propietarioUrgente.id}`,
+      href: `/inmobiliaria/propietarios/${propietarioUrgente.id}`,
+      etiqueta: "Propietario",
+      detalle: (() => {
+        const dias = diasDesde(propietarioUrgente.fecha_ultimo_contacto);
+        return dias === null ? "Sin contactar nunca" : `Hace ${dias} días sin contacto`;
+      })(),
+    },
+    compradorUrgente && {
+      id: `comp-${compradorUrgente.id}`,
+      href: `/inmobiliaria/compradores/${compradorUrgente.id}`,
+      etiqueta: "Comprador",
+      detalle:
+        compradorUrgente.estado === "visitas"
+          ? "Esperando visita"
+          : (() => {
+              const dias = diasDesde(compradorUrgente.fecha_ultimo_contacto);
+              return dias === null ? "Sin contactar nunca" : `Hace ${dias} días sin contacto`;
+            })(),
+    },
+    tareaVencida && {
+      id: `tarea-${tareaVencida.id}`,
+      href: `/inmobiliaria/tareas/${tareaVencida.id}`,
+      etiqueta: "Tarea vencida",
+      detalle: tareaVencida.titulo,
+    },
+  ].filter(Boolean) as { id: string; href: string; etiqueta: string; detalle: string }[];
 
   const kpis = [
     { label: "Mis propietarios", valor: propietariosActivos ?? 0, icono: Users, color: "bg-violet-500/10 text-violet-600" },
-    { label: "Mis inmuebles", valor: inmueblesActivos ?? 0, icono: Home, color: "bg-sky-500/10 text-sky-600" },
     { label: "Mis compradores", valor: compradoresActivos ?? 0, icono: UserSearch, color: "bg-emerald-500/10 text-emerald-600" },
-    { label: "Tareas pendientes", valor: tareasPendientes ?? 0, icono: CheckCircle2, color: "bg-amber-500/10 text-amber-600" },
+    { label: "Mis inmuebles", valor: inmueblesActivos ?? 0, icono: Home, color: "bg-sky-500/10 text-sky-600" },
+    { label: "Visitas hoy", valor: visitasHoy, icono: CalendarCheck, color: "bg-orange-500/10 text-orange-600" },
   ];
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Inicio</h1>
-        <p className="mt-1 text-muted-foreground">Hola, {usuario.nombre_completo ?? usuario.email}.</p>
+      <h1 className="text-2xl font-semibold">Mi día</h1>
+
+      <div className="rounded-2xl border bg-primary/5 p-6">
+        <p className="text-lg font-medium">{saludo}, {primerNombre} 👋</p>
+        <p className="mt-3 text-sm text-muted-foreground">Hoy tienes:</p>
+        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+          <span>📞 <strong>{llamadasHoy}</strong> {llamadasHoy === 1 ? "llamada" : "llamadas"}</span>
+          <span>🏡 <strong>{visitasHoy}</strong> {visitasHoy === 1 ? "visita" : "visitas"}</span>
+          <span>✅ <strong>{tareasPendientes ?? 0}</strong> {(tareasPendientes ?? 0) === 1 ? "tarea" : "tareas"}</span>
+          <span>🔴 <strong>{propietariosUrgentes.length}</strong> {propietariosUrgentes.length === 1 ? "propietario urgente" : "propietarios urgentes"}</span>
+        </div>
+        <Link
+          href={comenzarHref}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        >
+          Comenzar <ArrowRight className="size-4" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -191,45 +306,46 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border p-3">
-          <h2 className="flex items-center gap-1.5 text-sm font-medium">
-            <CalendarDays className="size-4" /> Agenda de hoy
-          </h2>
-          {(eventosHoy ?? []).length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">Sin eventos programados hoy.</p>
+          <h2 className="text-sm font-medium">Próximas tareas</h2>
+          {proximas.length === 0 ? (
+            <p className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
+              <CheckCircle2 className="size-4" /> No tienes nada pendiente ahora mismo.
+            </p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
-              {(eventosHoy ?? []).map((e) => (
-                <li key={e.id} className="flex items-center justify-between text-sm">
-                  <span>{e.titulo}</span>
-                  <span className="text-muted-foreground">
-                    {new Date(e.fecha_hora).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+            <ul className="mt-2 divide-y">
+              {proximas.map((item) => (
+                <li key={item.id} className="py-2 first:pt-0 last:pb-0">
+                  <Link href={item.href} className="flex items-center justify-between gap-3 text-sm hover:underline">
+                    <span className="flex items-center gap-2">
+                      <span>{item.icono}</span>
+                      <span>{item.titulo}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{item.horaTexto}</span>
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
         </div>
         <div className="rounded-lg border p-3">
-          <h2 className="text-sm font-medium">Tareas pendientes</h2>
-          {(tareasHoy ?? []).length === 0 ? (
+          <h2 className="text-sm font-medium">Prioridad alta</h2>
+          {prioridades.length === 0 ? (
             <p className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
-              <CheckCircle2 className="size-4" /> No tienes tareas pendientes.
+              <CheckCircle2 className="size-4" /> Todo al día, no hay nada urgente.
             </p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
-              {(tareasHoy ?? []).map((t) => {
-                const vencida = t.fecha_vencimiento && new Date(t.fecha_vencimiento) < ahora;
-                return (
-                  <li key={t.id} className="flex items-center justify-between text-sm">
-                    <span className={vencida ? "text-rose-600" : undefined}>{t.titulo}</span>
-                    {t.fecha_vencimiento && (
-                      <span className="text-muted-foreground">
-                        {new Date(t.fecha_vencimiento).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
+            <ul className="mt-2 divide-y">
+              {prioridades.map((p) => (
+                <li key={p.id} className="py-2 first:pt-0 last:pb-0">
+                  <Link href={p.href} className="flex items-center gap-2 text-sm hover:underline">
+                    <span>🔴</span>
+                    <span>
+                      <span className="font-medium">{p.etiqueta}</span>{" "}
+                      <span className="text-muted-foreground">· {p.detalle}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           )}
         </div>
