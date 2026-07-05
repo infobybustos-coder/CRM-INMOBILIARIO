@@ -25,12 +25,17 @@ export function adminsIncluidos(tenant: { plan_tarifa?: string | null }) {
   return tenant.plan_tarifa === "pago" ? ADMINS_INCLUIDOS_PAGO : ADMINS_INCLUIDOS_GRATIS;
 }
 
-export function limiteEmpleados(tenant: { agentes_extra?: number | null }) {
-  return ASESORES_INCLUIDOS_INMOBILIARIA + (tenant.agentes_extra ?? 0);
+// Los asientos extra solo existen en el plan PRO: en Gratis no se pueden
+// comprar, así que aunque quedara algún admins_extra/agentes_extra residual
+// de un plan de pago anterior, aquí se ignora.
+export function limiteEmpleados(tenant: { agentes_extra?: number | null; plan_tarifa?: string | null }) {
+  const extra = tenant.plan_tarifa === "pago" ? (tenant.agentes_extra ?? 0) : 0;
+  return ASESORES_INCLUIDOS_INMOBILIARIA + extra;
 }
 
 export function limiteAdmins(tenant: { admins_extra?: number | null; plan_tarifa?: string | null }) {
-  return adminsIncluidos(tenant) + (tenant.admins_extra ?? 0);
+  const extra = tenant.plan_tarifa === "pago" ? (tenant.admins_extra ?? 0) : 0;
+  return adminsIncluidos(tenant) + extra;
 }
 
 export function esIlimitado(tenant: { plan_tarifa?: string | null }) {

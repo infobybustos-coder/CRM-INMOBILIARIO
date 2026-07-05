@@ -13,6 +13,7 @@ import {
   PRECIO_ADMIN_EXTRA,
   adminsIncluidos,
   limiteAdmins,
+  limiteEmpleados,
 } from "@/lib/planes";
 
 export type RolInvitable = "empleado" | "admin";
@@ -60,9 +61,11 @@ export async function invitarMiembro(
     .eq("activo", true);
 
   const esAdmin = rol === "admin";
+  // Los asientos extra solo cuentan si el plan es de pago; en Gratis nunca
+  // se pueden comprar, así que el límite se calcula igual en ambos casos con
+  // las mismas funciones que usan Administradores/Agentes/Suscripción.
   const extra = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
-  const incluidos = esAdmin ? adminsIncluidos(usuario.tenant ?? {}) : ASESORES_INCLUIDOS_INMOBILIARIA;
-  const limite = incluidos + extra;
+  const limite = esAdmin ? limiteAdmins(usuario.tenant ?? {}) : limiteEmpleados(usuario.tenant ?? {});
   const precio = esAdmin ? PRECIO_ADMIN_EXTRA : PRECIO_ASESOR_EXTRA;
 
   if ((activos ?? 0) >= limite) {

@@ -2,13 +2,14 @@ import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
 import {
-  ASESORES_INCLUIDOS_INMOBILIARIA,
   PRECIO_ASESOR_EXTRA,
   PRECIO_ADMIN_EXTRA,
-  adminsIncluidos,
+  limiteAdmins,
+  limiteEmpleados,
   etiquetaPlan,
   type PlanTarifa,
 } from "@/lib/planes";
+import { cn } from "@/lib/utils";
 
 const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
   trial: "Periodo de prueba",
@@ -28,18 +29,27 @@ export default async function SuscripcionPage() {
     .eq("tenant_id", usuario.tenant_id)
     .maybeSingle();
 
-  const { count: usuariosActivos } = await supabase
-    .from("usuarios")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", usuario.tenant_id)
-    .eq("activo", true);
-
   const tenant = usuario.tenant ?? {};
-  const agentesExtra = tenant.agentes_extra ?? 0;
-  const adminsExtra = tenant.admins_extra ?? 0;
-  const usuariosIncluidos =
-    ASESORES_INCLUIDOS_INMOBILIARIA + adminsIncluidos(tenant) + agentesExtra + adminsExtra;
 
+  const [{ count: adminsActivos }, { count: empleadosActivos }] = await Promise.all([
+    supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "admin")
+      .eq("activo", true),
+    supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "empleado")
+      .eq("activo", true),
+  ]);
+
+  const limiteAdminsTenant = limiteAdmins(tenant);
+  const limiteEmpleadosTenant = limiteEmpleados(tenant);
+  const adminsExtra = tenant.plan_tarifa === "pago" ? (tenant.admins_extra ?? 0) : 0;
+  const agentesExtra = tenant.plan_tarifa === "pago" ? (tenant.agentes_extra ?? 0) : 0;
   const costeExtra = agentesExtra * PRECIO_ASESOR_EXTRA + adminsExtra * PRECIO_ADMIN_EXTRA;
 
   return (
@@ -58,12 +68,26 @@ export default async function SuscripcionPage() {
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Usuarios incluidos</p>
-          <p className="font-medium">{usuariosIncluidos}</p>
+          <p className="text-xs text-muted-foreground">Administradores</p>
+          <p
+            className={cn(
+              "font-medium",
+              (adminsActivos ?? 0) > limiteAdminsTenant && "text-destructive"
+            )}
+          >
+            {adminsActivos ?? 0} de {limiteAdminsTenant}
+          </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Usuarios utilizados</p>
-          <p className="font-medium">{usuariosActivos ?? 0}</p>
+          <p className="text-xs text-muted-foreground">Asesores</p>
+          <p
+            className={cn(
+              "font-medium",
+              (empleadosActivos ?? 0) > limiteEmpleadosTenant && "text-destructive"
+            )}
+          >
+            {empleadosActivos ?? 0} de {limiteEmpleadosTenant}
+          </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Próxima renovación</p>
@@ -89,6 +113,13 @@ export default async function SuscripcionPage() {
           </div>
         )}
       </div>
+
+      {((adminsActivos ?? 0) > limiteAdminsTenant || (empleadosActivos ?? 0) > limiteEmpleadosTenant) && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          Tienes más administradores o asesores activos de los que incluye tu plan actual. Elimina o
+          desactiva usuarios desde Administradores/Agentes, o pasa al plan PRO para ampliar.
+        </p>
+      )}
 
       <div className="space-y-2">
         <h2 className="text-sm font-semibold">Elige tu plan</h2>

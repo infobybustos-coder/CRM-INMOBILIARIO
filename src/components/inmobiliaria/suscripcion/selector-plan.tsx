@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/inmobiliaria/suscripcion/actions";
 import {
@@ -53,6 +53,7 @@ const PLANES: {
 
 export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function elegir(plan: PlanTarifa) {
     const mensaje =
@@ -60,12 +61,21 @@ export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
         ? "¿Cambiar al plan de pago (19,99€/mes)? Esto no procesa ningún cobro real todavía: solo actualiza tu plan en el CRM."
         : "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
     if (window.confirm(mensaje)) {
-      startTransition(() => cambiarPlanTarifa(plan));
+      setError(null);
+      startTransition(async () => {
+        const resultado = await cambiarPlanTarifa(plan);
+        if ("error" in resultado) setError(resultado.error);
+      });
     }
   }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      {error && (
+        <p className="sm:col-span-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
       {PLANES.map((plan) => {
         const esActual = plan.valor === planActual;
         return (
