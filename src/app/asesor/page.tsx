@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Users, Building2, ShoppingCart, CalendarCheck, CheckSquare, Award } from "lucide-react";
+import { Users, Building2, ShoppingCart, CalendarCheck, CheckSquare, Award } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarioMensual } from "@/components/asesor/calendario-mensual";
@@ -176,26 +176,30 @@ export default async function AsesorDashboard() {
       id: `llamada-${llamadaHoy.id}`,
       icono: "🔴",
       texto: `Llamar: ${llamadaHoy.titulo} (hoy)`,
+      href: "/asesor/agenda",
     },
     visitaSinConfirmar && {
       id: `visita-${visitaSinConfirmar.id}`,
       icono: "🟡",
       texto: `Confirmar visita: ${visitaSinConfirmar.titulo}`,
+      href: "/asesor/visitas",
     },
     (propietariosProximos.data?.length ?? 0) > 0 && {
       id: "propietarios-seguimiento",
       icono: "🔴",
       texto: `${propietariosProximos.data!.length} propietario${propietariosProximos.data!.length === 1 ? "" : "s"} sin seguimiento`,
+      href: "/asesor/propietarios",
     },
     tareasVencidas.length > 0 && {
       id: "tareas-vencidas",
       icono: "🟠",
       texto: `${tareasVencidas.length} tarea${tareasVencidas.length === 1 ? "" : "s"} vencida${tareasVencidas.length === 1 ? "" : "s"}`,
+      href: "/asesor/tareas",
     },
-  ].filter(Boolean) as { id: string; icono: string; texto: string }[];
+  ].filter(Boolean) as { id: string; icono: string; texto: string; href: string }[];
 
   // --- Próximas acciones (agenda fusionada) ----------------------------
-  type ItemProximo = { id: string; icono: string; titulo: string; horaTexto: string; fecha: number };
+  type ItemProximo = { id: string; icono: string; titulo: string; horaTexto: string; fecha: number; href: string };
 
   const eventosItems: ItemProximo[] = (eventosAgenda.data ?? [])
     .filter((e) => e.estado === "pendiente" && new Date(e.fecha_hora) >= inicioHoy)
@@ -205,6 +209,7 @@ export default async function AsesorDashboard() {
       titulo: e.titulo,
       horaTexto: new Date(e.fecha_hora).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
       fecha: new Date(e.fecha_hora).getTime(),
+      href: e.tipo === "visita" ? "/asesor/visitas" : "/asesor/agenda",
     }));
 
   const tareasItems: ItemProximo[] = (tareasAgenda.data ?? [])
@@ -218,6 +223,7 @@ export default async function AsesorDashboard() {
         month: "short",
       }),
       fecha: new Date(t.fecha_vencimiento as string).getTime(),
+      href: "/asesor/tareas",
     }));
 
   const proximas = [...eventosItems, ...tareasItems].sort((a, b) => a.fecha - b.fecha).slice(0, 6);
@@ -229,8 +235,8 @@ export default async function AsesorDashboard() {
     { label: "Propietarios", valor: propietariosActivos.count ?? 0, icono: Users, href: "/asesor/propietarios", color: "text-violet-500" },
     { label: "Inmuebles", valor: inmueblesTotal.count ?? 0, icono: Building2, href: "/asesor/inmuebles", color: "text-sky-500" },
     { label: "Compradores", valor: compradoresActivos.count ?? 0, icono: ShoppingCart, href: "/asesor/compradores", color: "text-emerald-500" },
-    { label: "Visitas de hoy", valor: visitasHoy.count ?? 0, icono: CalendarCheck, href: "/asesor/agenda", color: "text-orange-500" },
-    { label: "Tareas pendientes", valor: tareasPendientes.count ?? 0, icono: CheckSquare, href: "/asesor/agenda", color: "text-rose-500" },
+    { label: "Visitas de hoy", valor: visitasHoy.count ?? 0, icono: CalendarCheck, href: "/asesor/visitas", color: "text-orange-500" },
+    { label: "Tareas pendientes", valor: tareasPendientes.count ?? 0, icono: CheckSquare, href: "/asesor/tareas", color: "text-rose-500" },
     { label: "Exclusivas", valor: exclusivas.count ?? 0, icono: Award, href: "/asesor/propietarios", color: "text-indigo-500" },
   ];
 
@@ -251,19 +257,15 @@ export default async function AsesorDashboard() {
         ) : (
           <ul className="mt-3 space-y-2">
             {atencion.map((a) => (
-              <li key={a.id} className="flex items-center gap-2 text-sm">
-                <span>{a.icono}</span>
-                <span>{a.texto}</span>
+              <li key={a.id}>
+                <Link href={a.href} className="flex items-center gap-2 text-sm hover:underline">
+                  <span>{a.icono}</span>
+                  <span>{a.texto}</span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
-        <Link
-          href="/asesor/agenda"
-          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          Ver todo <ArrowRight className="size-3.5" />
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
@@ -289,7 +291,7 @@ export default async function AsesorDashboard() {
             <ul className="mt-2 divide-y">
               {proximas.map((item) => (
                 <li key={item.id} className="py-2 first:pt-0 last:pb-0">
-                  <Link href="/asesor/agenda" className="flex items-center justify-between gap-3 text-sm hover:underline">
+                  <Link href={item.href} className="flex items-center justify-between gap-3 text-sm hover:underline">
                     <span className="flex items-center gap-2">
                       <span>{item.icono}</span>
                       <span>{item.titulo}</span>

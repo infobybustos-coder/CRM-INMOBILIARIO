@@ -8,9 +8,8 @@ export type OrigenItem = "tarea" | "evento";
 
 function revalidarTodo() {
   revalidatePath("/asesor/agenda");
+  revalidatePath("/asesor/tareas");
   revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor");
 }
 
 export async function alternarTareaGeneral(
