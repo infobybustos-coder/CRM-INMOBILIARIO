@@ -116,12 +116,7 @@ export default async function AsesorLayout({
   };
 
   return (
-    <PreferenciasProvider
-      inicial={{
-        moneda: (usuario.moneda as "EUR" | "USD") ?? "EUR",
-        idioma: (usuario.idioma as "es" | "en") ?? "es",
-      }}
-    >
+    <PreferenciasProvider inicial={{ moneda: "EUR", idioma: "es" }}>
       <div className="tema-asesor min-h-screen bg-background text-foreground md:pl-(--nav-ancho)">
         <header className="flex items-center justify-between border-b px-4 py-3">
           <span className="font-semibold">{usuario.tenant?.nombre}</span>

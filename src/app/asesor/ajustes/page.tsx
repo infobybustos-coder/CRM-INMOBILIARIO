@@ -62,10 +62,7 @@ export default async function AjustesPage() {
         )}
       </div>
 
-      <AjustesForm
-        monedaInicial={(usuario.moneda as "EUR" | "USD") ?? "EUR"}
-        idiomaInicial={(usuario.idioma as "es" | "en") ?? "es"}
-      />
+      <AjustesForm />
     </div>
   );
 }
