@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidarAgenda(id?: string) {
@@ -15,7 +15,7 @@ function revalidarAgenda(id?: string) {
 }
 
 export async function marcarRealizada(id: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -30,7 +30,7 @@ export async function marcarRealizada(id: string) {
 }
 
 export async function cancelarEvento(id: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -45,7 +45,7 @@ export async function cancelarEvento(id: string) {
 }
 
 export async function confirmarEvento(id: string, confirmado: boolean) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -60,7 +60,7 @@ export async function confirmarEvento(id: string, confirmado: boolean) {
 }
 
 export async function reprogramarEvento(id: string, nuevaFechaHora: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -81,7 +81,7 @@ export async function actualizarResultado(
   _prevState: ResultadoState,
   formData: FormData
 ): Promise<ResultadoState> {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   const nota_resultado = String(formData.get("resultado") ?? "").trim() || null;

@@ -39,9 +39,12 @@ export async function requireInmobiliaria() {
 }
 
 // Un admin puede "ver como" un empleado de su misma inmobiliaria sin crear
-// otra sesión: solo afecta a qué datos ven las páginas propias del empleado
-// (mis-*, mi-agenda, perfil), nunca a los permisos reales de escritura, que
-// siguen siendo los del admin autenticado (RLS sigue usando su auth.uid()).
+// otra sesión: mientras dura la impersonación, tanto lo que se lee como lo
+// que se crea/edita desde las páginas y acciones propias del empleado
+// (mis-*, mi-agenda, perfil, altas rápidas) se atribuye al empleado
+// suplantado, no al admin real. RLS sigue validando con el auth.uid() real
+// por debajo, así que el admin nunca pierde ni gana permisos: solo cambia a
+// quién se le asignan los registros que él mismo crea mientras impersona.
 export async function obtenerImpersonacion() {
   const real = await getUsuarioConTenant();
   if (!real || real.rol !== "admin") return { real, objetivo: null };
@@ -67,5 +70,14 @@ export async function requireInmobiliariaEfectivo() {
   const { real, objetivo } = await obtenerImpersonacion();
   if (!real) redirect("/login");
   if (real.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
+  return objetivo ?? real;
+}
+
+// Para acciones compartidas entre /asesor y /inmobiliaria (altas rápidas,
+// notas, tareas por ficha...) que no necesitan redirigir, solo resolver
+// quién es el usuario "activo": el empleado suplantado si hay impersonación
+// en curso, o el usuario real en cualquier otro caso.
+export async function getUsuarioEfectivo() {
+  const { real, objetivo } = await obtenerImpersonacion();
   return objetivo ?? real;
 }

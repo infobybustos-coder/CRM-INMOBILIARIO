@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioConTenant, esGestor } from "@/lib/auth";
+import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
 
 async function requireUsuario() {
-  const usuario = await getUsuarioConTenant();
+  const usuario = await getUsuarioEfectivo();
   if (!usuario) throw new Error("No autenticado");
   return usuario;
 }

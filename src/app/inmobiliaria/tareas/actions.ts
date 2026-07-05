@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidarTareas(id?: string) {
@@ -13,7 +13,7 @@ function revalidarTareas(id?: string) {
 }
 
 export async function completarTarea(id: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -37,7 +37,7 @@ export async function completarTarea(id: string) {
 }
 
 export async function reprogramarTarea(id: string, nuevaFecha: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -61,7 +61,7 @@ export async function reprogramarTarea(id: string, nuevaFecha: string) {
 }
 
 export async function eliminarTarea(id: string) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase.from("tareas").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
@@ -78,7 +78,7 @@ export async function actualizarTarea(
   _prevState: ActualizarTareaState,
   formData: FormData
 ): Promise<ActualizarTareaState> {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const gestor = esGestor(usuario.rol);
 
   const titulo = String(formData.get("titulo") ?? "").trim();
@@ -118,7 +118,7 @@ export async function crearComentarioTarea(
   _prevState: ComentarioState,
   formData: FormData
 ): Promise<ComentarioState> {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const contenido = String(formData.get("contenido") ?? "").trim();
   if (!contenido) return null;
 

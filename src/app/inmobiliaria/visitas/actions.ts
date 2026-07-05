@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidarVisitas() {
@@ -18,7 +18,7 @@ export async function crearVisita(
   _prevState: CrearVisitaState,
   formData: FormData
 ): Promise<CrearVisitaState> {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   const inmuebleId = String(formData.get("inmueble_id") ?? "").trim();
@@ -73,7 +73,7 @@ export async function crearVisita(
 }
 
 export async function confirmarVisita(id: string, confirmado: boolean) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
@@ -88,7 +88,7 @@ export async function confirmarVisita(id: string, confirmado: boolean) {
 }
 
 export async function actualizarEstadoVisita(id: string, estado: "completado" | "cancelado" | "pendiente") {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase
