@@ -5,7 +5,11 @@ import { Plus, X, User, Phone, MapPin } from "lucide-react";
 import { crearPropietarioRapido } from "@/app/asesor/propietarios/actions";
 import { Button } from "@/components/ui/button";
 
-export function NuevoPropietario() {
+export function NuevoPropietario({
+  children,
+}: {
+  children?: (abrir: () => void) => React.ReactNode;
+} = {}) {
   const [abierto, setAbierto] = useState(false);
   const [state, formAction, pending] = useActionState(crearPropietarioRapido, null);
   const [stateProcesado, setStateProcesado] = useState(state);
@@ -17,10 +21,14 @@ export function NuevoPropietario() {
 
   return (
     <>
-      <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
-        <Plus className="size-4" />
-        Nuevo propietario
-      </Button>
+      {children ? (
+        children(() => setAbierto(true))
+      ) : (
+        <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
+          <Plus className="size-4" />
+          Nuevo propietario
+        </Button>
+      )}
 
       {abierto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center">

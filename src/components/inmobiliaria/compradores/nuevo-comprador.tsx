@@ -5,7 +5,11 @@ import { Plus, X, User, Phone } from "lucide-react";
 import { crearCompradorRapido } from "@/app/asesor/compradores/actions";
 import { Button } from "@/components/ui/button";
 
-export function NuevoComprador() {
+export function NuevoComprador({
+  children,
+}: {
+  children?: (abrir: () => void) => React.ReactNode;
+} = {}) {
   const [abierto, setAbierto] = useState(false);
   const [state, formAction, pending] = useActionState(crearCompradorRapido, null);
   const [stateProcesado, setStateProcesado] = useState(state);
@@ -17,10 +21,14 @@ export function NuevoComprador() {
 
   return (
     <>
-      <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
-        <Plus className="size-4" />
-        Nuevo comprador
-      </Button>
+      {children ? (
+        children(() => setAbierto(true))
+      ) : (
+        <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
+          <Plus className="size-4" />
+          Nuevo comprador
+        </Button>
+      )}
 
       {abierto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center">

@@ -11,10 +11,12 @@ export function NuevaVisita({
   inmuebles,
   compradores,
   asesores,
+  children,
 }: {
   inmuebles: Opcion[];
   compradores: Opcion[];
   asesores: Opcion[];
+  children?: (abrir: () => void) => React.ReactNode;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [state, formAction, pending] = useActionState(crearVisita, null);
@@ -27,10 +29,14 @@ export function NuevaVisita({
 
   return (
     <>
-      <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
-        <Plus className="size-4" />
-        Nueva visita
-      </Button>
+      {children ? (
+        children(() => setAbierto(true))
+      ) : (
+        <Button type="button" onClick={() => setAbierto(true)} className="gap-1.5">
+          <Plus className="size-4" />
+          Nueva visita
+        </Button>
+      )}
 
       {abierto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center">

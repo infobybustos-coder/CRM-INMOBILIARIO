@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import {
   UserPlus,
   Award,
@@ -25,6 +24,36 @@ import { createClient } from "@/lib/supabase/server";
 import { calcularCaptacionScore, diasDesde, estaVencida } from "@/lib/prioridad";
 import { ESTADOS_PROPIETARIO } from "../asesor/propietarios/constantes";
 import { cn } from "@/lib/utils";
+import { NuevoPropietario } from "@/components/inmobiliaria/propietarios/nuevo-propietario";
+import { NuevoInmueble } from "@/components/inmobiliaria/inmuebles/nuevo-inmueble";
+import { NuevoComprador } from "@/components/inmobiliaria/compradores/nuevo-comprador";
+import { NuevaVisita } from "@/components/inmobiliaria/visitas/nueva-visita";
+
+function AccionRapidaBoton({
+  onClick,
+  icono: Icono,
+  label,
+  color,
+}: {
+  onClick: () => void;
+  icono: typeof Plus;
+  label: string;
+  color: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full flex-col items-center gap-2 rounded-lg p-4 text-center transition-opacity hover:opacity-80",
+        color
+      )}
+    >
+      <Icono className="size-5" />
+      <span className="text-xs font-medium">{label}</span>
+    </button>
+  );
+}
 
 const ETAPAS_EMBUDO = [
   { etapa: "nuevo_lead", label: "Leads", color: "bg-slate-700" },
@@ -159,6 +188,8 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
     actividadesHoy,
     propietariosRecientes,
     compradoresParaSalud,
+    inmueblesParaSelector,
+    compradoresParaSelector,
   ] = await Promise.all([
     supabase
       .from("propietarios")
@@ -298,6 +329,8 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       .select("id, fecha_proxima_accion")
       .eq("tenant_id", tenantId)
       .not("estado", "in", "(comprado,perdido)"),
+    supabase.from("inmuebles").select("id, direccion").eq("tenant_id", tenantId).order("direccion"),
+    supabase.from("compradores").select("id, nombre").eq("tenant_id", tenantId).order("nombre"),
   ]);
 
   const nombrePorUsuario = new Map(
@@ -897,24 +930,30 @@ async function CentroDeControl({ usuario }: { usuario: NonNullable<Awaited<Retur
       <div className="rounded-lg border p-3">
         <h2 className="text-sm font-medium">Acciones rápidas</h2>
         <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-          {[
-            { href: "/inmobiliaria/propietarios", icono: Plus, label: "Nuevo propietario", color: "bg-violet-500/10 text-violet-600" },
-            { href: "/inmobiliaria/inmuebles", icono: Building2, label: "Nuevo inmueble", color: "bg-sky-500/10 text-sky-600" },
-            { href: "/inmobiliaria/compradores", icono: UserSearch, label: "Nuevo comprador", color: "bg-emerald-500/10 text-emerald-600" },
-            { href: "/inmobiliaria/visitas", icono: CalendarPlus, label: "Nueva visita", color: "bg-amber-500/10 text-amber-600" },
-          ].map(({ href, icono: Icono, label, color }) => (
-            <Link
-              key={label}
-              href={href}
-              className={cn(
-                "flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-opacity hover:opacity-80",
-                color
-              )}
-            >
-              <Icono className="size-5" />
-              <span className="text-xs font-medium">{label}</span>
-            </Link>
-          ))}
+          <NuevoPropietario>
+            {(abrir) => (
+              <AccionRapidaBoton onClick={abrir} icono={Plus} label="Nuevo propietario" color="bg-violet-500/10 text-violet-600" />
+            )}
+          </NuevoPropietario>
+          <NuevoInmueble>
+            {(abrir) => (
+              <AccionRapidaBoton onClick={abrir} icono={Building2} label="Nuevo inmueble" color="bg-sky-500/10 text-sky-600" />
+            )}
+          </NuevoInmueble>
+          <NuevoComprador>
+            {(abrir) => (
+              <AccionRapidaBoton onClick={abrir} icono={UserSearch} label="Nuevo comprador" color="bg-emerald-500/10 text-emerald-600" />
+            )}
+          </NuevoComprador>
+          <NuevaVisita
+            inmuebles={(inmueblesParaSelector.data ?? []).map((i) => ({ id: i.id, etiqueta: i.direccion }))}
+            compradores={(compradoresParaSelector.data ?? []).map((c) => ({ id: c.id, etiqueta: c.nombre }))}
+            asesores={(usuariosEquipo.data ?? []).map((a) => ({ id: a.id, etiqueta: a.nombre_completo }))}
+          >
+            {(abrir) => (
+              <AccionRapidaBoton onClick={abrir} icono={CalendarPlus} label="Nueva visita" color="bg-amber-500/10 text-amber-600" />
+            )}
+          </NuevaVisita>
         </div>
       </div>
     </div>
