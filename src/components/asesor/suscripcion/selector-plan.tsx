@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/asesor/suscripcion/actions";
 import { LIMITES_GRATIS, PRECIO_MENSUAL, type PlanTarifa } from "@/lib/planes";
@@ -33,14 +34,17 @@ const PLANES: {
 ];
 
 export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function elegir(plan: PlanTarifa) {
+    if (plan === "pago") {
+      router.push("/asesor/suscripcion/pago");
+      return;
+    }
     const mensaje =
-      plan === "pago"
-        ? `¿Cambiar al plan PRO (${PRECIO_MENSUAL.asesor.toFixed(2).replace(".", ",")}€/mes)? Esto no procesa ningún cobro real todavía: solo actualiza tu plan en el CRM.`
-        : "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
+      "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
     if (window.confirm(mensaje)) {
       setError(null);
       startTransition(async () => {
@@ -97,7 +101,13 @@ export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
                   : "bg-primary text-primary-foreground hover:opacity-90"
               )}
             >
-              {esActual ? "Plan actual" : pending ? "Guardando..." : "Guardar"}
+              {esActual
+                ? "Plan actual"
+                : plan.valor === "pago"
+                  ? "Cambiar"
+                  : pending
+                    ? "Guardando..."
+                    : "Guardar"}
             </button>
           </div>
         );

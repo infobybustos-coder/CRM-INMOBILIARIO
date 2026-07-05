@@ -6,7 +6,7 @@ import { Lock } from "lucide-react";
 
 export function LimitePlanAviso({ mensaje }: { mensaje: string }) {
   const pathname = usePathname();
-  const href = pathname?.startsWith("/inmobiliaria") ? "/inmobiliaria/suscripcion" : "/asesor/suscripcion";
+  const href = pathname?.startsWith("/inmobiliaria") ? "/inmobiliaria/suscripcion" : "/asesor/suscripcion/pago";
 
   return (
     <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
