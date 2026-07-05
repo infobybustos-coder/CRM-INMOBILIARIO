@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioInmueble } from "@/components/asesor/inmuebles/formulario-inmueble";
 import { Fotos } from "@/components/asesor/inmuebles/fotos";
@@ -22,7 +22,7 @@ export default async function InmueblePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const { id } = await params;
   const supabase = await createClient();
   const gestor = esGestor(usuario.rol);

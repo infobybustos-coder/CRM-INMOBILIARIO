@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioComprador } from "@/components/asesor/compradores/formulario-comprador";
 import { Documentos } from "@/components/asesor/documentos";
@@ -29,7 +29,7 @@ export default async function CompradorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const { id } = await params;
   const supabase = await createClient();
   const gestor = esGestor(usuario.rol);

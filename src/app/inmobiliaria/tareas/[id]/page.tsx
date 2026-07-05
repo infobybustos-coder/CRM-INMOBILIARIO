@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Link2 } from "lucide-react";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FormularioTarea } from "@/components/inmobiliaria/tareas/formulario-tarea";
 import { Notas } from "@/components/asesor/notas";
@@ -19,7 +19,7 @@ export default async function TareaPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const { id } = await params;
   const supabase = await createClient();
   const gestor = esGestor(usuario.rol);

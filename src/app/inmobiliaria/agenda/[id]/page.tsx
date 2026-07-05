@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Clock, UserCog, Link2 } from "lucide-react";
-import { requireInmobiliaria, esGestor } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ResultadoForm } from "@/components/inmobiliaria/agenda/resultado-form";
 import { actualizarResultado } from "../actions";
@@ -18,7 +18,7 @@ export default async function EventoPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const { id } = await params;
   const supabase = await createClient();
   const gestor = esGestor(usuario.rol);
