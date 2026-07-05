@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, useTransition } from "react";
 import { Check, Building2, UserRound } from "lucide-react";
 import { signUp } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,7 @@ const PLANES: Record<
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signUp, null);
+  const [, startTransition] = useTransition();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [enviando, setEnviando] = useState<PlanTarifa | null>(null);
   const [errorPaso1, setErrorPaso1] = useState<string | null>(null);
@@ -127,7 +128,9 @@ export default function SignupPage() {
     fd.set("terminos", terminos ? "on" : "off");
     fd.set("tipo_plan", tipoPlan);
     fd.set("plan_tarifa", planTarifa);
-    formAction(fd);
+    startTransition(() => {
+      formAction(fd);
+    });
   }
 
   return (
