@@ -25,6 +25,7 @@ function revalidarEquipo(id?: string) {
 
 export type InvitarState =
   | { error: string }
+  | { requierePlanPro: true }
   | { requierePago: true; precio: number }
   | { ok: true; link: string }
   | null;
@@ -64,6 +65,8 @@ export async function invitarMiembro(
   const precio = esAdmin ? PRECIO_ADMIN_EXTRA : PRECIO_ASESOR_EXTRA;
 
   if ((activos ?? 0) >= limite) {
+    const esPago = usuario.tenant?.plan_tarifa === "pago";
+    if (!esPago) return { requierePlanPro: true };
     if (!confirmarExtra) return { requierePago: true, precio };
 
     const admin = createAdminClient();
@@ -143,8 +146,11 @@ export async function actualizarMiembro(
       .eq("activo", true);
     const limite = limiteAdmins(usuario.tenant ?? {});
     if ((adminsActivos ?? 0) >= limite) {
+      const esPago = usuario.tenant?.plan_tarifa === "pago";
       return {
-        error: `Ya tienes el máximo de administradores incluidos en tu plan. Añade uno nuevo desde Administradores para ampliar el plan.`,
+        error: esPago
+          ? "Ya tienes el máximo de administradores incluidos en tu plan. Añade uno nuevo desde Administradores para ampliar el plan."
+          : "Has alcanzado el límite de administradores de tu plan Free. Cambia al plan PRO desde Suscripción para añadir más.",
       };
     }
   }

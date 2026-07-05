@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, X, Copy, Check } from "lucide-react";
+import Link from "next/link";
+import { Plus, X, Copy, Check, Lock } from "lucide-react";
 import { invitarMiembro, type InvitarState, type RolInvitable } from "@/app/inmobiliaria/equipo/actions";
 
 export function NuevoMiembro({
@@ -92,6 +93,30 @@ export function NuevoMiembro({
                 >
                   Cerrar
                 </button>
+              </div>
+            ) : estado && "requierePlanPro" in estado ? (
+              <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                <p className="flex items-start gap-2">
+                  <Lock className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                  Con el plan Free no puedes añadir más{" "}
+                  {rol === "admin" ? "administradores" : "asesores"} de los incluidos. Para añadir
+                  usuarios extra, necesitas pasarte al plan PRO.
+                </p>
+                <div className="flex gap-2">
+                  <Link
+                    href="/inmobiliaria/suscripcion"
+                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Ver plan PRO
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={cerrar}
+                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             ) : estado && "requierePago" in estado ? (
               <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
