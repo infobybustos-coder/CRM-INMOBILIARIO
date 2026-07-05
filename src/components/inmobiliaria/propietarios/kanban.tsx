@@ -209,8 +209,17 @@ export function Kanban({
   basePath?: string;
 }) {
   const [items, setItems] = useState(propietarios);
+  const [propietariosPrevios, setPropietariosPrevios] = useState(propietarios);
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // El estado local solo existe para el drag & drop; cuando el servidor
+  // revalida (p. ej. al crear un propietario nuevo) hay que traer la lista
+  // fresca, si no el Kanban se queda con la foto del primer render.
+  if (propietarios !== propietariosPrevios) {
+    setPropietariosPrevios(propietarios);
+    setItems(propietarios);
+  }
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
