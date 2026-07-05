@@ -37,12 +37,14 @@ export default async function TareaPage({
   if (!gestor && tarea.asignado_a !== usuario.id) notFound();
 
   const [{ data: agentes }, { data: actividades }, entidad] = await Promise.all([
-    supabase
-      .from("usuarios")
-      .select("id, nombre_completo")
-      .eq("tenant_id", usuario.tenant_id)
-      .eq("activo", true)
-      .order("nombre_completo"),
+    gestor
+      ? supabase
+          .from("usuarios")
+          .select("id, nombre_completo")
+          .eq("tenant_id", usuario.tenant_id)
+          .eq("activo", true)
+          .order("nombre_completo")
+      : Promise.resolve({ data: [] as { id: string; nombre_completo: string }[] }),
     supabase
       .from("actividades")
       .select("id, tipo, contenido, creado_en")

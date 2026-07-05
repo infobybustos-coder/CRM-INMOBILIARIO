@@ -76,7 +76,7 @@ export function AccionesRapidas({
           />
         )}
       </NuevoComprador>
-      <NuevaVisita inmuebles={inmuebles} compradores={compradores} asesores={asesores}>
+      <NuevaVisita inmuebles={inmuebles} compradores={compradores} asesores={asesores} gestor>
         {(abrir) => (
           <AccionRapidaBoton
             onClick={abrir}

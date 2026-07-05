@@ -79,11 +79,11 @@ export async function actualizarTarea(
   formData: FormData
 ): Promise<ActualizarTareaState> {
   const usuario = await requireInmobiliaria();
+  const gestor = esGestor(usuario.rol);
 
   const titulo = String(formData.get("titulo") ?? "").trim();
   if (!titulo) return { error: "Pon un título a la tarea." };
 
-  const asignado_a = String(formData.get("asignado_a") ?? "").trim() || null;
   const fecha_vencimiento = String(formData.get("fecha_vencimiento") ?? "").trim() || null;
   const prioridad = String(formData.get("prioridad") ?? "media");
   const descripcion = String(formData.get("descripcion") ?? "").trim() || null;
@@ -91,10 +91,18 @@ export async function actualizarTarea(
   const supabase = await createClient();
   let query = supabase
     .from("tareas")
-    .update({ titulo, asignado_a, fecha_vencimiento, prioridad, descripcion })
+    .update({
+      titulo,
+      fecha_vencimiento,
+      prioridad,
+      descripcion,
+      // Solo un gestor puede reasignar una tarea a otra persona; un empleado
+      // no puede tocar su propio "asignado_a" desde este formulario.
+      ...(gestor ? { asignado_a: String(formData.get("asignado_a") ?? "").trim() || null } : {}),
+    })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
-  if (!esGestor(usuario.rol)) query = query.eq("asignado_a", usuario.id);
+  if (!gestor) query = query.eq("asignado_a", usuario.id);
   const { error } = await query;
 
   if (error) return { error: "No se pudo guardar la tarea." };

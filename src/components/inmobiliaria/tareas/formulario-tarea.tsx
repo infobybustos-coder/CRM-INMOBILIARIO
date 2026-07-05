@@ -41,24 +41,26 @@ export function FormularioTarea({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label htmlFor="asignado_a" className="text-sm font-medium">
-            Responsable
-          </label>
-          <select
-            id="asignado_a"
-            name="asignado_a"
-            defaultValue={tarea.asignado_a ?? ""}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Sin asignar</option>
-            {agentes.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.nombre_completo}
-              </option>
-            ))}
-          </select>
-        </div>
+        {agentes.length > 0 && (
+          <div className="space-y-2">
+            <label htmlFor="asignado_a" className="text-sm font-medium">
+              Responsable
+            </label>
+            <select
+              id="asignado_a"
+              name="asignado_a"
+              defaultValue={tarea.asignado_a ?? ""}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Sin asignar</option>
+              {agentes.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre_completo}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <label htmlFor="fecha_vencimiento" className="text-sm font-medium">

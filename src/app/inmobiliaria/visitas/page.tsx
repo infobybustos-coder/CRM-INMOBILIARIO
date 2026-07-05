@@ -157,6 +157,7 @@ export default async function VisitasPage() {
           inmuebles={(inmuebles ?? []).map((i) => ({ id: i.id, etiqueta: i.direccion }))}
           compradores={(compradores ?? []).map((c) => ({ id: c.id, etiqueta: c.nombre }))}
           asesores={(asesores ?? []).map((a) => ({ id: a.id, etiqueta: a.nombre_completo }))}
+          gestor
         />
       </div>
 

@@ -25,7 +25,11 @@ export async function crearVisita(
   const compradorId = String(formData.get("comprador_id") ?? "").trim();
   const fecha = String(formData.get("fecha") ?? "").trim();
   const hora = String(formData.get("hora") ?? "").trim();
-  const asesorId = String(formData.get("asesor_id") ?? "").trim() || null;
+  // Un empleado siempre se asigna la visita a sí mismo; solo un gestor puede
+  // elegir a otro asesor (o dejarla sin asignar) desde el selector.
+  const asesorId = esGestor(usuario.rol)
+    ? String(formData.get("asesor_id") ?? "").trim() || null
+    : usuario.id;
 
   if (!inmuebleId || !compradorId || !fecha || !hora) {
     return { error: "Selecciona inmueble, comprador, fecha y hora." };

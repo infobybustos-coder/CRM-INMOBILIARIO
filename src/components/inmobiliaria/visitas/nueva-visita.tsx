@@ -10,12 +10,14 @@ type Opcion = { id: string; etiqueta: string };
 export function NuevaVisita({
   inmuebles,
   compradores,
-  asesores,
+  asesores = [],
+  gestor = false,
   children,
 }: {
   inmuebles: Opcion[];
   compradores: Opcion[];
-  asesores: Opcion[];
+  asesores?: Opcion[];
+  gestor?: boolean;
   children?: (abrir: () => void) => React.ReactNode;
 }) {
   const [abierto, setAbierto] = useState(false);
@@ -120,23 +122,25 @@ export function NuevaVisita({
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="asesor_id" className="text-sm font-medium">
-                  Asesor (opcional)
-                </label>
-                <select
-                  id="asesor_id"
-                  name="asesor_id"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">Sin asignar</option>
-                  {asesores.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.etiqueta}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {gestor && (
+                <div className="space-y-1.5">
+                  <label htmlFor="asesor_id" className="text-sm font-medium">
+                    Asesor (opcional)
+                  </label>
+                  <select
+                    id="asesor_id"
+                    name="asesor_id"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Sin asignar</option>
+                    {asesores.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {state && "error" in state && (
                 <p className="text-sm text-destructive">{state.error}</p>

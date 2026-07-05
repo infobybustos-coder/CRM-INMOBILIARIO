@@ -148,7 +148,6 @@ export default async function MisVisitasPage() {
         <NuevaVisita
           inmuebles={(inmuebles ?? []).map((i) => ({ id: i.id, etiqueta: i.direccion }))}
           compradores={(compradores ?? []).map((c) => ({ id: c.id, etiqueta: c.nombre }))}
-          asesores={[{ id: usuario.id, etiqueta: usuario.nombre_completo }]}
         />
       </div>
 
