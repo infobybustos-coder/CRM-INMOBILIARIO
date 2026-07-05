@@ -1,70 +1,74 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  UserPlus,
-  Clock,
-  CalendarCheck,
-  Award,
-  Building2,
-  CheckSquare,
-} from "lucide-react";
+import { ArrowRight, Users, Building2, ShoppingCart, CalendarCheck, CheckSquare, Award } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarioMensual } from "@/components/asesor/calendario-mensual";
-import { ResumenTareas } from "@/components/asesor/resumen-tareas";
-import { GraficoLineas } from "@/components/asesor/grafico-lineas";
-import { agruparPorDia, type AgendaItem } from "@/lib/agenda";
-import { ESTADOS_PROPIETARIO, ETIQUETAS_ESTADO } from "./propietarios/constantes";
+import { claveDia, agruparPorDia, type AgendaItem } from "@/lib/agenda";
 
-const COLOR_BARRA_ESTADO: Record<string, string> = {
-  nuevo_lead: "bg-sky-500",
-  contactado: "bg-cyan-500",
-  tasacion_programada: "bg-amber-500",
-  tasacion_realizada: "bg-orange-500",
-  negociacion: "bg-violet-500",
-  exclusiva_firmada: "bg-indigo-500",
-  captado: "bg-emerald-500",
-  perdido: "bg-rose-500",
+const EMOJI_TIPO_EVENTO: Record<string, string> = {
+  llamada: "📞",
+  visita: "🏡",
+  tasacion: "📋",
+  reunion: "🤝",
+  recordatorio: "🔔",
 };
+
+function BarraProgreso({ label, actual, objetivo }: { label: string; actual: number; objetivo: number }) {
+  const pct = Math.min(100, Math.round((actual / Math.max(1, objetivo)) * 100));
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <p className="text-muted-foreground">{label}</p>
+        <p className="font-medium">
+          {actual} / {objetivo}
+        </p>
+      </div>
+      <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default async function AsesorDashboard() {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
   const supabase = await createClient();
-  const ahora = new Date().toISOString();
+  const ahora = new Date();
+  const ahoraISO = ahora.toISOString();
   const inicioHoy = new Date();
   inicioHoy.setHours(0, 0, 0, 0);
   const finHoy = new Date();
   finHoy.setHours(23, 59, 59, 999);
-  const inicioHistorico = new Date();
-  inicioHistorico.setDate(inicioHistorico.getDate() - 7 * 8);
-  inicioHistorico.setHours(0, 0, 0, 0);
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
 
   const [
     propietariosProximos,
     compradoresProximos,
-    propietariosNuevos,
+    propietariosActivos,
+    compradoresActivos,
     visitasHoy,
     exclusivas,
-    inmueblesCaptados,
+    inmueblesTotal,
     tareasPendientes,
-    eventosPendientes,
-    totalPropietarios,
-    captados,
-    perdidos,
-    estadosPropietarios,
     eventosAgenda,
     tareasAgenda,
-    propietariosHistorico,
-    tareasCompletadasHistorico,
+    captacionesMes,
+    exclusivasMes,
   ] = await Promise.all([
     supabase
       .from("propietarios")
       .select("id, nombre, fecha_proxima_accion")
       .eq("agente_id", usuario.id)
       .not("fecha_proxima_accion", "is", null)
-      .lte("fecha_proxima_accion", ahora)
+      .lte("fecha_proxima_accion", ahoraISO)
       .order("fecha_proxima_accion")
       .limit(10),
     supabase
@@ -72,14 +76,19 @@ export default async function AsesorDashboard() {
       .select("id, nombre, fecha_proxima_accion")
       .eq("agente_id", usuario.id)
       .not("fecha_proxima_accion", "is", null)
-      .lte("fecha_proxima_accion", ahora)
+      .lte("fecha_proxima_accion", ahoraISO)
       .order("fecha_proxima_accion")
       .limit(10),
     supabase
       .from("propietarios")
       .select("id", { count: "exact", head: true })
       .eq("agente_id", usuario.id)
-      .eq("estado", "nuevo_lead"),
+      .not("estado", "in", "(captado,perdido)"),
+    supabase
+      .from("compradores")
+      .select("id", { count: "exact", head: true })
+      .eq("agente_id", usuario.id)
+      .not("estado", "in", "(comprado,perdido)"),
     supabase
       .from("eventos_agenda")
       .select("id", { count: "exact", head: true })
@@ -103,27 +112,7 @@ export default async function AsesorDashboard() {
       .eq("estado", "pendiente"),
     supabase
       .from("eventos_agenda")
-      .select("id", { count: "exact", head: true })
-      .eq("usuario_id", usuario.id)
-      .eq("estado", "pendiente"),
-    supabase
-      .from("propietarios")
-      .select("id", { count: "exact", head: true })
-      .eq("agente_id", usuario.id),
-    supabase
-      .from("propietarios")
-      .select("id", { count: "exact", head: true })
-      .eq("agente_id", usuario.id)
-      .eq("estado", "captado"),
-    supabase
-      .from("propietarios")
-      .select("id", { count: "exact", head: true })
-      .eq("agente_id", usuario.id)
-      .eq("estado", "perdido"),
-    supabase.from("propietarios").select("estado").eq("agente_id", usuario.id),
-    supabase
-      .from("eventos_agenda")
-      .select("id, tipo, titulo, fecha_hora, estado")
+      .select("id, tipo, titulo, fecha_hora, estado, confirmado")
       .eq("usuario_id", usuario.id),
     supabase
       .from("tareas")
@@ -132,31 +121,23 @@ export default async function AsesorDashboard() {
       .not("fecha_vencimiento", "is", null),
     supabase
       .from("propietarios")
-      .select("creado_en, estado")
+      .select("id", { count: "exact", head: true })
       .eq("agente_id", usuario.id)
-      .gte("creado_en", inicioHistorico.toISOString()),
+      .gte("creado_en", inicioMes.toISOString()),
     supabase
-      .from("tareas")
-      .select("completada_en")
-      .eq("asignado_a", usuario.id)
-      .not("completada_en", "is", null)
-      .gte("completada_en", inicioHistorico.toISOString()),
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("agente_id", usuario.id)
+      .eq("estado", "exclusiva_firmada")
+      .gte("actualizado_en", inicioMes.toISOString()),
   ]);
 
-  const totalCaptaciones = totalPropietarios.count ?? 0;
-  const conversion =
-    totalCaptaciones > 0
-      ? Math.round(((captados.count ?? 0) / totalCaptaciones) * 100)
-      : 0;
+  const primerNombre = usuario.nombre_completo?.split(" ")[0] ?? "";
+  const hora = ahora.getHours();
+  const saludo = hora < 12 ? "Buenos días" : hora < 20 ? "Buenas tardes" : "Buenas noches";
 
-  const conteoPorEstado = ESTADOS_PROPIETARIO.reduce<Record<string, number>>((acc, estado) => {
-    acc[estado] = 0;
-    return acc;
-  }, {});
-  for (const p of estadosPropietarios.data ?? []) {
-    if (p.estado in conteoPorEstado) conteoPorEstado[p.estado] += 1;
-  }
-  const maxEstado = Math.max(1, ...Object.values(conteoPorEstado));
+  const seguimientosPendientes =
+    (propietariosProximos.data?.length ?? 0) + (compradoresProximos.data?.length ?? 0);
 
   const agendaItems: AgendaItem[] = [
     ...(eventosAgenda.data ?? []).map((e) => ({
@@ -177,120 +158,116 @@ export default async function AsesorDashboard() {
   ];
   const agendaPorDia = agruparPorDia(agendaItems);
 
-  const stats = [
-    {
-      label: "Propietarios nuevos",
-      valor: propietariosNuevos.count ?? 0,
-      icono: UserPlus,
-      href: "/asesor/propietarios",
-      color: "text-sky-500",
+  // --- Centro de atención ---------------------------------------------
+  const llamadaHoy = (eventosAgenda.data ?? []).find(
+    (e) => e.tipo === "llamada" && e.estado === "pendiente" && claveDia(e.fecha_hora) === claveDia(ahora)
+  );
+  const visitaSinConfirmar = [...(eventosAgenda.data ?? [])]
+    .filter(
+      (e) => e.tipo === "visita" && e.estado === "pendiente" && !e.confirmado && new Date(e.fecha_hora) >= ahora
+    )
+    .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())[0];
+  const tareasVencidas = (tareasAgenda.data ?? []).filter(
+    (t) => t.estado === "pendiente" && new Date(t.fecha_vencimiento as string) < ahora
+  );
+
+  const atencion = [
+    llamadaHoy && {
+      id: `llamada-${llamadaHoy.id}`,
+      icono: "🔴",
+      texto: `Llamar: ${llamadaHoy.titulo} (hoy)`,
     },
-    {
-      label: "Seguimientos pendientes",
-      valor: (propietariosProximos.data?.length ?? 0) + (compradoresProximos.data?.length ?? 0),
-      icono: Clock,
-      href: "/asesor/propietarios",
-      color: "text-amber-500",
+    visitaSinConfirmar && {
+      id: `visita-${visitaSinConfirmar.id}`,
+      icono: "🟡",
+      texto: `Confirmar visita: ${visitaSinConfirmar.titulo}`,
     },
-    {
-      label: "Visitas del día",
-      valor: visitasHoy.count ?? 0,
-      icono: CalendarCheck,
-      href: "/asesor/agenda",
-      color: "text-orange-500",
+    (propietariosProximos.data?.length ?? 0) > 0 && {
+      id: "propietarios-seguimiento",
+      icono: "🔴",
+      texto: `${propietariosProximos.data!.length} propietario${propietariosProximos.data!.length === 1 ? "" : "s"} sin seguimiento`,
     },
-    {
-      label: "Exclusivas conseguidas",
-      valor: exclusivas.count ?? 0,
-      icono: Award,
-      href: "/asesor/propietarios",
-      color: "text-emerald-500",
+    tareasVencidas.length > 0 && {
+      id: "tareas-vencidas",
+      icono: "🟠",
+      texto: `${tareasVencidas.length} tarea${tareasVencidas.length === 1 ? "" : "s"} vencida${tareasVencidas.length === 1 ? "" : "s"}`,
     },
-    {
-      label: "Inmuebles captados",
-      valor: inmueblesCaptados.count ?? 0,
-      icono: Building2,
-      href: "/asesor/inmuebles",
-      color: "text-violet-500",
-    },
-    {
-      label: "Tareas pendientes",
-      valor: (tareasPendientes.count ?? 0) + (eventosPendientes.count ?? 0),
-      icono: CheckSquare,
-      href: "/asesor/agenda",
-      color: "text-rose-500",
-    },
+  ].filter(Boolean) as { id: string; icono: string; texto: string }[];
+
+  // --- Próximas acciones (agenda fusionada) ----------------------------
+  type ItemProximo = { id: string; icono: string; titulo: string; horaTexto: string; fecha: number };
+
+  const eventosItems: ItemProximo[] = (eventosAgenda.data ?? [])
+    .filter((e) => e.estado === "pendiente" && new Date(e.fecha_hora) >= inicioHoy)
+    .map((e) => ({
+      id: `evento-${e.id}`,
+      icono: EMOJI_TIPO_EVENTO[e.tipo] ?? "🔔",
+      titulo: e.titulo,
+      horaTexto: new Date(e.fecha_hora).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+      fecha: new Date(e.fecha_hora).getTime(),
+    }));
+
+  const tareasItems: ItemProximo[] = (tareasAgenda.data ?? [])
+    .filter((t) => t.estado === "pendiente")
+    .map((t) => ({
+      id: `tarea-${t.id}`,
+      icono: "✅",
+      titulo: t.titulo,
+      horaTexto: new Date(t.fecha_vencimiento as string).toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "short",
+      }),
+      fecha: new Date(t.fecha_vencimiento as string).getTime(),
+    }));
+
+  const proximas = [...eventosItems, ...tareasItems].sort((a, b) => a.fecha - b.fecha).slice(0, 6);
+
+  const objetivoCaptaciones = 10;
+  const objetivoExclusivas = usuario.tenant?.objetivo_exclusivas_mensual ?? 10;
+
+  const kpis = [
+    { label: "Propietarios", valor: propietariosActivos.count ?? 0, icono: Users, href: "/asesor/propietarios", color: "text-violet-500" },
+    { label: "Inmuebles", valor: inmueblesTotal.count ?? 0, icono: Building2, href: "/asesor/inmuebles", color: "text-sky-500" },
+    { label: "Compradores", valor: compradoresActivos.count ?? 0, icono: ShoppingCart, href: "/asesor/compradores", color: "text-emerald-500" },
+    { label: "Visitas de hoy", valor: visitasHoy.count ?? 0, icono: CalendarCheck, href: "/asesor/agenda", color: "text-orange-500" },
+    { label: "Tareas pendientes", valor: tareasPendientes.count ?? 0, icono: CheckSquare, href: "/asesor/agenda", color: "text-rose-500" },
+    { label: "Exclusivas", valor: exclusivas.count ?? 0, icono: Award, href: "/asesor/propietarios", color: "text-indigo-500" },
   ];
-
-  function inicioDeSemana(fecha: Date) {
-    const d = new Date(fecha);
-    d.setHours(0, 0, 0, 0);
-    const dia = d.getDay();
-    const diff = (dia + 6) % 7;
-    d.setDate(d.getDate() - diff);
-    return d;
-  }
-
-  const semanas: Date[] = [];
-  for (let i = 7; i >= 0; i--) {
-    const d = inicioDeSemana(new Date());
-    d.setDate(d.getDate() - i * 7);
-    semanas.push(d);
-  }
-
-  function indiceSemana(fecha: string) {
-    const inicio = inicioDeSemana(new Date(fecha)).getTime();
-    return semanas.findIndex((s) => s.getTime() === inicio);
-  }
-
-  const captacionesPorSemana = new Array(semanas.length).fill(0);
-  const captadosPorSemana = new Array(semanas.length).fill(0);
-  for (const p of propietariosHistorico.data ?? []) {
-    const i = indiceSemana(p.creado_en);
-    if (i >= 0) {
-      captacionesPorSemana[i] += 1;
-      if (p.estado === "captado") captadosPorSemana[i] += 1;
-    }
-  }
-
-  const tareasPorSemana = new Array(semanas.length).fill(0);
-  for (const t of tareasCompletadasHistorico.data ?? []) {
-    const i = indiceSemana(t.completada_en as string);
-    if (i >= 0) tareasPorSemana[i] += 1;
-  }
-
-  const etiquetasSemanas = semanas.map((s) =>
-    s.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" })
-  );
-
-  const acciones = [
-    ...(propietariosProximos.data ?? []).map((p) => ({
-      ...p,
-      tipo: "propietario" as const,
-    })),
-    ...(compradoresProximos.data ?? []).map((c) => ({
-      ...c,
-      tipo: "comprador" as const,
-    })),
-  ].sort(
-    (a, b) =>
-      new Date(a.fecha_proxima_accion!).getTime() -
-      new Date(b.fecha_proxima_accion!).getTime()
-  );
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Vista General</h1>
+        <h1 className="text-2xl font-semibold">{saludo}, {primerNombre} 👋</h1>
         <p className="mt-1 text-muted-foreground">
-          Hola, {usuario.nombre_completo?.split(" ")[0]}.
+          Hoy tienes {tareasPendientes.count ?? 0} tareas, {seguimientosPendientes} seguimientos y{" "}
+          {visitasHoy.count ?? 0} {(visitasHoy.count ?? 0) === 1 ? "visita programada" : "visitas programadas"}.
         </p>
       </div>
 
-      <ResumenTareas items={agendaItems} />
+      <div className="rounded-2xl border bg-amber-500/5 p-5">
+        <h2 className="text-base font-semibold">🚨 Requiere tu atención</h2>
+        {atencion.length === 0 ? (
+          <p className="mt-2 text-sm text-emerald-600">Todo al día, no hay nada urgente ahora mismo.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {atencion.map((a) => (
+              <li key={a.id} className="flex items-center gap-2 text-sm">
+                <span>{a.icono}</span>
+                <span>{a.texto}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link
+          href="/asesor/agenda"
+          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          Ver todo <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
 
-      <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
-        {stats.map(({ label, valor, icono: Icono, href, color }) => (
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+        {kpis.map(({ label, valor, icono: Icono, href, color }) => (
           <Link
             key={label}
             href={href}
@@ -306,49 +283,21 @@ export default async function AsesorDashboard() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border p-3 md:col-span-2">
           <h2 className="text-sm font-medium">Próximas acciones</h2>
-          {acciones.length === 0 ? (
-            <div className="mt-2">
-              <p className="text-xs text-muted-foreground">
-                No tienes acciones pendientes ni vencidas. ¡Vas al día!
-              </p>
-              <div className="mt-3">
-                <GraficoLineas
-                  etiquetas={etiquetasSemanas}
-                  series={[
-                    { nombre: "Captaciones nuevas", color: "#0ea5e9", valores: captacionesPorSemana },
-                    { nombre: "Captados", color: "#10b981", valores: captadosPorSemana },
-                    { nombre: "Tareas completadas", color: "#a855f7", valores: tareasPorSemana },
-                  ]}
-                  alto={90}
-                  grosorLinea={1.25}
-                />
-              </div>
-            </div>
+          {proximas.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">No tienes nada pendiente ahora mismo.</p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
-              {acciones.slice(0, 6).map((a) => {
-                const vencida = new Date(a.fecha_proxima_accion!) < new Date();
-                return (
-                  <li key={`${a.tipo}-${a.id}`}>
-                    <Link
-                      href={`/asesor/${a.tipo === "comprador" ? "compradores" : "propietarios"}`}
-                      className="flex items-center justify-between rounded-md border px-3 py-1.5 text-xs"
-                    >
-                      <span>
-                        <span className="font-medium">{a.nombre}</span>
-                        <span className="ml-2 text-muted-foreground">
-                          {a.tipo === "comprador" ? "Comprador" : "Captación"}
-                        </span>
-                      </span>
-                      <span
-                        className={vencida ? "text-destructive" : "text-muted-foreground"}
-                      >
-                        {new Date(a.fecha_proxima_accion!).toLocaleDateString("es-ES")}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+            <ul className="mt-2 divide-y">
+              {proximas.map((item) => (
+                <li key={item.id} className="py-2 first:pt-0 last:pb-0">
+                  <Link href="/asesor/agenda" className="flex items-center justify-between gap-3 text-sm hover:underline">
+                    <span className="flex items-center gap-2">
+                      <span>{item.icono}</span>
+                      <span>{item.titulo}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{item.horaTexto}</span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           )}
         </div>
@@ -360,63 +309,11 @@ export default async function AsesorDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-lg border p-3 md:col-span-2">
-          <h2 className="text-sm font-medium">Captaciones por estado</h2>
-          <div className="mt-2 space-y-1.5">
-            {ESTADOS_PROPIETARIO.map((estado) => (
-              <div key={estado} className="flex items-center gap-2">
-                <span className="w-28 shrink-0 text-xs text-muted-foreground">
-                  {ETIQUETAS_ESTADO[estado]}
-                </span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full rounded-full ${COLOR_BARRA_ESTADO[estado]}`}
-                    style={{ width: `${(conteoPorEstado[estado] / maxEstado) * 100}%` }}
-                  />
-                </div>
-                <span className="w-5 shrink-0 text-right text-xs font-medium">
-                  {conteoPorEstado[estado]}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border p-3">
-          <h2 className="self-start text-sm font-medium">Conversión</h2>
-          <div
-            className="flex size-24 items-center justify-center rounded-full"
-            style={{
-              background: `conic-gradient(#10b981 ${conversion * 3.6}deg, rgb(120 113 108 / 0.15) 0deg)`,
-            }}
-          >
-            <div className="flex size-16 items-center justify-center rounded-full bg-background text-sm font-semibold">
-              {conversion}%
-            </div>
-          </div>
-          <p className="text-center text-xs text-muted-foreground">
-            {captados.count ?? 0} de {totalCaptaciones} captaciones cerradas
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <div className="rounded-lg border bg-sky-500/10 p-3">
-          <p className="text-xl font-semibold text-sky-600">{totalCaptaciones}</p>
-          <p className="text-xs text-muted-foreground">Captaciones</p>
-        </div>
-        <div className="rounded-lg border bg-indigo-500/10 p-3">
-          <p className="text-xl font-semibold text-indigo-600">{exclusivas.count ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Exclusivas</p>
-        </div>
-        <div className="rounded-lg border bg-rose-500/10 p-3">
-          <p className="text-xl font-semibold text-rose-600">{perdidos.count ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Perdidos</p>
-        </div>
-        <div className="rounded-lg border bg-emerald-500/10 p-3">
-          <p className="text-xl font-semibold text-emerald-600">{conversion}%</p>
-          <p className="text-xs text-muted-foreground">Conversión</p>
+      <div className="rounded-lg border p-3">
+        <h2 className="text-sm font-medium">Mi progreso del mes</h2>
+        <div className="mt-3 space-y-4">
+          <BarraProgreso label="Objetivo captaciones" actual={captacionesMes.count ?? 0} objetivo={objetivoCaptaciones} />
+          <BarraProgreso label="Objetivo exclusivas" actual={exclusivasMes.count ?? 0} objetivo={objetivoExclusivas} />
         </div>
       </div>
     </div>
