@@ -10,47 +10,46 @@ async function requireUsuario() {
   return usuario;
 }
 
-export type EventoState = { error: string } | null;
-
-export async function crearEvento(
-  _prevState: EventoState,
-  formData: FormData
-): Promise<EventoState> {
-  const usuario = await requireUsuario();
-
-  const titulo = String(formData.get("titulo") ?? "").trim();
-  const tipo = String(formData.get("tipo") ?? "llamada");
-  const fechaHora = String(formData.get("fecha_hora") ?? "");
-
-  if (!titulo) return { error: "Pon un título." };
-  if (!fechaHora) return { error: "Pon fecha y hora." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("eventos_agenda").insert({
-    tenant_id: usuario.tenant_id,
-    usuario_id: usuario.id,
-    tipo,
-    titulo,
-    fecha_hora: fechaHora,
-  });
-
-  if (error) return { error: "No se pudo crear el evento." };
-
-  revalidatePath("/asesor/agenda");
+function revalidarSeguimiento() {
+  revalidatePath("/asesor/seguimiento");
   revalidatePath("/asesor");
-  return null;
 }
 
-export async function actualizarEstadoEvento(id: string, estado: string) {
+export async function marcarRealizada(id: string) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
 
   await supabase
     .from("eventos_agenda")
-    .update({ estado })
+    .update({ estado: "completado" })
     .eq("id", id)
     .eq("usuario_id", usuario.id);
 
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor");
+  revalidarSeguimiento();
+}
+
+export async function cancelarEvento(id: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase
+    .from("eventos_agenda")
+    .update({ estado: "cancelado" })
+    .eq("id", id)
+    .eq("usuario_id", usuario.id);
+
+  revalidarSeguimiento();
+}
+
+export async function reprogramarEvento(id: string, nuevaFechaHora: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  await supabase
+    .from("eventos_agenda")
+    .update({ fecha_hora: nuevaFechaHora, estado: "pendiente" })
+    .eq("id", id)
+    .eq("usuario_id", usuario.id);
+
+  revalidarSeguimiento();
 }

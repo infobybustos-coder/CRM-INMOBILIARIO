@@ -99,10 +99,10 @@ export default async function AsesorLayout({
   let focoHref: string | null = null;
   if (tareasVencidas && tareasVencidas.length > 0) {
     const t = tareasVencidas[0];
-    focoHref = t.entidad_tipo && t.entidad_id ? `${RUTA_ENTIDAD[t.entidad_tipo]}/${t.entidad_id}` : "/asesor/tareas";
+    focoHref = t.entidad_tipo && t.entidad_id ? `${RUTA_ENTIDAD[t.entidad_tipo]}/${t.entidad_id}` : "/asesor/seguimiento";
   } else if (eventosVencidos && eventosVencidos.length > 0) {
     const e = eventosVencidos[0];
-    focoHref = e.entidad_tipo && e.entidad_id ? `${RUTA_ENTIDAD[e.entidad_tipo]}/${e.entidad_id}` : "/asesor/agenda";
+    focoHref = e.entidad_tipo && e.entidad_id ? `${RUTA_ENTIDAD[e.entidad_tipo]}/${e.entidad_id}` : "/asesor/seguimiento";
   } else if (propietariosUrgentes.length > 0) {
     const top = [...propietariosUrgentes].sort((a, b) => calcularCaptacionScore(b) - calcularCaptacionScore(a))[0];
     focoHref = `/asesor/propietarios/${top.id}`;
@@ -112,8 +112,7 @@ export default async function AsesorLayout({
   }
 
   const avisos = {
-    "/asesor/tareas": (tareasHoy ?? 0) > 0,
-    "/asesor/agenda": (eventosHoy ?? 0) > 0,
+    "/asesor/seguimiento": (tareasHoy ?? 0) > 0 || (eventosHoy ?? 0) > 0,
   };
 
   return (

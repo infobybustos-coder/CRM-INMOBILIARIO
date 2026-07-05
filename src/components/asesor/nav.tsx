@@ -10,7 +10,6 @@ import {
   UserSearch,
   CalendarClock,
   CalendarDays,
-  CheckSquare,
   BarChart3,
   Settings,
   ChevronLeft,
@@ -20,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Enlace = { href: string; label: string; icon: typeof LayoutDashboard };
+type Enlace = { href: string; label: string; icon: typeof LayoutDashboard; activoTambien?: string[] };
 type Grupo = { titulo?: string; enlaces: Enlace[] };
 
 const GRUPOS_ASESOR: Grupo[] = [
@@ -37,8 +36,12 @@ const GRUPOS_ASESOR: Grupo[] = [
   {
     titulo: "Seguimiento",
     enlaces: [
-      { href: "/asesor/agenda", label: "Agenda", icon: CalendarDays },
-      { href: "/asesor/tareas", label: "Tareas", icon: CheckSquare },
+      {
+        href: "/asesor/seguimiento",
+        label: "Agenda y Tareas",
+        icon: CalendarDays,
+        activoTambien: ["/asesor/agenda", "/asesor/tareas"],
+      },
     ],
   },
   {
@@ -127,7 +130,10 @@ function ListaGrupos({
           )}
           {grupo.enlaces.map((enlace) => {
             const activo =
-              enlace.href === "/asesor" ? pathname === "/asesor" : (pathname?.startsWith(enlace.href) ?? false);
+              enlace.href === "/asesor"
+                ? pathname === "/asesor"
+                : (pathname?.startsWith(enlace.href) ?? false) ||
+                  (enlace.activoTambien?.some((p) => pathname?.startsWith(p)) ?? false);
             return (
               <EnlaceItem
                 key={enlace.href}
