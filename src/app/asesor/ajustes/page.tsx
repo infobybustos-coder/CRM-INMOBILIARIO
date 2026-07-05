@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AjustesForm } from "@/components/asesor/ajustes-form";
-import { LIMITES_GRATIS, esIlimitado, etiquetaPlan, precioPlan, type TipoPlan } from "@/lib/planes";
+import { SelectorPlan } from "@/components/asesor/suscripcion/selector-plan";
+import { LIMITES_GRATIS, esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa, type TipoPlan } from "@/lib/planes";
 
 export default async function AjustesPage() {
   const usuario = await getUsuarioConTenant();
@@ -60,6 +61,14 @@ export default async function AjustesPage() {
             </li>
           </ul>
         )}
+      </div>
+
+      <div className="max-w-lg space-y-2">
+        <h2 className="text-sm font-semibold">Elige tu plan</h2>
+        <SelectorPlan planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"} />
+        <p className="text-xs text-muted-foreground">
+          Cambiar de plan aquí no procesa ningún cobro real todavía — no hay pasarela de pago conectada.
+        </p>
       </div>
 
       <AjustesForm />

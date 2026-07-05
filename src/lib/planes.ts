@@ -5,7 +5,7 @@ export const LIMITES_GRATIS: Record<
   TipoPlan,
   { propietarios: number; inmuebles: number; compradores: number }
 > = {
-  asesor: { propietarios: 3, inmuebles: 3, compradores: 2 },
+  asesor: { propietarios: 3, inmuebles: 3, compradores: 3 },
   inmobiliaria: { propietarios: 10, inmuebles: 10, compradores: 10 },
 };
 
