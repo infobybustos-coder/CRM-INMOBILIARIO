@@ -102,13 +102,45 @@ export async function eliminarMiembro(id: string) {
   if (id === usuario.id) return;
 
   const supabase = await createClient();
+
+  const { data: objetivo } = await supabase
+    .from("usuarios")
+    .select("rol")
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id)
+    .single();
+
   await supabase
     .from("usuarios")
     .update({ activo: false })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
 
+  if (objetivo) {
+    const esAdmin = objetivo.rol === "admin";
+
+    const { count: activosRestantes } = await supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", objetivo.rol)
+      .eq("activo", true);
+
+    const incluidos = esAdmin ? adminsIncluidos(usuario.tenant ?? {}) : ASESORES_INCLUIDOS_INMOBILIARIA;
+    const nuevoExtra = Math.max(0, (activosRestantes ?? 0) - incluidos);
+    const extraActual = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
+
+    if (nuevoExtra !== extraActual) {
+      const admin = createAdminClient();
+      await admin
+        .from("tenants")
+        .update({ [esAdmin ? "admins_extra" : "agentes_extra"]: nuevoExtra })
+        .eq("id", usuario.tenant_id);
+    }
+  }
+
   revalidarEquipo();
+  revalidatePath("/inmobiliaria/suscripcion");
 }
 
 export type ActualizarMiembroState = { error: string } | { ok: true } | null;
