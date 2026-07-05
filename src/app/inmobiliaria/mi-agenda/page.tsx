@@ -1,5 +1,5 @@
 import { CalendarClock, CalendarRange, Clock, CheckCircle2, CheckCheck, XCircle } from "lucide-react";
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarioMensual } from "@/components/asesor/calendario-mensual";
 import { Tabla, type EventoFila } from "@/components/inmobiliaria/agenda/tabla";
@@ -22,7 +22,7 @@ function inicioDeSemana(fecha: Date) {
 }
 
 export default async function MiAgendaPage() {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   const ahora = new Date();

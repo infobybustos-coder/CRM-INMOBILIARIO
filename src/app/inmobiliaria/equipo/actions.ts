@@ -1,9 +1,10 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireAdminInmobiliaria, COOKIE_VISTA_COMO } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -197,4 +198,35 @@ export async function actualizarMiembro(
 
   revalidarEquipo(id);
   return { ok: true };
+}
+
+export async function iniciarVistaComo(id: string) {
+  const usuario = await requireAdminInmobiliaria();
+
+  const supabase = await createClient();
+  const { data: objetivo } = await supabase
+    .from("usuarios")
+    .select("id")
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id)
+    .eq("rol", "empleado")
+    .eq("activo", true)
+    .single();
+
+  if (!objetivo) return;
+
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_VISTA_COMO, id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+
+  redirect("/inmobiliaria");
+}
+
+export async function salirVistaComo() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_VISTA_COMO);
+  redirect("/inmobiliaria");
 }

@@ -1,5 +1,5 @@
 import { Home, Sparkles, Award, BookmarkCheck, ImageOff, FileWarning } from "lucide-react";
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
 import { Tabla } from "@/components/inmobiliaria/inmuebles/tabla";
@@ -13,7 +13,7 @@ export default async function MisInmueblesPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   let query = supabase

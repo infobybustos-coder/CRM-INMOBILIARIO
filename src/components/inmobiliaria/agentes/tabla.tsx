@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Eye, BarChart3 } from "lucide-react";
-import { eliminarMiembro } from "@/app/inmobiliaria/equipo/actions";
+import { Eye, BarChart3, Glasses } from "lucide-react";
+import { eliminarMiembro, iniciarVistaComo } from "@/app/inmobiliaria/equipo/actions";
 import { BotonEliminar } from "@/components/inmobiliaria/boton-eliminar";
 import { cn } from "@/lib/utils";
 import type { AgenteFila } from "@/app/inmobiliaria/agentes/constantes";
@@ -79,6 +79,14 @@ function Fila({ agente }: { agente: AgenteFila }) {
         >
           <BarChart3 className="size-3.5" /> Ver rendimiento
         </Link>
+        <form action={iniciarVistaComo.bind(null, agente.id)}>
+          <button
+            type="submit"
+            className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+          >
+            <Glasses className="size-3.5" /> Ver como
+          </button>
+        </form>
         <BotonEliminar
           id={agente.id}
           mensaje={`¿Eliminar a ${agente.nombreCompleto} del equipo? Dejará de tener acceso al CRM.`}

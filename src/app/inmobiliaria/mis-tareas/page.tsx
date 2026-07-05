@@ -1,5 +1,5 @@
 import { Clock, CalendarClock, AlertTriangle, CheckCheck, Flame } from "lucide-react";
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla, type TareaFila } from "@/components/inmobiliaria/tareas/tabla";
 
@@ -10,7 +10,7 @@ const RUTA_ENTIDAD: Record<string, string> = {
 };
 
 export default async function MisTareasPage() {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const supabase = await createClient();
 
   const inicioHoy = new Date();

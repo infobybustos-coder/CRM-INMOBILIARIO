@@ -6,7 +6,7 @@ import {
   Award,
   XCircle,
 } from "lucide-react";
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/propietarios/filtros";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
@@ -23,7 +23,7 @@ export default async function MisPropietariosPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const params = await searchParams;
   const vista = params.vista === "tabla" ? "tabla" : "kanban";
 

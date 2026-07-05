@@ -1,5 +1,5 @@
 import { UserPlus, Users, Flame, CalendarCheck, Award, XCircle } from "lucide-react";
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/compradores/filtros";
 import { VistaSwitcher } from "@/components/asesor/propietarios/vista-switcher";
@@ -16,7 +16,7 @@ export default async function MisCompradoresPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
   const params = await searchParams;
   const vista = params.vista === "tabla" ? "tabla" : "kanban";
 

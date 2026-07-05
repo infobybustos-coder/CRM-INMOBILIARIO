@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { Glasses } from "lucide-react";
+import { obtenerImpersonacion } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../(auth)/actions";
+import { salirVistaComo } from "./equipo/actions";
 import { InmobiliariaNav } from "@/components/inmobiliaria/nav";
 import { ThemeToggle } from "@/components/inmobiliaria/theme-toggle";
 import { UserMenu } from "@/components/inmobiliaria/user-menu";
@@ -11,11 +13,12 @@ export default async function InmobiliariaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const usuario = await getUsuarioConTenant();
+  const { real, objetivo } = await obtenerImpersonacion();
 
-  if (!usuario) redirect("/login");
-  if (usuario.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
+  if (!real) redirect("/login");
+  if (real.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
 
+  const usuario = objetivo ?? real;
   const esAdmin = usuario.rol === "admin";
 
   let hayTareasHoy = false;
@@ -50,6 +53,18 @@ export default async function InmobiliariaLayout({
           />
         </div>
       </header>
+      {objetivo && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <span className="flex items-center gap-1.5">
+            <Glasses className="size-4" /> Viendo como {objetivo.nombre_completo ?? objetivo.email}
+          </span>
+          <form action={salirVistaComo}>
+            <button type="submit" className="font-medium underline underline-offset-2">
+              Volver a mi vista
+            </button>
+          </form>
+        </div>
+      )}
       <main className="p-4 pb-24 md:pb-6">{children}</main>
       <InmobiliariaNav esAdmin={esAdmin} avisos={hayTareasHoy ? { "/inmobiliaria/seguimiento": true } : {}} />
     </div>

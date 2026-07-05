@@ -1,9 +1,9 @@
-import { requireInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PerfilForm } from "@/components/asesor/perfil-form";
 
 export default async function PerfilInmobiliariaPage() {
-  const usuario = await requireInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
 
   const supabase = await createClient();
   const avatarUrl = usuario.avatar_url

@@ -16,7 +16,7 @@ import {
   CalendarDays,
   Bell,
 } from "lucide-react";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, obtenerImpersonacion } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { calcularCaptacionScore, diasDesde, estaVencida } from "@/lib/prioridad";
 import { ESTADOS_PROPIETARIO } from "../asesor/propietarios/constantes";
@@ -90,8 +90,10 @@ function Tendencia({ ok, texto }: { ok: boolean; texto: string }) {
 }
 
 export default async function InmobiliariaPage() {
-  const usuario = await getUsuarioConTenant();
-  if (!usuario) redirect("/login");
+  const { real, objetivo } = await obtenerImpersonacion();
+  if (!real) redirect("/login");
+
+  const usuario = objetivo ?? real;
 
   if (usuario.rol !== "admin") {
     return <InicioAsesor usuario={usuario} />;
