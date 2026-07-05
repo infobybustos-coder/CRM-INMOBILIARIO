@@ -3,6 +3,7 @@ import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/usuarios/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
+import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 import type { UsuarioFila } from "./constantes";
 
 export default async function UsuariosPage() {
@@ -63,8 +64,11 @@ export default async function UsuariosPage() {
 
   return (
     <div className="space-y-5">
+      <h1 className="text-2xl font-semibold">Configuración</h1>
+      <ConfiguracionTabs />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
+        <h2 className="text-lg font-semibold">Usuarios</h2>
         <NuevoMiembro etiqueta="usuario" />
       </div>
 

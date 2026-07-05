@@ -14,10 +14,6 @@ import {
   UserCog,
   ShieldCheck,
   MessageSquare,
-  UsersRound,
-  Building2,
-  Shield,
-  CreditCard,
   SlidersHorizontal,
   User,
   Lock,
@@ -69,13 +65,18 @@ const GRUPOS_ADMIN: Grupo[] = [
     ],
   },
   {
-    titulo: "Configuración",
     enlaces: [
-      { href: "/inmobiliaria/empresa", label: "Empresa", icon: Building2 },
-      { href: "/inmobiliaria/usuarios", label: "Usuarios", icon: UsersRound },
-      { href: "/inmobiliaria/roles", label: "Roles", icon: Shield },
-      { href: "/inmobiliaria/suscripcion", label: "Suscripción", icon: CreditCard },
-      { href: "/inmobiliaria/preferencias", label: "Preferencias", icon: SlidersHorizontal },
+      {
+        href: "/inmobiliaria/empresa",
+        label: "Configuración",
+        icon: SlidersHorizontal,
+        activoTambien: [
+          "/inmobiliaria/usuarios",
+          "/inmobiliaria/roles",
+          "/inmobiliaria/suscripcion",
+          "/inmobiliaria/preferencias",
+        ],
+      },
     ],
   },
 ];

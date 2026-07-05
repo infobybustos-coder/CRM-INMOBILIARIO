@@ -1,5 +1,6 @@
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { Crown, User, Check } from "lucide-react";
+import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 
 const PERMISOS_ADMIN = [
   "Gestionar la empresa",
@@ -15,8 +16,11 @@ export default async function RolesPage() {
 
   return (
     <div className="max-w-lg space-y-5">
+      <h1 className="text-2xl font-semibold">Configuración</h1>
+      <ConfiguracionTabs />
+
       <div>
-        <h1 className="text-2xl font-semibold">Roles</h1>
+        <h2 className="text-lg font-semibold">Roles</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           En esta versión los permisos son fijos: solo hay dos roles, para mantener el CRM simple.
         </p>

@@ -1,5 +1,6 @@
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { FormularioEmpresa } from "@/components/inmobiliaria/empresa/formulario-empresa";
+import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 
 export default async function EmpresaPage() {
   const usuario = await requireAdminInmobiliaria();
@@ -7,8 +8,10 @@ export default async function EmpresaPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Empresa</h1>
+      <h1 className="text-2xl font-semibold">Configuración</h1>
+      <ConfiguracionTabs />
 
+      <h2 className="text-lg font-semibold">Empresa</h2>
       <FormularioEmpresa
         tenantId={usuario.tenant_id}
         nombre={tenant.nombre ?? ""}

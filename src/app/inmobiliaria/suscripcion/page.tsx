@@ -1,6 +1,7 @@
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
+import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 import {
   PRECIO_ASESOR_EXTRA,
   PRECIO_ADMIN_EXTRA,
@@ -54,7 +55,10 @@ export default async function SuscripcionPage() {
 
   return (
     <div className="max-w-lg space-y-5">
-      <h1 className="text-2xl font-semibold">Suscripción</h1>
+      <h1 className="text-2xl font-semibold">Configuración</h1>
+      <ConfiguracionTabs />
+
+      <h2 className="text-lg font-semibold">Suscripción</h2>
 
       <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <div>
