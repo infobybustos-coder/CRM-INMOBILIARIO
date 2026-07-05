@@ -37,7 +37,6 @@ export default async function InmueblePage({
     .single();
 
   if (!inmueble) notFound();
-  if (!gestor && inmueble.agente_id !== usuario.id) notFound();
 
   const [
     { data: actividades },
@@ -97,7 +96,7 @@ export default async function InmueblePage({
   return (
     <div className="space-y-6">
       <Link
-        href={gestor ? "/inmobiliaria/inmuebles" : "/inmobiliaria/mis-inmuebles"}
+        href="/inmobiliaria/inmuebles"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />

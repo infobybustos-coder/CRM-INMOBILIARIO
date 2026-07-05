@@ -45,15 +45,16 @@ export async function actualizarInmueble(
   const propietarioId = String(formData.get("propietario_id") ?? "");
 
   const gestor = esGestor(usuario.rol);
-  const filtroCol = gestor ? "tenant_id" : "agente_id";
-  const filtroVal = gestor ? usuario.tenant_id : usuario.id;
+  // Los inmuebles son la cartera compartida de la inmobiliaria: cualquier
+  // empleado activo puede editarlos (no hay "dueño"). Solo un gestor puede
+  // reasignar el campo agente_id.
   const nuevoAgenteId = gestor ? String(formData.get("agente_id") ?? "").trim() || null : null;
 
   const { data: actual } = await supabase
     .from("inmuebles")
     .select("estado")
     .eq("id", id)
-    .eq(filtroCol, filtroVal)
+    .eq("tenant_id", usuario.tenant_id)
     .single();
 
   const { error } = await supabase
@@ -75,7 +76,7 @@ export async function actualizarInmueble(
       ...(nuevoAgenteId ? { agente_id: nuevoAgenteId } : {}),
     })
     .eq("id", id)
-    .eq(filtroCol, filtroVal);
+    .eq("tenant_id", usuario.tenant_id);
 
   if (error) {
     return error.code === "23505"
@@ -269,6 +270,13 @@ export async function crearInmuebleRapido(
   formData: FormData
 ): Promise<CrearInmuebleRapidoState> {
   const usuario = await requireUsuario();
+  // En una inmobiliaria, los inmuebles son la cartera compartida y solo un
+  // gestor da de alta nuevos. En el plan asesor (un único usuario) no hay
+  // distinción de roles, así que se mantiene como hasta ahora.
+  if (usuario.tenant?.tipo_plan === "inmobiliaria" && !esGestor(usuario.rol)) {
+    return { error: "Solo un administrador puede añadir inmuebles nuevos." };
+  }
+
   const supabase = await createClient();
 
   const referencia = String(formData.get("referencia") ?? "").trim();
@@ -310,14 +318,15 @@ export async function crearInmuebleRapido(
 
 export async function eliminarInmueble(id: string) {
   const usuario = await requireUsuario();
-  const supabase = await createClient();
   const gestor = esGestor(usuario.rol);
 
-  await supabase
-    .from("inmuebles")
-    .delete()
-    .eq("id", id)
-    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+  // Igual que al crear: en una inmobiliaria, dar de baja un inmueble de la
+  // cartera compartida es cosa del gestor. En el plan asesor no hay esa
+  // distinción.
+  if (usuario.tenant?.tipo_plan === "inmobiliaria" && !gestor) return;
+
+  const supabase = await createClient();
+  await supabase.from("inmuebles").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
 
   revalidarInmueble();
 }

@@ -86,7 +86,7 @@ const GRUPOS_EMPLEADO: Grupo[] = [
     titulo: "Mi Captación",
     enlaces: [
       { href: "/inmobiliaria/mis-propietarios", label: "Mis propietarios", icon: Users },
-      { href: "/inmobiliaria/mis-inmuebles", label: "Mis inmuebles", icon: Home },
+      { href: "/inmobiliaria/inmuebles", label: "Inmuebles", icon: Home },
       { href: "/inmobiliaria/mis-compradores", label: "Mis compradores", icon: UserSearch },
       { href: "/inmobiliaria/mis-visitas", label: "Mis visitas", icon: CalendarClock },
     ],

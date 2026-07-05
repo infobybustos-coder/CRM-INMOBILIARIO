@@ -142,11 +142,12 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
       .eq("tenant_id", tenantId)
       .eq("agente_id", usuario.id)
       .not("estado", "in", "(comprado,perdido)"),
+    // Los inmuebles son la cartera compartida de la inmobiliaria: se cuentan
+    // todos, no solo los que este empleado tenga anotados como agente.
     supabase
       .from("inmuebles")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", tenantId)
-      .eq("agente_id", usuario.id)
       .neq("estado", "vendido"),
     supabase
       .from("tareas")

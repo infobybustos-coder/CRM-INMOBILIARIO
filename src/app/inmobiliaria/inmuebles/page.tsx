@@ -1,5 +1,5 @@
 import { Home, Sparkles, Award, BookmarkCheck, ImageOff, FileWarning } from "lucide-react";
-import { requireAdminInmobiliaria } from "@/lib/auth";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
 import { Tabla } from "@/components/inmobiliaria/inmuebles/tabla";
@@ -13,7 +13,8 @@ export default async function InmueblesPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const usuario = await requireAdminInmobiliaria();
+  const usuario = await requireInmobiliariaEfectivo();
+  const gestor = esGestor(usuario.rol);
   const supabase = await createClient();
 
   let query = supabase
@@ -130,7 +131,7 @@ export default async function InmueblesPage({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Inmuebles</h1>
-        <NuevoInmueble />
+        {gestor && <NuevoInmueble />}
       </div>
 
       <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
@@ -150,7 +151,7 @@ export default async function InmueblesPage({
       {inmuebles.length === 0 ? (
         <p className="text-sm text-muted-foreground">Todavía no hay inmuebles registrados.</p>
       ) : (
-        <Tabla inmuebles={inmuebles} agentesPorId={agentesPorId} />
+        <Tabla inmuebles={inmuebles} agentesPorId={agentesPorId} gestor={gestor} />
       )}
     </div>
   );

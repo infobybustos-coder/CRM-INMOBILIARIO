@@ -31,10 +31,12 @@ export function Tabla({
   inmuebles,
   agentesPorId,
   basePath = "/inmobiliaria/inmuebles",
+  gestor = true,
 }: {
   inmuebles: InmuebleConAgente[];
   agentesPorId: Map<string, string>;
   basePath?: string;
+  gestor?: boolean;
 }) {
   const { formatear } = useMoneda();
   const [orden, setOrden] = useState<Orden>("direccion");
@@ -91,11 +93,13 @@ export function Tabla({
                 >
                   {ETIQUETAS_ESTADO_INMUEBLE[i.estado] ?? i.estado}
                 </span>
-                <BotonEliminar
-                  id={i.id}
-                  mensaje={`¿Eliminar el inmueble en ${i.direccion}? Esta acción no se puede deshacer.`}
-                  eliminarAction={eliminarInmueble}
-                />
+                {gestor && (
+                  <BotonEliminar
+                    id={i.id}
+                    mensaje={`¿Eliminar el inmueble en ${i.direccion}? Esta acción no se puede deshacer.`}
+                    eliminarAction={eliminarInmueble}
+                  />
+                )}
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
