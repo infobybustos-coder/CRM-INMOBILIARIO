@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Trophy,
   CalendarDays,
-  Bell,
 } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -498,29 +497,11 @@ export default async function AsesorDashboard() {
   return (
     <div className="space-y-8">
       {/* Encabezado */}
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-semibold tracking-tight">Centro de Control</h1>
-          <p className="text-lg text-muted-foreground">
-            {saludo}, {primerNombre}
-          </p>
-          <p className="text-sm text-muted-foreground/70 capitalize">{hoyFormato}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Notificaciones"
-            className="relative flex size-10 items-center justify-center rounded-full border text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <Bell className="size-4" />
-            {alertas.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
-            )}
-          </button>
-          <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            {iniciales(usuario.nombre_completo ?? usuario.email ?? "") || "?"}
-          </div>
-        </div>
+      <div className="space-y-1.5">
+        <p className="text-lg text-muted-foreground">
+          {saludo}, {primerNombre}
+        </p>
+        <p className="text-sm text-muted-foreground/70 capitalize">{hoyFormato}</p>
       </div>
 
       {/* Atención requerida */}

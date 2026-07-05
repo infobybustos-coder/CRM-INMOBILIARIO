@@ -23,7 +23,7 @@ type Enlace = { href: string; label: string; icon: typeof LayoutDashboard; activ
 type Grupo = { titulo?: string; enlaces: Enlace[] };
 
 const GRUPOS_ASESOR: Grupo[] = [
-  { enlaces: [{ href: "/asesor", label: "Inicio", icon: LayoutDashboard }] },
+  { enlaces: [{ href: "/asesor", label: "Centro de Control", icon: LayoutDashboard }] },
   {
     titulo: "Captación",
     enlaces: [
@@ -176,7 +176,7 @@ export function AsesorNav({ avisos = {} }: { avisos?: Record<string, boolean> })
           )}
         >
           <LayoutDashboard className="size-5" />
-          Inicio
+          Control
         </Link>
         <button
           type="button"
