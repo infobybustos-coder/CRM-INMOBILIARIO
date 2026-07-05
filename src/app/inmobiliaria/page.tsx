@@ -5,7 +5,6 @@ import {
   Award,
   Home,
   Users,
-  UserSearch,
   Phone,
   CalendarCheck,
   Flame,
@@ -195,7 +194,6 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
 
   const listaPropietarios = propietariosPrioridad ?? [];
   const listaCompradores = compradoresPrioridad ?? [];
-  const propietariosUrgentes = listaPropietarios.filter((p) => estaVencida(p.fecha_proxima_accion));
 
   type ItemProximo = { id: string; href: string; icono: string; titulo: string; horaTexto: string; fecha: number };
 
@@ -264,12 +262,27 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
     },
   ].filter(Boolean) as { id: string; href: string; etiqueta: string; detalle: string }[];
 
-  const kpis = [
-    { label: "Mis propietarios", valor: propietariosActivos ?? 0, icono: Users, color: "bg-violet-500/10 text-violet-600" },
-    { label: "Mis compradores", valor: compradoresActivos ?? 0, icono: UserSearch, color: "bg-emerald-500/10 text-emerald-600" },
-    { label: "Mis inmuebles", valor: inmueblesActivos ?? 0, icono: Home, color: "bg-sky-500/10 text-sky-600" },
-    { label: "Visitas hoy", valor: visitasHoy, icono: CalendarCheck, color: "bg-orange-500/10 text-orange-600" },
+  // Colores fijos por categoría (mismo orden que el resto del CRM: violeta =
+  // propietarios, esmeralda = compradores, cielo = inmuebles) para que el
+  // donut y la leyenda sean consistentes en cualquier página.
+  const cartera = [
+    { label: "Propietarios", valor: propietariosActivos ?? 0, color: "#8b5cf6", clase: "bg-violet-500" },
+    { label: "Compradores", valor: compradoresActivos ?? 0, color: "#10b981", clase: "bg-emerald-500" },
+    { label: "Inmuebles", valor: inmueblesActivos ?? 0, color: "#0ea5e9", clase: "bg-sky-500" },
   ];
+  const totalCartera = cartera.reduce((sum, c) => sum + c.valor, 0);
+  let acumulado = 0;
+  const donutCartera =
+    totalCartera > 0
+      ? cartera
+          .map((c) => {
+            const inicio = (acumulado / totalCartera) * 360;
+            acumulado += c.valor;
+            const fin = (acumulado / totalCartera) * 360;
+            return `${c.color} ${inicio}deg ${fin}deg`;
+          })
+          .join(", ")
+      : "var(--muted) 0deg 360deg";
 
   return (
     <div className="space-y-5">
@@ -282,7 +295,6 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
           <span>📞 <strong>{llamadasHoy}</strong> {llamadasHoy === 1 ? "llamada" : "llamadas"}</span>
           <span>🏡 <strong>{visitasHoy}</strong> {visitasHoy === 1 ? "visita" : "visitas"}</span>
           <span>✅ <strong>{tareasPendientes ?? 0}</strong> {(tareasPendientes ?? 0) === 1 ? "tarea" : "tareas"}</span>
-          <span>🔴 <strong>{propietariosUrgentes.length}</strong> {propietariosUrgentes.length === 1 ? "propietario urgente" : "propietarios urgentes"}</span>
         </div>
         <Link
           href={comenzarHref}
@@ -292,16 +304,33 @@ async function InicioAsesor({ usuario }: { usuario: NonNullable<Awaited<ReturnTy
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        {kpis.map(({ label, valor, icono: Icono, color }) => (
-          <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
-            <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
-              <Icono className="size-4" />
-            </span>
-            <span className="text-xl font-semibold">{valor}</span>
-            <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex flex-col items-center gap-5 rounded-2xl border p-5 sm:flex-row">
+        <div
+          className="relative flex size-28 shrink-0 items-center justify-center rounded-full"
+          style={{ background: `conic-gradient(${donutCartera})` }}
+        >
+          <div className="flex size-20 flex-col items-center justify-center rounded-full bg-background">
+            <span className="text-xl font-semibold">{totalCartera}</span>
+            <span className="text-[10px] text-muted-foreground">en tu cartera</span>
           </div>
-        ))}
+        </div>
+
+        <div className="w-full flex-1 space-y-1.5 text-sm">
+          {cartera.map((c) => (
+            <div key={c.label} className="flex items-center gap-2">
+              <span className={cn("size-2.5 shrink-0 rounded-full", c.clase)} />
+              <span className="flex-1 text-muted-foreground">{c.label}</span>
+              <span className="font-medium">{c.valor}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex shrink-0 flex-col items-center gap-1.5 border-t pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
+          <span className="flex size-14 items-center justify-center rounded-full bg-orange-500/10 text-xl font-semibold text-orange-600">
+            {visitasHoy}
+          </span>
+          <span className="text-xs text-muted-foreground">Visitas hoy</span>
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
