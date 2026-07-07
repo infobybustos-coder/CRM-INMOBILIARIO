@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { Glasses } from "lucide-react";
-import { obtenerImpersonacion } from "@/lib/auth";
+import { Glasses, ShieldAlert } from "lucide-react";
+import { obtenerImpersonacion, enImpersonacionSuperadmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../(auth)/actions";
 import { salirVistaComo } from "./equipo/actions";
+import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
 import { InmobiliariaNav } from "@/components/inmobiliaria/nav";
 import { ThemeToggle } from "@/components/inmobiliaria/theme-toggle";
 import { UserMenu } from "@/components/inmobiliaria/user-menu";
@@ -14,6 +15,7 @@ export default async function InmobiliariaLayout({
   children: React.ReactNode;
 }) {
   const { real, objetivo } = await obtenerImpersonacion();
+  const soporteActivo = await enImpersonacionSuperadmin();
 
   if (!real) redirect("/login");
   if (real.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
@@ -61,6 +63,19 @@ export default async function InmobiliariaLayout({
           <form action={salirVistaComo}>
             <button type="submit" className="font-medium underline underline-offset-2">
               Volver a mi vista
+            </button>
+          </form>
+        </div>
+      )}
+      {soporteActivo && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <span className="flex items-center gap-1.5">
+            <ShieldAlert className="size-4" /> Sesión de soporte: has accedido como{" "}
+            {usuario.nombre_completo ?? usuario.email}
+          </span>
+          <form action={salirDeImpersonacion}>
+            <button type="submit" className="font-medium underline underline-offset-2">
+              Salir y volver a Superadmin
             </button>
           </form>
         </div>

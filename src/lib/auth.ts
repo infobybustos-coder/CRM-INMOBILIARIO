@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export const COOKIE_VISTA_COMO = "vista_como_id";
+export const COOKIE_SESION_SUPERADMIN = "sa_sesion_original";
 
 export function esGestor(rol: string): boolean {
   return rol === "admin";
@@ -26,6 +27,15 @@ export async function requireSuperadmin() {
 
   if (!superadmin) redirect("/login");
   return user;
+}
+
+// Mientras un superadmin está "accediendo como" un usuario de soporte, su
+// sesión original queda guardada en esta cookie httpOnly. Su presencia es
+// la señal de que la sesión activa del navegador es una suplantación, no
+// una cuenta de cliente real.
+export async function enImpersonacionSuperadmin(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return cookieStore.has(COOKIE_SESION_SUPERADMIN);
 }
 
 export async function esSuperadmin(): Promise<boolean> {

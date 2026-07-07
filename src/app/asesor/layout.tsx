@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Target, ArrowRight } from "lucide-react";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { Target, ArrowRight, ShieldAlert } from "lucide-react";
+import { getUsuarioConTenant, enImpersonacionSuperadmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { calcularCaptacionScore, calcularCompraScore, calcularPrioridad, calcularPrioridadComprador } from "@/lib/prioridad";
 import { signOut } from "../(auth)/actions";
+import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
 import { AsesorNav } from "@/components/asesor/nav";
 import { QuickAdd } from "@/components/asesor/quick-add";
 import { ThemeToggle } from "@/components/asesor/theme-toggle";
@@ -23,6 +24,7 @@ export default async function AsesorLayout({
   children: React.ReactNode;
 }) {
   const usuario = await getUsuarioConTenant();
+  const soporteActivo = await enImpersonacionSuperadmin();
 
   if (!usuario) redirect("/login");
   if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
@@ -143,6 +145,19 @@ export default async function AsesorLayout({
             />
           </div>
         </header>
+        {soporteActivo && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+            <span className="flex items-center gap-1.5">
+              <ShieldAlert className="size-4" /> Sesión de soporte: has accedido como{" "}
+              {usuario.nombre_completo ?? usuario.email}
+            </span>
+            <form action={salirDeImpersonacion}>
+              <button type="submit" className="font-medium underline underline-offset-2">
+                Salir y volver a Superadmin
+              </button>
+            </form>
+          </div>
+        )}
         <main className="p-4 pb-24 md:pb-6">{children}</main>
         <AsesorNav avisos={avisos} />
         <QuickAdd />
