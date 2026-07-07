@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Users, CreditCard, Headset, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Users, CreditCard, Headset, Settings, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ENLACES = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/superadmin/finanzas", label: "Finanzas", icon: TrendingUp },
   { href: "/superadmin/clientes", label: "Clientes", icon: Users },
   { href: "/superadmin/suscripciones", label: "Suscripciones", icon: CreditCard },
   { href: "/superadmin/soporte", label: "Soporte", icon: Headset },

@@ -83,7 +83,15 @@ export default async function ClientesPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Clientes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Clientes</h1>
+        <Link
+          href="/superadmin/clientes/nuevo"
+          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+        >
+          + Nuevo cliente
+        </Link>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {kpis.map((k) => (

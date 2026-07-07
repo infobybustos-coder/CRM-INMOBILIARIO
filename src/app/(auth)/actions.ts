@@ -5,19 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono, telefonoValido, emailSinteticoDesdeIdentificador } from "@/lib/telefono";
 import { validarPassword } from "@/lib/validacion";
-
-function slugify(texto: string) {
-  return (
-    texto
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") +
-    "-" +
-    Math.random().toString(36).slice(2, 7)
-  );
-}
+import { slugify } from "@/lib/slug";
 
 export type AuthActionState = { error: string } | null;
 

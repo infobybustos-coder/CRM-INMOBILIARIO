@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
-import { precioPlan } from "@/lib/planes";
+import { precioPlan, limiteRecurso, limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { EstadoTenantAcciones } from "@/components/superadmin/estado-tenant-acciones";
@@ -49,13 +49,20 @@ export default async function ClienteFichaPage({
 
   const { data: tenant } = await admin
     .from("tenants")
-    .select("id, nombre, tipo_plan, plan_tarifa, pais, estado, creado_en")
+    .select("id, nombre, tipo_plan, plan_tarifa, pais, estado, admins_extra, agentes_extra, creado_en")
     .eq("id", id)
     .maybeSingle();
 
   if (!tenant) notFound();
 
-  const [{ data: usuarios }, { data: eventos }, { data: notas }] = await Promise.all([
+  const [
+    { data: usuarios },
+    { data: eventos },
+    { data: notas },
+    { count: numPropietarios },
+    { count: numInmuebles },
+    { count: numCompradores },
+  ] = await Promise.all([
     admin
       .from("usuarios")
       .select("id, nombre_completo, email, telefono, rol, ultimo_acceso")
@@ -70,11 +77,32 @@ export default async function ClienteFichaPage({
       .select("id, texto, creado_por, creado_en")
       .eq("tenant_id", id)
       .order("creado_en", { ascending: false }),
+    admin.from("propietarios").select("id", { count: "exact", head: true }).eq("tenant_id", id),
+    admin.from("inmuebles").select("id", { count: "exact", head: true }).eq("tenant_id", id),
+    admin.from("compradores").select("id", { count: "exact", head: true }).eq("tenant_id", id),
   ]);
 
   const contacto = (usuarios ?? []).find((u) => u.rol === "admin") ?? (usuarios ?? [])[0] ?? null;
   const estado = ETIQUETA_ESTADO[tenant.estado] ?? ETIQUETA_ESTADO.activo;
   const cambiosDePlan = (eventos ?? []).filter((e) => e.tipo === "plan");
+
+  const numAdmins = (usuarios ?? []).filter((u) => u.rol === "admin").length;
+  const numEmpleados = (usuarios ?? []).filter((u) => u.rol === "empleado").length;
+
+  const conLimite = (actual: number, limite: number | null) =>
+    limite === null ? `${actual} (ilimitado)` : `${actual} / ${limite}`;
+
+  const usoRecursos = [
+    { label: "Propietarios", valor: conLimite(numPropietarios ?? 0, limiteRecurso(config, tenant, "propietarios")) },
+    { label: "Inmuebles", valor: conLimite(numInmuebles ?? 0, limiteRecurso(config, tenant, "inmuebles")) },
+    { label: "Compradores", valor: conLimite(numCompradores ?? 0, limiteRecurso(config, tenant, "compradores")) },
+    ...(tenant.tipo_plan === "inmobiliaria"
+      ? [
+          { label: "Administradores", valor: conLimite(numAdmins, limiteAdmins(config, tenant)) },
+          { label: "Asesores", valor: conLimite(numEmpleados, limiteEmpleados(config, tenant)) },
+        ]
+      : []),
+  ];
 
   const campos = [
     { label: "Nombre", valor: contacto?.nombre_completo ?? "—" },
@@ -111,6 +139,18 @@ export default async function ClienteFichaPage({
             <span className="font-medium">{c.valor}</span>
           </div>
         ))}
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold">Uso actual</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {usoRecursos.map((u) => (
+            <div key={u.label} className="rounded-lg border p-3">
+              <p className="text-sm font-semibold">{u.valor}</p>
+              <p className="text-xs text-muted-foreground">{u.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-2">
