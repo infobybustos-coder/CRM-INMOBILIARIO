@@ -60,3 +60,18 @@ export function precioPlan(tenant: { tipo_plan?: string | null; plan_tarifa?: st
   if (tenant.plan_tarifa !== "pago") return 0;
   return PRECIO_MENSUAL[(tenant.tipo_plan as TipoPlan) ?? "asesor"];
 }
+
+// Precio real que paga un tenant: el plan base más los asientos extra que
+// tenga comprados (solo aplican en PRO; en Gratis siempre son 0).
+export function precioMensualTotal(tenant: {
+  tipo_plan?: string | null;
+  plan_tarifa?: string | null;
+  admins_extra?: number | null;
+  agentes_extra?: number | null;
+}) {
+  const base = precioPlan(tenant);
+  if (tenant.plan_tarifa !== "pago") return base;
+  const adminsExtra = tenant.admins_extra ?? 0;
+  const agentesExtra = tenant.agentes_extra ?? 0;
+  return base + adminsExtra * PRECIO_ADMIN_EXTRA + agentesExtra * PRECIO_ASESOR_EXTRA;
+}

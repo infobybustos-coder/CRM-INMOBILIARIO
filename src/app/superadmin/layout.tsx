@@ -1,5 +1,6 @@
 import { requireSuperadmin } from "@/lib/auth";
 import { signOut } from "../(auth)/actions";
+import { SuperadminNav } from "@/components/superadmin/nav";
 
 export default async function SuperadminLayout({
   children,
@@ -9,7 +10,7 @@ export default async function SuperadminLayout({
   await requireSuperadmin();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground md:pl-56">
       <header className="flex items-center justify-between border-b px-4 py-3">
         <span className="font-semibold">Superadmin</span>
         <form action={signOut}>
@@ -18,7 +19,8 @@ export default async function SuperadminLayout({
           </button>
         </form>
       </header>
-      <main className="p-4">{children}</main>
+      <SuperadminNav />
+      <main className="p-4 pb-20 md:pb-4">{children}</main>
     </div>
   );
 }
