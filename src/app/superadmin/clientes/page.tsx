@@ -5,6 +5,7 @@ import { precioPlan } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
+import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
@@ -153,7 +154,12 @@ export default async function ClientesPage({
                     <td className="px-3 py-2 text-muted-foreground">
                       {banderaPais(t.pais)} {nombrePais(t.pais)}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">{contacto?.telefono ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        {contacto?.telefono ?? "—"}
+                        <WhatsAppBoton telefono={contacto?.telefono} nombre={contacto?.nombre_completo} />
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-muted-foreground">{contacto?.email ?? "—"}</td>
                     <td className="px-3 py-2">
                       <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", estado.clase)}>

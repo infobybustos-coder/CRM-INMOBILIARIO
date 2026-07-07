@@ -1,16 +1,14 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreditCard, Clock } from "lucide-react";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
-import { ConfirmarPago } from "@/components/asesor/suscripcion/confirmar-pago";
+import { redirect } from "next/navigation";
+import { ConfirmarPago } from "@/components/inmobiliaria/suscripcion/confirmar-pago";
 
 export default async function PagoPage() {
-  const usuario = await getUsuarioConTenant();
-  if (!usuario) redirect("/login");
-  if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
-  if (usuario.tenant?.plan_tarifa === "pago") redirect("/asesor/ajustes");
+  const usuario = await requireAdminInmobiliaria();
+  if (usuario.tenant?.plan_tarifa === "pago") redirect("/inmobiliaria/suscripcion");
 
   const config = await obtenerConfigPlanes();
   const admin = createAdminClient();
@@ -23,17 +21,17 @@ export default async function PagoPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <Link href="/asesor/ajustes" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Volver a Configuración
+      <Link href="/inmobiliaria/suscripcion" className="text-sm text-muted-foreground hover:text-foreground">
+        ← Volver a Suscripción
       </Link>
 
       <div className="space-y-4 rounded-lg border p-5">
         <div className="flex items-center gap-2">
           <CreditCard className="size-5 text-primary" />
-          <h1 className="text-xl font-semibold">Cambiar a Asesor PRO</h1>
+          <h1 className="text-xl font-semibold">Cambiar a Inmobiliaria PRO</h1>
         </div>
         <p className="text-2xl font-semibold">
-          {config.asesorProPrecio.toFixed(2).replace(".", ",")}€
+          {config.inmobiliariaProPrecio.toFixed(2).replace(".", ",")}€
           <span className="text-sm font-normal text-muted-foreground">/mes</span>
         </p>
 

@@ -4,6 +4,9 @@ import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono, telefonoValido } from "@/lib/telefono";
 import { slugify } from "@/lib/slug";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { precioPlan } from "@/lib/planes";
+import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export type CrearClienteState =
   | { error: string }
@@ -33,6 +36,11 @@ export async function crearTenantManual(
   const pais = String(formData.get("pais") ?? "ES");
   const tipoPlan = String(formData.get("tipo_plan") ?? "asesor") as "asesor" | "inmobiliaria";
   const planTarifa = String(formData.get("plan_tarifa") ?? "gratis") as "gratis" | "pago";
+  const metodoPago = String(formData.get("metodo_pago") ?? "");
+
+  if (planTarifa === "pago" && !METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
+    return { error: "Elige un método de pago válido." };
+  }
 
   if (!nombreEmpresa || !nombreContacto || !email || !telefonoInput) {
     return { error: "Rellena todos los campos obligatorios." };
@@ -112,6 +120,20 @@ export async function crearTenantManual(
     tipo: "estado",
     descripcion: `Cliente creado manualmente por ${superadmin.email}.`,
   });
+
+  if (planTarifa === "pago") {
+    const config = await obtenerConfigPlanes();
+    await admin.from("pedidos").insert({
+      tenant_id: tenant.id,
+      tipo: "ajuste_manual",
+      concepto: `Alta manual en ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO`,
+      importe: precioPlan(config, { tipo_plan: tipoPlan, plan_tarifa: planTarifa }),
+      metodo_pago: metodoPago,
+      estado: "pagado",
+      confirmado_en: new Date().toISOString(),
+      confirmado_por: superadmin.email,
+    });
+  }
 
   return { ok: true, password, tenantId: tenant.id };
 }

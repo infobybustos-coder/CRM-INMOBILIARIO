@@ -1,5 +1,6 @@
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
 import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 import { limiteAdmins, limiteEmpleados, etiquetaPlan, type PlanTarifa } from "@/lib/planes";
@@ -26,6 +27,13 @@ export default async function SuscripcionPage() {
     .maybeSingle();
 
   const tenant = usuario.tenant ?? {};
+
+  const admin = createAdminClient();
+  const { count: pedidosPendientes } = await admin
+    .from("pedidos")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", usuario.tenant_id)
+    .eq("estado", "iniciado");
 
   const [{ count: adminsActivos }, { count: empleadosActivos }] = await Promise.all([
     supabase
@@ -122,7 +130,11 @@ export default async function SuscripcionPage() {
 
       <div className="space-y-2">
         <h2 className="text-sm font-semibold">Elige tu plan</h2>
-        <SelectorPlan planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"} config={config} />
+        <SelectorPlan
+          planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"}
+          config={config}
+          pedidoPendiente={(pedidosPendientes ?? 0) > 0}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -144,8 +156,9 @@ export default async function SuscripcionPage() {
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Cambiar de plan aquí no procesa ningún cobro real todavía — no hay pasarela de pago
-        conectada. La gestión de pago y las facturas estarán disponibles próximamente.
+        No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un
+        administrador confirma el pago manualmente antes de activar el plan. La gestión de pago y
+        las facturas estarán disponibles próximamente.
       </p>
     </div>
   );

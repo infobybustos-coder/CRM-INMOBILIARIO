@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AjustesForm } from "@/components/asesor/ajustes-form";
 import { SelectorPlan } from "@/components/asesor/suscripcion/selector-plan";
 import { esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa } from "@/lib/planes";
@@ -32,6 +33,13 @@ export default async function AjustesPage() {
           .select("id", { count: "exact", head: true })
           .eq("tenant_id", usuario.tenant_id),
       ]);
+
+  const admin = createAdminClient();
+  const { count: pedidosPendientes } = await admin
+    .from("pedidos")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", usuario.tenant_id)
+    .eq("estado", "iniciado");
 
   return (
     <div className="space-y-4">
@@ -68,9 +76,14 @@ export default async function AjustesPage() {
 
       <div className="max-w-lg space-y-2">
         <h2 className="text-sm font-semibold">Elige tu plan</h2>
-        <SelectorPlan planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"} config={config} />
+        <SelectorPlan
+          planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"}
+          config={config}
+          pedidoPendiente={(pedidosPendientes ?? 0) > 0}
+        />
         <p className="text-xs text-muted-foreground">
-          Cambiar de plan aquí no procesa ningún cobro real todavía — no hay pasarela de pago conectada.
+          No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un
+          administrador confirma el pago manualmente antes de activar el plan.
         </p>
       </div>
 

@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono, telefonoValido, emailSinteticoDesdeIdentificador } from "@/lib/telefono";
 import { validarPassword } from "@/lib/validacion";
 import { slugify } from "@/lib/slug";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export type AuthActionState = { error: string } | null;
 
@@ -21,7 +23,8 @@ export async function signUp(
   const pais = String(formData.get("pais") ?? "ES");
   const terminos = formData.get("terminos") === "on";
   const tipoPlan = String(formData.get("tipo_plan") ?? "asesor") as "asesor" | "inmobiliaria";
-  const planTarifa = String(formData.get("plan_tarifa") ?? "gratis") as "gratis" | "pago";
+  const planTarifaDeseada = String(formData.get("plan_tarifa") ?? "gratis") as "gratis" | "pago";
+  const metodoPago = String(formData.get("metodo_pago") ?? METODOS_PAGO[0]);
 
   if (!nombre || !email || !telefonoInput || !password) {
     return { error: "Rellena todos los campos obligatorios." };
@@ -65,6 +68,8 @@ export async function signUp(
     };
   }
 
+  // El tenant siempre nace en Gratis: si se pidió PRO, se activa cuando se
+  // confirme el pedido de pago (ver más abajo), nunca al instante.
   const { data: tenant, error: tenantError } = await admin
     .from("tenants")
     .insert({
@@ -73,7 +78,7 @@ export async function signUp(
       tipo_plan: tipoPlan,
       pais,
       moneda: "EUR",
-      plan_tarifa: planTarifa,
+      plan_tarifa: "gratis",
     })
     .select()
     .single();
@@ -101,6 +106,17 @@ export async function signUp(
           ? "Ya existe una cuenta con ese teléfono."
           : "No se pudo crear el perfil de usuario.",
     };
+  }
+
+  if (planTarifaDeseada === "pago" && METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
+    const config = await obtenerConfigPlanes();
+    await admin.from("pedidos").insert({
+      tenant_id: tenant.id,
+      tipo: "plan_pro",
+      concepto: tipoPlan === "inmobiliaria" ? "Cambio a Inmobiliaria PRO" : "Cambio a Asesor PRO",
+      importe: tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio,
+      metodo_pago: metodoPago,
+    });
   }
 
   const supabase = await createClient();

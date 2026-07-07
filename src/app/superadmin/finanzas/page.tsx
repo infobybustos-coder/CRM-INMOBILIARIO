@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { precioMensualTotal, precioPlan } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
@@ -100,6 +101,17 @@ export default async function FinanzasPage() {
   const paisesOrdenados = [...ingresoPorPais.entries()].sort((a, b) => b[1] - a[1]);
   const maxPais = Math.max(1, ...paisesOrdenados.map(([, n]) => n));
 
+  const { data: pagosConfirmados } = await admin
+    .from("pedidos")
+    .select("importe, metodo_pago")
+    .eq("estado", "pagado");
+  const importePorMetodo = new Map<string, number>();
+  for (const p of pagosConfirmados ?? []) {
+    importePorMetodo.set(p.metodo_pago, (importePorMetodo.get(p.metodo_pago) ?? 0) + Number(p.importe));
+  }
+  const metodosOrdenados = [...importePorMetodo.entries()].sort((a, b) => b[1] - a[1]);
+  const maxMetodo = Math.max(1, ...metodosOrdenados.map(([, n]) => n));
+
   const kpis = [
     { label: "MRR", valor: euros(mrr) },
     { label: "Ingreso medio por cliente (ARPU)", valor: euros(arpu) },
@@ -114,7 +126,11 @@ export default async function FinanzasPage() {
       <div>
         <h1 className="text-2xl font-semibold">Finanzas</h1>
         <p className="text-sm text-muted-foreground">
-          Cuánto ingresa el negocio y de dónde viene, según los planes activos.
+          Solo cuenta clientes con un pago confirmado de verdad en{" "}
+          <Link href="/superadmin/pedidos" className="text-primary hover:underline">
+            Pedidos
+          </Link>{" "}
+          — nada de esto se activa hasta que tú lo confirmas.
         </p>
       </div>
 
@@ -193,6 +209,32 @@ export default async function FinanzasPage() {
               ))
             )}
           </div>
+        </div>
+
+        <div className="rounded-lg border p-4 lg:col-span-2">
+          <h2 className="mb-3 text-sm font-semibold">Ingresos por método de pago (histórico)</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Suma de todos los pedidos marcados como pagados alguna vez, no solo los activos ahora
+            mismo.
+          </p>
+          {metodosOrdenados.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todavía no hay pagos confirmados.</p>
+          ) : (
+            <div className="space-y-2">
+              {metodosOrdenados.map(([metodo, valor]) => (
+                <div key={metodo} className="flex items-center gap-2 text-sm">
+                  <span className="w-40 shrink-0 truncate">{metodo}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${(valor / maxMetodo) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-muted-foreground">{euros(valor)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

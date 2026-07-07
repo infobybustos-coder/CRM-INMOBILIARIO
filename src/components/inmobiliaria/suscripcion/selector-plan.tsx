@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/inmobiliaria/suscripcion/actions";
 import { type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
 import { cn } from "@/lib/utils";
 
-export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; config: ConfigPlanes }) {
+export function SelectorPlan({
+  planActual,
+  config,
+  pedidoPendiente,
+}: {
+  planActual: PlanTarifa;
+  config: ConfigPlanes;
+  pedidoPendiente?: boolean;
+}) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -40,10 +50,12 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
   ];
 
   function elegir(plan: PlanTarifa) {
+    if (plan === "pago") {
+      router.push("/inmobiliaria/suscripcion/pago");
+      return;
+    }
     const mensaje =
-      plan === "pago"
-        ? `¿Cambiar al plan de pago (${config.inmobiliariaProPrecio.toFixed(2).replace(".", ",")}€/mes)? Esto no procesa ningún cobro real todavía: solo actualiza tu plan en el CRM.`
-        : "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
+      "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
     if (window.confirm(mensaje)) {
       setError(null);
       startTransition(async () => {
@@ -62,6 +74,7 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
       )}
       {planes.map((plan) => {
         const esActual = plan.valor === planActual;
+        const esProPendiente = plan.valor === "pago" && pedidoPendiente;
         return (
           <div
             key={plan.valor}
@@ -75,6 +88,11 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
               {esActual && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                   Plan actual
+                </span>
+              )}
+              {esProPendiente && (
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                  Pago en revisión
                 </span>
               )}
             </div>
@@ -91,16 +109,22 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
             </ul>
             <button
               type="button"
-              disabled={esActual || pending}
+              disabled={esActual || esProPendiente || pending}
               onClick={() => elegir(plan.valor)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50",
-                esActual
+                esActual || esProPendiente
                   ? "border text-muted-foreground"
                   : "bg-primary text-primary-foreground hover:opacity-90"
               )}
             >
-              {esActual ? "Plan actual" : pending ? "Cambiando..." : "Cambiar a este plan"}
+              {esActual
+                ? "Plan actual"
+                : esProPendiente
+                  ? "Pago en revisión"
+                  : pending
+                    ? "Cambiando..."
+                    : "Cambiar a este plan"}
             </button>
           </div>
         );

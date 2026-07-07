@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { precioPlan } from "@/lib/planes";
+import { METODO_PAGO_AJUSTE_MANUAL, METODOS_PAGO } from "@/lib/metodos-pago";
 
 export type EstadoTenant = "activo" | "suspendido" | "cancelado";
 
@@ -37,9 +40,10 @@ export async function cambiarEstadoTenant(tenantId: string, nuevoEstado: EstadoT
 export async function cambiarPlanTenant(
   tenantId: string,
   tipoPlan: "asesor" | "inmobiliaria",
-  planTarifa: "gratis" | "pago"
+  planTarifa: "gratis" | "pago",
+  metodoPago?: string
 ) {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const admin = createAdminClient();
   await admin.from("tenants").update({ tipo_plan: tipoPlan, plan_tarifa: planTarifa }).eq("id", tenantId);
@@ -51,11 +55,25 @@ export async function cambiarPlanTenant(
     } (manual, por soporte).`,
   });
 
+  if (planTarifa === "pago" && metodoPago && METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
+    const config = await obtenerConfigPlanes();
+    await admin.from("pedidos").insert({
+      tenant_id: tenantId,
+      tipo: "ajuste_manual",
+      concepto: `Cambio a ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (manual)`,
+      importe: precioPlan(config, { tipo_plan: tipoPlan, plan_tarifa: planTarifa }),
+      metodo_pago: metodoPago,
+      estado: "pagado",
+      confirmado_en: new Date().toISOString(),
+      confirmado_por: superadmin.email,
+    });
+  }
+
   revalidarCliente(tenantId);
 }
 
 export async function ajustarAsientosTenant(tenantId: string, campo: "admins_extra" | "agentes_extra", delta: number) {
-  await requireSuperadmin();
+  const superadmin = await requireSuperadmin();
 
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select(campo).eq("id", tenantId).maybeSingle();
@@ -69,6 +87,21 @@ export async function ajustarAsientosTenant(tenantId: string, campo: "admins_ext
     tipo: "plan",
     descripcion: `${campo === "admins_extra" ? "Administradores" : "Asesores"} extra ajustado a ${nuevo} (manual, por soporte).`,
   });
+
+  if (nuevo > actual) {
+    const config = await obtenerConfigPlanes();
+    const precioAsiento = campo === "admins_extra" ? config.precioAdminExtra : config.precioAsesorExtra;
+    await admin.from("pedidos").insert({
+      tenant_id: tenantId,
+      tipo: "ajuste_manual",
+      concepto: `${campo === "admins_extra" ? "Administrador" : "Asesor"} adicional (manual)`,
+      importe: precioAsiento * (nuevo - actual),
+      metodo_pago: METODO_PAGO_AJUSTE_MANUAL,
+      estado: "pagado",
+      confirmado_en: new Date().toISOString(),
+      confirmado_por: superadmin.email,
+    });
+  }
 
   revalidarCliente(tenantId);
 }

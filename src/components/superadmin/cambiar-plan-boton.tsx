@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { cambiarPlanTenant } from "@/app/superadmin/clientes/actions";
+import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export function CambiarPlanBoton({
   tenantId,
@@ -19,12 +20,18 @@ export function CambiarPlanBoton({
   const [planTarifa, setPlanTarifa] = useState<"gratis" | "pago">(
     planTarifaActual === "pago" ? "pago" : "gratis"
   );
+  const [metodoPago, setMetodoPago] = useState<string>(METODOS_PAGO[0]);
   const [pending, startTransition] = useTransition();
 
+  const pasaAPago = planTarifa === "pago" && planTarifaActual !== "pago";
+
   function guardar() {
-    if (!window.confirm("¿Cambiar el plan de este cliente manualmente? No procesa ningún cobro real.")) return;
+    const mensaje = pasaAPago
+      ? "¿Confirmas que has recibido el pago de este cliente y quieres activar el plan PRO?"
+      : "¿Cambiar el plan de este cliente manualmente?";
+    if (!window.confirm(mensaje)) return;
     startTransition(async () => {
-      await cambiarPlanTenant(tenantId, tipoPlan, planTarifa);
+      await cambiarPlanTenant(tenantId, tipoPlan, planTarifa, pasaAPago ? metodoPago : undefined);
       setAbierto(false);
     });
   }
@@ -64,6 +71,22 @@ export function CambiarPlanBoton({
                 <option value="pago">PRO</option>
               </select>
             </div>
+            {pasaAPago && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Método de pago recibido</label>
+                <select
+                  value={metodoPago}
+                  onChange={(e) => setMetodoPago(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                >
+                  {METODOS_PAGO.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"

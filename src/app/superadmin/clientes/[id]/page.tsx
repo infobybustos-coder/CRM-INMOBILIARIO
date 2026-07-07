@@ -11,11 +11,18 @@ import { CambiarPlanBoton } from "@/components/superadmin/cambiar-plan-boton";
 import { EliminarTenantBoton } from "@/components/superadmin/eliminar-tenant-boton";
 import { AccederComoBoton } from "@/components/superadmin/acceder-como-boton";
 import { NotasInternas } from "@/components/superadmin/notas-internas";
+import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
 import type { EstadoTenant } from "../actions";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
   suspendido: { texto: "Suspendido", clase: "bg-amber-500/10 text-amber-600" },
+  cancelado: { texto: "Cancelado", clase: "bg-muted text-muted-foreground" },
+};
+
+const ETIQUETA_ESTADO_PEDIDO: Record<string, { texto: string; clase: string }> = {
+  iniciado: { texto: "Pendiente", clase: "bg-amber-500/10 text-amber-600" },
+  pagado: { texto: "Pagado", clase: "bg-emerald-500/10 text-emerald-600" },
   cancelado: { texto: "Cancelado", clase: "bg-muted text-muted-foreground" },
 };
 
@@ -59,6 +66,7 @@ export default async function ClienteFichaPage({
     { data: usuarios },
     { data: eventos },
     { data: notas },
+    { data: pedidos },
     { count: numPropietarios },
     { count: numInmuebles },
     { count: numCompradores },
@@ -75,6 +83,11 @@ export default async function ClienteFichaPage({
     admin
       .from("tenant_notas")
       .select("id, texto, creado_por, creado_en")
+      .eq("tenant_id", id)
+      .order("creado_en", { ascending: false }),
+    admin
+      .from("pedidos")
+      .select("id, concepto, importe, metodo_pago, estado, creado_en")
       .eq("tenant_id", id)
       .order("creado_en", { ascending: false }),
     admin.from("propietarios").select("id", { count: "exact", head: true }).eq("tenant_id", id),
@@ -136,7 +149,12 @@ export default async function ClienteFichaPage({
         {campos.map((c) => (
           <div key={c.label} className="flex items-center justify-between px-4 py-2.5 text-sm">
             <span className="text-muted-foreground">{c.label}</span>
-            <span className="font-medium">{c.valor}</span>
+            <span className="flex items-center gap-2 font-medium">
+              {c.valor}
+              {c.label === "WhatsApp" && (
+                <WhatsAppBoton telefono={contacto?.telefono} nombre={contacto?.nombre_completo} />
+              )}
+            </span>
           </div>
         ))}
       </div>
@@ -227,12 +245,41 @@ export default async function ClienteFichaPage({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {["Pagos", "Incidencias", "Tickets"].map((seccion) => (
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold">Pagos</h2>
+        {(pedidos ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sin pedidos todavía.</p>
+        ) : (
+          <div className="divide-y rounded-lg border">
+            {(pedidos ?? []).map((p) => {
+              const estadoPedido = ETIQUETA_ESTADO_PEDIDO[p.estado] ?? ETIQUETA_ESTADO_PEDIDO.iniciado;
+              return (
+                <div key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                  <div>
+                    <p className="font-medium">{p.concepto}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.metodo_pago} · {fechaHora(p.creado_en)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{Number(p.importe).toFixed(2).replace(".", ",")}€</span>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", estadoPedido.clase)}>
+                      {estadoPedido.texto}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {["Incidencias", "Tickets"].map((seccion) => (
           <div key={seccion} className="space-y-1 rounded-lg border border-dashed p-4">
             <h2 className="text-sm font-semibold text-muted-foreground">{seccion}</h2>
             <p className="text-xs text-muted-foreground">
-              Próximamente — necesita infraestructura nueva ({seccion === "Pagos" ? "pasarela de pago" : "sistema de tickets"}).
+              Próximamente — necesita un sistema de tickets dedicado.
             </p>
           </div>
         ))}

@@ -7,7 +7,15 @@ import { cambiarPlanTarifa } from "@/app/asesor/suscripcion/actions";
 import { type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
 import { cn } from "@/lib/utils";
 
-export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; config: ConfigPlanes }) {
+export function SelectorPlan({
+  planActual,
+  config,
+  pedidoPendiente,
+}: {
+  planActual: PlanTarifa;
+  config: ConfigPlanes;
+  pedidoPendiente?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +64,7 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
       )}
       {planes.map((plan) => {
         const esActual = plan.valor === planActual;
+        const esProPendiente = plan.valor === "pago" && pedidoPendiente;
         return (
           <div
             key={plan.valor}
@@ -69,6 +78,11 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
               {esActual && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                   Plan actual
+                </span>
+              )}
+              {esProPendiente && (
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                  Pago en revisión
                 </span>
               )}
             </div>
@@ -85,22 +99,24 @@ export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; c
             </ul>
             <button
               type="button"
-              disabled={esActual || pending}
+              disabled={esActual || esProPendiente || pending}
               onClick={() => elegir(plan.valor)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50",
-                esActual
+                esActual || esProPendiente
                   ? "border text-muted-foreground"
                   : "bg-primary text-primary-foreground hover:opacity-90"
               )}
             >
               {esActual
                 ? "Plan actual"
-                : plan.valor === "pago"
-                  ? "Cambiar"
-                  : pending
-                    ? "Guardando..."
-                    : "Guardar"}
+                : esProPendiente
+                  ? "Pago en revisión"
+                  : plan.valor === "pago"
+                    ? "Cambiar"
+                    : pending
+                      ? "Guardando..."
+                      : "Guardar"}
             </button>
           </div>
         );

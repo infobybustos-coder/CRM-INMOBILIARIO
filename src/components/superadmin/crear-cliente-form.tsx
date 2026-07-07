@@ -5,6 +5,7 @@ import Link from "next/link";
 import { crearTenantManual, type CrearClienteState } from "@/app/superadmin/clientes/nuevo/actions";
 import { PAISES, prefijoPais, banderaPais } from "@/lib/paises";
 import { formatearMientrasEscribe } from "@/lib/telefono";
+import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export function CrearClienteForm() {
   const [state, formAction, pending] = useActionState<CrearClienteState, FormData>(
@@ -13,6 +14,7 @@ export function CrearClienteForm() {
   );
   const [pais, setPais] = useState("ES");
   const [telefono, setTelefono] = useState("");
+  const [planTarifa, setPlanTarifa] = useState("gratis");
   const [copiado, setCopiado] = useState(false);
 
   if (state && "ok" in state) {
@@ -158,7 +160,8 @@ export function CrearClienteForm() {
           <select
             id="plan_tarifa"
             name="plan_tarifa"
-            defaultValue="gratis"
+            value={planTarifa}
+            onChange={(e) => setPlanTarifa(e.target.value)}
             className="w-full rounded-md border px-3 py-2 text-sm"
           >
             <option value="gratis">Gratis</option>
@@ -166,6 +169,26 @@ export function CrearClienteForm() {
           </select>
         </div>
       </div>
+
+      {planTarifa === "pago" && (
+        <div className="space-y-2">
+          <label htmlFor="metodo_pago" className="text-sm font-medium">
+            Método de pago recibido
+          </label>
+          <select
+            id="metodo_pago"
+            name="metodo_pago"
+            defaultValue={METODOS_PAGO[0]}
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          >
+            {METODOS_PAGO.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {state && "error" in state && <p className="text-sm text-destructive">{state.error}</p>}
 

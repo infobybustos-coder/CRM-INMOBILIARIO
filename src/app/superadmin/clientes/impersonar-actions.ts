@@ -6,7 +6,7 @@ import { COOKIE_SESION_SUPERADMIN, requireSuperadmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function entrarComoUsuario(usuarioId: string) {
+async function iniciarSesionComo(usuarioId: string) {
   const superadmin = await requireSuperadmin();
 
   const admin = createAdminClient();
@@ -53,6 +53,42 @@ export async function entrarComoUsuario(usuarioId: string) {
   });
 
   redirect("/");
+}
+
+export async function entrarComoUsuario(usuarioId: string) {
+  await iniciarSesionComo(usuarioId);
+}
+
+export type TipoVista = "asesor" | "inmobiliaria_admin" | "inmobiliaria_empleado";
+
+const ETIQUETA_VISTA: Record<TipoVista, string> = {
+  asesor: "Asesor independiente",
+  inmobiliaria_admin: "Administrador de Inmobiliaria",
+  inmobiliaria_empleado: "Empleado de Inmobiliaria",
+};
+
+export async function entrarComoVista(tipo: TipoVista): Promise<{ error: string } | void> {
+  await requireSuperadmin();
+  const admin = createAdminClient();
+
+  const tipoPlan = tipo === "asesor" ? "asesor" : "inmobiliaria";
+  const { data: tenants } = await admin.from("tenants").select("id").eq("tipo_plan", tipoPlan);
+  const tenantIds = (tenants ?? []).map((t) => t.id);
+  if (tenantIds.length === 0) {
+    return { error: `Todavía no hay ninguna cuenta de tipo "${ETIQUETA_VISTA[tipo]}".` };
+  }
+
+  let query = admin.from("usuarios").select("id").in("tenant_id", tenantIds);
+  if (tipo === "inmobiliaria_admin") query = query.eq("rol", "admin");
+  if (tipo === "inmobiliaria_empleado") query = query.eq("rol", "empleado");
+  const { data: usuarios } = await query.order("creado_en", { ascending: false }).limit(1);
+
+  const usuario = usuarios?.[0];
+  if (!usuario) {
+    return { error: `Todavía no hay ninguna cuenta de tipo "${ETIQUETA_VISTA[tipo]}".` };
+  }
+
+  await iniciarSesionComo(usuario.id);
 }
 
 export async function salirDeImpersonacion() {

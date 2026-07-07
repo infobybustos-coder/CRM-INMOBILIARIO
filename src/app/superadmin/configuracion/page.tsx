@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { VistaPreviaBotones } from "@/components/superadmin/vista-previa-boton";
 
 export default async function ConfiguracionPage() {
   const admin = createAdminClient();
@@ -21,6 +22,16 @@ export default async function ConfiguracionPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Configuración</h1>
+
+      <div className="max-w-lg space-y-2">
+        <h2 className="text-sm font-semibold">Vista previa de interfaz</h2>
+        <p className="text-xs text-muted-foreground">
+          Entra directamente a cada tipo de vista (usando una cuenta real existente de ese tipo)
+          para comprobar cómo se ve, igual que &quot;Acceder como usuario&quot; en la ficha de un
+          cliente.
+        </p>
+        <VistaPreviaBotones />
+      </div>
 
       <div className="max-w-lg space-y-2">
         <h2 className="text-sm font-semibold">Superadmins</h2>

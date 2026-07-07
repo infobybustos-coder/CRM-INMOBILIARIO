@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { buscarUsuario } from "@/app/superadmin/soporte/actions";
+import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
 
 export function SoporteBuscador() {
   const [resultados, formAction, pending] = useActionState(buscarUsuario, []);
@@ -43,7 +44,12 @@ export function SoporteBuscador() {
                 <tr key={u.usuarioId}>
                   <td className="px-3 py-2 font-medium">{u.nombreCompleto}</td>
                   <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{u.telefono ?? "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      {u.telefono ?? "—"}
+                      <WhatsAppBoton telefono={u.telefono} nombre={u.nombreCompleto} />
+                    </div>
+                  </td>
                   <td className="px-3 py-2 capitalize text-muted-foreground">{u.rol}</td>
                   <td className="px-3 py-2">{u.tenantNombre}</td>
                   <td className="px-3 py-2 text-muted-foreground">

@@ -28,9 +28,9 @@ export function AccionesFilaSuscripcion({
     });
   }
 
-  function ajustarAsiento(campo: "admins_extra" | "agentes_extra") {
+  function ajustarAsiento(campo: "admins_extra" | "agentes_extra", delta: number) {
     startTransition(async () => {
-      await ajustarAsientosTenant(tenantId, campo, 1);
+      await ajustarAsientosTenant(tenantId, campo, delta);
     });
   }
 
@@ -64,7 +64,7 @@ export function AccionesFilaSuscripcion({
           <button
             type="button"
             disabled={pending}
-            onClick={() => ajustarAsiento("agentes_extra")}
+            onClick={() => ajustarAsiento("agentes_extra", 1)}
             className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
           >
             + Asesor
@@ -72,10 +72,26 @@ export function AccionesFilaSuscripcion({
           <button
             type="button"
             disabled={pending}
-            onClick={() => ajustarAsiento("admins_extra")}
+            onClick={() => ajustarAsiento("agentes_extra", -1)}
+            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
+          >
+            − Asesor
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => ajustarAsiento("admins_extra", 1)}
             className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
           >
             + Admin
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => ajustarAsiento("admins_extra", -1)}
+            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
+          >
+            − Admin
           </button>
         </>
       )}

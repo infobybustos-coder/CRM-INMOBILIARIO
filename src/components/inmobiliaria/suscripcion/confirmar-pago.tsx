@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { solicitarUpgradePro } from "@/app/asesor/suscripcion/actions";
+import { solicitarUpgradePro } from "@/app/inmobiliaria/suscripcion/actions";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export function ConfirmarPago() {
@@ -19,7 +19,7 @@ export function ConfirmarPago() {
         setError(resultado.error);
         return;
       }
-      router.push("/asesor/ajustes");
+      router.push("/inmobiliaria/suscripcion");
       router.refresh();
     });
   }
