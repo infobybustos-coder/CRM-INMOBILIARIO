@@ -143,7 +143,7 @@ export default async function SuperadminPage({
     { count: cancelaciones },
     { data: todosTenants },
   ] = await Promise.all([
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("activo", true),
+    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "inmobiliaria"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "asesor"),
     admin
@@ -155,7 +155,7 @@ export default async function SuperadminPage({
       .select("tipo_plan, plan_tarifa, admins_extra, agentes_extra")
       .eq("plan_tarifa", "pago"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("plan_tarifa", "gratis"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("activo", false),
+    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "cancelado"),
     admin
       .from("tenants")
       .select("id, nombre, tipo_plan, plan_tarifa, pais, creado_en")
@@ -183,7 +183,7 @@ export default async function SuperadminPage({
     { label: "Conversión registro", valor: "—", nota: "sin analítica conectada" },
     { label: "Clientes PRO", valor: tenantsPago?.length ?? 0 },
     { label: "Clientes FREE", valor: clientesFree ?? 0 },
-    { label: "Cancelaciones", valor: cancelaciones ?? 0, nota: "cuentas inactivas" },
+    { label: "Cancelaciones", valor: cancelaciones ?? 0 },
     { label: "Tickets abiertos", valor: "—", nota: "sin sistema de tickets" },
   ];
 

@@ -132,7 +132,7 @@ export async function signIn(
     : emailSinteticoDesdeIdentificador(identificador);
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -144,6 +144,13 @@ export async function signIn(
       };
     }
     return { error: "Email o contraseña incorrectos." };
+  }
+
+  if (data.user) {
+    await supabase
+      .from("usuarios")
+      .update({ ultimo_acceso: new Date().toISOString() })
+      .eq("id", data.user.id);
   }
 
   redirect("/");
