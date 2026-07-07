@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
-import { getUsuarioConTenant } from "@/lib/auth";
+import { getUsuarioConTenant, esSuperadmin } from "@/lib/auth";
 
 export default async function Home() {
+  if (await esSuperadmin()) {
+    redirect("/superadmin");
+  }
+
   const usuario = await getUsuarioConTenant();
 
   if (!usuario) {

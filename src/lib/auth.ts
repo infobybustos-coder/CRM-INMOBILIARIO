@@ -9,6 +9,41 @@ export function esGestor(rol: string): boolean {
   return rol === "admin";
 }
 
+// El superadmin es un rol de plataforma, no de tenant: no vive en la
+// tabla usuarios (que siempre exige tenant_id), solo en superadmins.
+export async function requireSuperadmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: superadmin } = await supabase
+    .from("superadmins")
+    .select("usuario_id")
+    .eq("usuario_id", user.id)
+    .maybeSingle();
+
+  if (!superadmin) redirect("/login");
+  return user;
+}
+
+export async function esSuperadmin(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("superadmins")
+    .select("usuario_id")
+    .eq("usuario_id", user.id)
+    .maybeSingle();
+
+  return !!data;
+}
+
 export async function getUsuarioConTenant() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
