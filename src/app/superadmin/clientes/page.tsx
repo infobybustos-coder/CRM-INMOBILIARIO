@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
 
@@ -18,6 +19,7 @@ export default async function ClientesPage({
 }) {
   const params = await searchParams;
   const admin = createAdminClient();
+  const config = await obtenerConfigPlanes();
 
   const inicioMes = new Date();
   inicioMes.setDate(1);
@@ -136,7 +138,7 @@ export default async function ClientesPage({
                       {t.plan_tarifa === "pago" ? "PRO" : "Gratis"}
                       {t.plan_tarifa === "pago" && (
                         <span className="ml-1 text-xs text-muted-foreground">
-                          ({precioPlan(t).toFixed(2).replace(".", ",")}€/mes)
+                          ({precioPlan(config, t).toFixed(2).replace(".", ",")}€/mes)
                         </span>
                       )}
                     </td>

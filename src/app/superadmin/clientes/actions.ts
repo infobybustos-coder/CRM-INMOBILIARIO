@@ -16,6 +16,7 @@ const ETIQUETA_ESTADO: Record<EstadoTenant, string> = {
 function revalidarCliente(tenantId: string) {
   revalidatePath(`/superadmin/clientes/${tenantId}`);
   revalidatePath("/superadmin/clientes");
+  revalidatePath("/superadmin/suscripciones");
   revalidatePath("/superadmin");
 }
 
@@ -48,6 +49,25 @@ export async function cambiarPlanTenant(
     descripcion: `Plan cambiado a ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} ${
       planTarifa === "pago" ? "PRO" : "Gratis"
     } (manual, por soporte).`,
+  });
+
+  revalidarCliente(tenantId);
+}
+
+export async function ajustarAsientosTenant(tenantId: string, campo: "admins_extra" | "agentes_extra", delta: number) {
+  await requireSuperadmin();
+
+  const admin = createAdminClient();
+  const { data: tenant } = await admin.from("tenants").select(campo).eq("id", tenantId).maybeSingle();
+  if (!tenant) return;
+
+  const actual = (tenant as unknown as Record<string, number>)[campo] ?? 0;
+  const nuevo = Math.max(0, actual + delta);
+  await admin.from("tenants").update({ [campo]: nuevo }).eq("id", tenantId);
+  await admin.from("tenant_eventos").insert({
+    tenant_id: tenantId,
+    tipo: "plan",
+    descripcion: `${campo === "admins_extra" ? "Administradores" : "Asesores"} extra ajustado a ${nuevo} (manual, por soporte).`,
   });
 
   revalidarCliente(tenantId);

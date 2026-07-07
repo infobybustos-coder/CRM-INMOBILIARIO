@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ADMINS_INCLUIDOS_GRATIS, ASESORES_INCLUIDOS_INMOBILIARIA, type PlanTarifa } from "@/lib/planes";
+import { type PlanTarifa } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 export type CambiarPlanState = { error: string } | { ok: true };
 
@@ -13,6 +14,7 @@ export async function cambiarPlanTarifa(nuevoPlan: PlanTarifa): Promise<CambiarP
 
   if (nuevoPlan === "gratis" && usuario.tenant?.plan_tarifa === "pago") {
     const supabase = await createClient();
+    const config = await obtenerConfigPlanes();
     const [{ count: adminsActivos }, { count: empleadosActivos }] = await Promise.all([
       supabase
         .from("usuarios")
@@ -28,12 +30,15 @@ export async function cambiarPlanTarifa(nuevoPlan: PlanTarifa): Promise<CambiarP
         .eq("activo", true),
     ]);
 
+    const adminsGratis = config.inmobiliariaFree.administradores;
+    const asesoresGratis = config.inmobiliariaFree.asesores;
+
     const problemas: string[] = [];
-    if ((adminsActivos ?? 0) > ADMINS_INCLUIDOS_GRATIS) {
-      problemas.push(`${adminsActivos} administradores (el plan Gratis solo incluye ${ADMINS_INCLUIDOS_GRATIS})`);
+    if ((adminsActivos ?? 0) > adminsGratis) {
+      problemas.push(`${adminsActivos} administradores (el plan Gratis solo incluye ${adminsGratis})`);
     }
-    if ((empleadosActivos ?? 0) > ASESORES_INCLUIDOS_INMOBILIARIA) {
-      problemas.push(`${empleadosActivos} asesores (el plan Gratis solo incluye ${ASESORES_INCLUIDOS_INMOBILIARIA})`);
+    if ((empleadosActivos ?? 0) > asesoresGratis) {
+      problemas.push(`${empleadosActivos} asesores (el plan Gratis solo incluye ${asesoresGratis})`);
     }
     if (problemas.length > 0) {
       return {

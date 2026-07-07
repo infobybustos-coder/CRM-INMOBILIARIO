@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/agentes/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
 import { limiteEmpleados } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AgenteFila } from "./constantes";
 
 const MEDALLAS = ["🥇", "🥈", "🥉"];
@@ -25,6 +26,7 @@ function contarPorId(filas: { id: string | null }[]) {
 export default async function AgentesPage() {
   const usuario = await requireAdminInmobiliaria();
   const supabase = await createClient();
+  const config = await obtenerConfigPlanes();
 
   const ahora = new Date();
   const inicioHoy = new Date();
@@ -163,7 +165,7 @@ export default async function AgentesPage() {
   const activosHoyCount = activos.filter((a) => idsActivosHoy.has(a.id)).length;
   const sinActividadCount = activos.length - activosHoyCount;
   const pctActivosHoy = activos.length > 0 ? (activosHoyCount / activos.length) * 100 : 0;
-  const limiteAgentes = limiteEmpleados(usuario.tenant ?? {});
+  const limiteAgentes = limiteEmpleados(config, usuario.tenant ?? {});
 
   const kpis = [
     {

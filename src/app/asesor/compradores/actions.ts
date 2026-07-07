@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 async function requireUsuario() {
   const usuario = await getUsuarioEfectivo();
@@ -219,7 +220,8 @@ export async function crearCompradorRapido(
     return { error: "Pon al menos el nombre y el teléfono." };
   }
 
-  const limite = limiteRecurso(usuario.tenant ?? {}, "compradores");
+  const config = await obtenerConfigPlanes();
+  const limite = limiteRecurso(config, usuario.tenant ?? {}, "compradores");
   if (limite !== null) {
     const { count } = await supabase
       .from("compradores")

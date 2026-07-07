@@ -3,62 +3,46 @@
 import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/inmobiliaria/suscripcion/actions";
-import {
-  LIMITES_GRATIS,
-  PRECIO_MENSUAL,
-  ASESORES_INCLUIDOS_INMOBILIARIA,
-  ADMINS_INCLUIDOS_GRATIS,
-  ADMINS_INCLUIDOS_PAGO,
-  PRECIO_ASESOR_EXTRA,
-  PRECIO_ADMIN_EXTRA,
-  type PlanTarifa,
-} from "@/lib/planes";
+import { type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
 import { cn } from "@/lib/utils";
 
-const LIMITES_FREE = LIMITES_GRATIS.inmobiliaria;
-
-const PLANES: {
-  valor: PlanTarifa;
-  nombre: string;
-  precio: number;
-  caracteristicas: string[];
-}[] = [
-  {
-    valor: "gratis",
-    nombre: "Inmobiliaria Free",
-    precio: 0,
-    caracteristicas: [
-      `Hasta ${LIMITES_FREE.propietarios} propietarios`,
-      `Hasta ${LIMITES_FREE.inmuebles} inmuebles`,
-      `Hasta ${LIMITES_FREE.compradores} compradores`,
-      `${ADMINS_INCLUIDOS_GRATIS} administrador incluido`,
-      `${ASESORES_INCLUIDOS_INMOBILIARIA} asesores incluidos`,
-    ],
-  },
-  {
-    valor: "pago",
-    nombre: "Inmobiliaria PRO",
-    precio: PRECIO_MENSUAL.inmobiliaria,
-    caracteristicas: [
-      "Propietarios ilimitados",
-      "Inmuebles ilimitados",
-      "Compradores ilimitados",
-      `${ADMINS_INCLUIDOS_PAGO} administradores incluidos`,
-      `${ASESORES_INCLUIDOS_INMOBILIARIA} asesores incluidos`,
-      `Administrador adicional: ${PRECIO_ADMIN_EXTRA.toFixed(2).replace(".", ",")}€/mes`,
-      `Asesor adicional: ${PRECIO_ASESOR_EXTRA.toFixed(2).replace(".", ",")}€/mes`,
-    ],
-  },
-];
-
-export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
+export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; config: ConfigPlanes }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const planes: { valor: PlanTarifa; nombre: string; precio: number; caracteristicas: string[] }[] = [
+    {
+      valor: "gratis",
+      nombre: "Inmobiliaria Free",
+      precio: 0,
+      caracteristicas: [
+        `Hasta ${config.inmobiliariaFree.propietarios} propietarios`,
+        `Hasta ${config.inmobiliariaFree.inmuebles} inmuebles`,
+        `Hasta ${config.inmobiliariaFree.compradores} compradores`,
+        `${config.inmobiliariaFree.administradores} administrador incluido`,
+        `${config.inmobiliariaFree.asesores} asesores incluidos`,
+      ],
+    },
+    {
+      valor: "pago",
+      nombre: "Inmobiliaria PRO",
+      precio: config.inmobiliariaProPrecio,
+      caracteristicas: [
+        "Propietarios ilimitados",
+        "Inmuebles ilimitados",
+        "Compradores ilimitados",
+        `${config.inmobiliariaProAdminsIncluidos} administradores incluidos`,
+        `${config.inmobiliariaProAsesoresIncluidos} asesores incluidos`,
+        `Administrador adicional: ${config.precioAdminExtra.toFixed(2).replace(".", ",")}€/mes`,
+        `Asesor adicional: ${config.precioAsesorExtra.toFixed(2).replace(".", ",")}€/mes`,
+      ],
+    },
+  ];
 
   function elegir(plan: PlanTarifa) {
     const mensaje =
       plan === "pago"
-        ? "¿Cambiar al plan de pago (19,99€/mes)? Esto no procesa ningún cobro real todavía: solo actualiza tu plan en el CRM."
+        ? `¿Cambiar al plan de pago (${config.inmobiliariaProPrecio.toFixed(2).replace(".", ",")}€/mes)? Esto no procesa ningún cobro real todavía: solo actualiza tu plan en el CRM.`
         : "¿Volver al plan Gratis? Si tienes más propietarios, inmuebles o compradores de los permitidos, no podrás crear nuevos hasta bajar de ese límite.";
     if (window.confirm(mensaje)) {
       setError(null);
@@ -76,7 +60,7 @@ export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
           {error}
         </p>
       )}
-      {PLANES.map((plan) => {
+      {planes.map((plan) => {
         const esActual = plan.valor === planActual;
         return (
           <div

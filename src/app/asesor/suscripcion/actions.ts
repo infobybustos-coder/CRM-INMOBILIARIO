@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LIMITES_GRATIS, type PlanTarifa } from "@/lib/planes";
+import { type PlanTarifa } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 export type CambiarPlanState = { error: string } | { ok: true };
 
@@ -16,7 +17,8 @@ export async function cambiarPlanTarifa(nuevoPlan: PlanTarifa): Promise<CambiarP
 
   if (nuevoPlan === "gratis" && usuario.tenant?.plan_tarifa === "pago") {
     const supabase = await createClient();
-    const limites = LIMITES_GRATIS.asesor;
+    const config = await obtenerConfigPlanes();
+    const limites = config.asesorFree;
     const [{ count: propietarios }, { count: inmuebles }, { count: compradores }] = await Promise.all([
       supabase
         .from("propietarios")

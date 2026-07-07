@@ -3,15 +3,18 @@ import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AjustesForm } from "@/components/asesor/ajustes-form";
 import { SelectorPlan } from "@/components/asesor/suscripcion/selector-plan";
-import { LIMITES_GRATIS, esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa, type TipoPlan } from "@/lib/planes";
+import { esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 export default async function AjustesPage() {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
 
   const supabase = await createClient();
+  const config = await obtenerConfigPlanes();
   const ilimitado = esIlimitado(usuario.tenant ?? {});
-  const limites = LIMITES_GRATIS[(usuario.tenant?.tipo_plan as TipoPlan) ?? "asesor"];
+  const limites =
+    usuario.tenant?.tipo_plan === "inmobiliaria" ? config.inmobiliariaFree : config.asesorFree;
 
   const [{ count: propietarios }, { count: inmuebles }, { count: compradores }] = ilimitado
     ? [{ count: null }, { count: null }, { count: null }]
@@ -40,7 +43,7 @@ export default async function AjustesPage() {
           {etiquetaPlan(usuario.tenant ?? {})}
           {ilimitado && (
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {precioPlan(usuario.tenant ?? {}).toFixed(2)}€/mes
+              {precioPlan(config, usuario.tenant ?? {}).toFixed(2)}€/mes
             </span>
           )}
         </p>
@@ -65,7 +68,7 @@ export default async function AjustesPage() {
 
       <div className="max-w-lg space-y-2">
         <h2 className="text-sm font-semibold">Elige tu plan</h2>
-        <SelectorPlan planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"} />
+        <SelectorPlan planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"} config={config} />
         <p className="text-xs text-muted-foreground">
           Cambiar de plan aquí no procesa ningún cobro real todavía — no hay pasarela de pago conectada.
         </p>

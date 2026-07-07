@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { precioMensualTotal } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { banderaPais, nombrePais } from "@/lib/paises";
 import { cn } from "@/lib/utils";
 
@@ -129,6 +130,7 @@ export default async function SuperadminPage({
   const rango: Rango = params.rango === "7d" || params.rango === "12m" ? params.rango : "30d";
 
   const admin = createAdminClient();
+  const config = await obtenerConfigPlanes();
 
   const inicioHoy = new Date();
   inicioHoy.setHours(0, 0, 0, 0);
@@ -162,7 +164,7 @@ export default async function SuperadminPage({
       .order("creado_en", { ascending: false }),
   ]);
 
-  const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(t), 0);
+  const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
   const tenants = (todosTenants ?? []) as TenantFila[];
 
   const kpisFila1 = [

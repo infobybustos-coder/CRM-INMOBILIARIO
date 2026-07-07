@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { EstadoTenantAcciones } from "@/components/superadmin/estado-tenant-acciones";
 import { EditarEmpresaBoton } from "@/components/superadmin/editar-empresa-boton";
@@ -44,6 +45,7 @@ export default async function ClienteFichaPage({
 }) {
   const { id } = await params;
   const admin = createAdminClient();
+  const config = await obtenerConfigPlanes();
 
   const { data: tenant } = await admin
     .from("tenants")
@@ -86,7 +88,7 @@ export default async function ClienteFichaPage({
       label: "Plan",
       valor:
         tenant.plan_tarifa === "pago"
-          ? `${tenant.tipo_plan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (${precioPlan(tenant).toFixed(2).replace(".", ",")}€/mes)`
+          ? `${tenant.tipo_plan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (${precioPlan(config, tenant).toFixed(2).replace(".", ",")}€/mes)`
           : "Gratis",
     },
   ];

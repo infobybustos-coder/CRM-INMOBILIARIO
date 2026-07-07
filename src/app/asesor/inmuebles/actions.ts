@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 async function requireUsuario() {
   const usuario = await getUsuarioEfectivo();
@@ -287,7 +288,8 @@ export async function crearInmuebleRapido(
     return { error: "Pon al menos la referencia y la dirección." };
   }
 
-  const limite = limiteRecurso(usuario.tenant ?? {}, "inmuebles");
+  const config = await obtenerConfigPlanes();
+  const limite = limiteRecurso(config, usuario.tenant ?? {}, "inmuebles");
   if (limite !== null) {
     const { count } = await supabase
       .from("inmuebles")

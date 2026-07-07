@@ -4,39 +4,32 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/asesor/suscripcion/actions";
-import { LIMITES_GRATIS, PRECIO_MENSUAL, type PlanTarifa } from "@/lib/planes";
+import { type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
 import { cn } from "@/lib/utils";
 
-const LIMITES_FREE = LIMITES_GRATIS.asesor;
-
-const PLANES: {
-  valor: PlanTarifa;
-  nombre: string;
-  precio: number;
-  caracteristicas: string[];
-}[] = [
-  {
-    valor: "gratis",
-    nombre: "Asesor Free",
-    precio: 0,
-    caracteristicas: [
-      `Hasta ${LIMITES_FREE.propietarios} propietarios`,
-      `Hasta ${LIMITES_FREE.inmuebles} inmuebles`,
-      `Hasta ${LIMITES_FREE.compradores} compradores`,
-    ],
-  },
-  {
-    valor: "pago",
-    nombre: "Asesor PRO",
-    precio: PRECIO_MENSUAL.asesor,
-    caracteristicas: ["Propietarios ilimitados", "Inmuebles ilimitados", "Compradores ilimitados"],
-  },
-];
-
-export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
+export function SelectorPlan({ planActual, config }: { planActual: PlanTarifa; config: ConfigPlanes }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const planes: { valor: PlanTarifa; nombre: string; precio: number; caracteristicas: string[] }[] = [
+    {
+      valor: "gratis",
+      nombre: "Asesor Free",
+      precio: 0,
+      caracteristicas: [
+        `Hasta ${config.asesorFree.propietarios} propietarios`,
+        `Hasta ${config.asesorFree.inmuebles} inmuebles`,
+        `Hasta ${config.asesorFree.compradores} compradores`,
+      ],
+    },
+    {
+      valor: "pago",
+      nombre: "Asesor PRO",
+      precio: config.asesorProPrecio,
+      caracteristicas: ["Propietarios ilimitados", "Inmuebles ilimitados", "Compradores ilimitados"],
+    },
+  ];
 
   function elegir(plan: PlanTarifa) {
     if (plan === "pago") {
@@ -61,7 +54,7 @@ export function SelectorPlan({ planActual }: { planActual: PlanTarifa }) {
           {error}
         </p>
       )}
-      {PLANES.map((plan) => {
+      {planes.map((plan) => {
         const esActual = plan.valor === planActual;
         return (
           <div

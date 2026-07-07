@@ -7,14 +7,8 @@ import { revalidatePath } from "next/cache";
 import { requireAdminInmobiliaria, COOKIE_VISTA_COMO } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  ASESORES_INCLUIDOS_INMOBILIARIA,
-  PRECIO_ASESOR_EXTRA,
-  PRECIO_ADMIN_EXTRA,
-  adminsIncluidos,
-  limiteAdmins,
-  limiteEmpleados,
-} from "@/lib/planes";
+import { adminsIncluidos, limiteAdmins, limiteEmpleados } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
 export type RolInvitable = "empleado" | "admin";
 
@@ -60,13 +54,14 @@ export async function invitarMiembro(
     .eq("rol", rol)
     .eq("activo", true);
 
+  const config = await obtenerConfigPlanes();
   const esAdmin = rol === "admin";
   // Los asientos extra solo cuentan si el plan es de pago; en Gratis nunca
   // se pueden comprar, así que el límite se calcula igual en ambos casos con
   // las mismas funciones que usan Administradores/Agentes/Suscripción.
   const extra = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
-  const limite = esAdmin ? limiteAdmins(usuario.tenant ?? {}) : limiteEmpleados(usuario.tenant ?? {});
-  const precio = esAdmin ? PRECIO_ADMIN_EXTRA : PRECIO_ASESOR_EXTRA;
+  const limite = esAdmin ? limiteAdmins(config, usuario.tenant ?? {}) : limiteEmpleados(config, usuario.tenant ?? {});
+  const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
 
   if ((activos ?? 0) >= limite) {
     const esPago = usuario.tenant?.plan_tarifa === "pago";
@@ -121,6 +116,7 @@ export async function eliminarMiembro(id: string) {
     .eq("tenant_id", usuario.tenant_id);
 
   if (objetivo) {
+    const config = await obtenerConfigPlanes();
     const esAdmin = objetivo.rol === "admin";
 
     const { count: activosRestantes } = await supabase
@@ -130,7 +126,11 @@ export async function eliminarMiembro(id: string) {
       .eq("rol", objetivo.rol)
       .eq("activo", true);
 
-    const incluidos = esAdmin ? adminsIncluidos(usuario.tenant ?? {}) : ASESORES_INCLUIDOS_INMOBILIARIA;
+    const incluidos = esAdmin
+      ? adminsIncluidos(config, usuario.tenant ?? {})
+      : usuario.tenant?.plan_tarifa === "pago"
+        ? config.inmobiliariaProAsesoresIncluidos
+        : config.inmobiliariaFree.asesores;
     const nuevoExtra = Math.max(0, (activosRestantes ?? 0) - incluidos);
     const extraActual = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
 
@@ -180,7 +180,8 @@ export async function actualizarMiembro(
       .eq("tenant_id", usuario.tenant_id)
       .eq("rol", "admin")
       .eq("activo", true);
-    const limite = limiteAdmins(usuario.tenant ?? {});
+    const config = await obtenerConfigPlanes();
+    const limite = limiteAdmins(config, usuario.tenant ?? {});
     if ((adminsActivos ?? 0) >= limite) {
       const esPago = usuario.tenant?.plan_tarifa === "pago";
       return {

@@ -3,11 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/administradores/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
 import { limiteAdmins } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AdminFila } from "./constantes";
 
 export default async function AdministradoresPage() {
   const usuario = await requireAdminInmobiliaria();
   const supabase = await createClient();
+  const config = await obtenerConfigPlanes();
 
   const { data: admins, error } = await supabase
     .from("usuarios")
@@ -26,7 +28,7 @@ export default async function AdministradoresPage() {
   }));
 
   const activos = (admins ?? []).filter((a) => a.activo);
-  const limite = limiteAdmins(usuario.tenant ?? {});
+  const limite = limiteAdmins(config, usuario.tenant ?? {});
 
   return (
     <div className="space-y-5">

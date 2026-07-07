@@ -2,14 +2,8 @@ import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
 import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
-import {
-  PRECIO_ASESOR_EXTRA,
-  PRECIO_ADMIN_EXTRA,
-  limiteAdmins,
-  limiteEmpleados,
-  etiquetaPlan,
-  type PlanTarifa,
-} from "@/lib/planes";
+import { limiteAdmins, limiteEmpleados, etiquetaPlan, type PlanTarifa } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 
 const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
@@ -23,6 +17,7 @@ const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
 export default async function SuscripcionPage() {
   const usuario = await requireAdminInmobiliaria();
   const supabase = await createClient();
+  const config = await obtenerConfigPlanes();
 
   const { data: suscripcion } = await supabase
     .from("suscripciones")
@@ -47,11 +42,11 @@ export default async function SuscripcionPage() {
       .eq("activo", true),
   ]);
 
-  const limiteAdminsTenant = limiteAdmins(tenant);
-  const limiteEmpleadosTenant = limiteEmpleados(tenant);
+  const limiteAdminsTenant = limiteAdmins(config, tenant);
+  const limiteEmpleadosTenant = limiteEmpleados(config, tenant);
   const adminsExtra = tenant.plan_tarifa === "pago" ? (tenant.admins_extra ?? 0) : 0;
   const agentesExtra = tenant.plan_tarifa === "pago" ? (tenant.agentes_extra ?? 0) : 0;
-  const costeExtra = agentesExtra * PRECIO_ASESOR_EXTRA + adminsExtra * PRECIO_ADMIN_EXTRA;
+  const costeExtra = agentesExtra * config.precioAsesorExtra + adminsExtra * config.precioAdminExtra;
 
   return (
     <div className="max-w-lg space-y-5">
@@ -127,7 +122,7 @@ export default async function SuscripcionPage() {
 
       <div className="space-y-2">
         <h2 className="text-sm font-semibold">Elige tu plan</h2>
-        <SelectorPlan planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"} />
+        <SelectorPlan planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"} config={config} />
       </div>
 
       <div className="flex flex-wrap gap-2">

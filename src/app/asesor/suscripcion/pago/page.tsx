@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreditCard } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
-import { PRECIO_MENSUAL } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { ConfirmarPago } from "@/components/asesor/suscripcion/confirmar-pago";
 
 export default async function PagoPage() {
@@ -10,6 +10,8 @@ export default async function PagoPage() {
   if (!usuario) redirect("/login");
   if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
   if (usuario.tenant?.plan_tarifa === "pago") redirect("/asesor/ajustes");
+
+  const config = await obtenerConfigPlanes();
 
   return (
     <div className="mx-auto max-w-md space-y-4">
@@ -23,7 +25,7 @@ export default async function PagoPage() {
           <h1 className="text-xl font-semibold">Cambiar a Asesor PRO</h1>
         </div>
         <p className="text-2xl font-semibold">
-          {PRECIO_MENSUAL.asesor.toFixed(2).replace(".", ",")}€
+          {config.asesorProPrecio.toFixed(2).replace(".", ",")}€
           <span className="text-sm font-normal text-muted-foreground">/mes</span>
         </p>
         <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
