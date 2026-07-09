@@ -6,7 +6,7 @@ import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { precioPlan } from "@/lib/planes";
-import { METODO_PAGO_AJUSTE_MANUAL, METODOS_PAGO } from "@/lib/metodos-pago";
+import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export type EstadoTenant = "activo" | "suspendido" | "cancelado";
 
@@ -63,40 +63,6 @@ export async function cambiarPlanTenant(
       concepto: `Cambio a ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (manual)`,
       importe: precioPlan(config, { tipo_plan: tipoPlan, plan_tarifa: planTarifa }),
       metodo_pago: metodoPago,
-      estado: "pagado",
-      confirmado_en: new Date().toISOString(),
-      confirmado_por: superadmin.email,
-    });
-  }
-
-  revalidarCliente(tenantId);
-}
-
-export async function ajustarAsientosTenant(tenantId: string, campo: "admins_extra" | "agentes_extra", delta: number) {
-  const superadmin = await requireSuperadmin();
-
-  const admin = createAdminClient();
-  const { data: tenant } = await admin.from("tenants").select(campo).eq("id", tenantId).maybeSingle();
-  if (!tenant) return;
-
-  const actual = (tenant as unknown as Record<string, number>)[campo] ?? 0;
-  const nuevo = Math.max(0, actual + delta);
-  await admin.from("tenants").update({ [campo]: nuevo }).eq("id", tenantId);
-  await admin.from("tenant_eventos").insert({
-    tenant_id: tenantId,
-    tipo: "plan",
-    descripcion: `${campo === "admins_extra" ? "Administradores" : "Asesores"} extra ajustado a ${nuevo} (manual, por soporte).`,
-  });
-
-  if (nuevo > actual) {
-    const config = await obtenerConfigPlanes();
-    const precioAsiento = campo === "admins_extra" ? config.precioAdminExtra : config.precioAsesorExtra;
-    await admin.from("pedidos").insert({
-      tenant_id: tenantId,
-      tipo: "ajuste_manual",
-      concepto: `${campo === "admins_extra" ? "Administrador" : "Asesor"} adicional (manual)`,
-      importe: precioAsiento * (nuevo - actual),
-      metodo_pago: METODO_PAGO_AJUSTE_MANUAL,
       estado: "pagado",
       confirmado_en: new Date().toISOString(),
       confirmado_por: superadmin.email,

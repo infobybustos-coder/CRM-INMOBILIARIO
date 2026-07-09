@@ -27,6 +27,21 @@ export default async function SuscripcionesPage() {
   const gratis = todos.filter((t) => t.plan_tarifa !== "pago");
   const cancelados = todos.filter((t) => t.estado === "cancelado");
 
+  const idsInmobiliaria = todos.filter((t) => t.tipo_plan === "inmobiliaria").map((t) => t.id);
+  const { data: usuariosEquipo } = await admin
+    .from("usuarios")
+    .select("tenant_id, rol, activo")
+    .in("tenant_id", idsInmobiliaria);
+
+  const equipoPorTenant = new Map<string, { admins: number; asesores: number }>();
+  for (const u of usuariosEquipo ?? []) {
+    if (!u.activo) continue;
+    const actual = equipoPorTenant.get(u.tenant_id) ?? { admins: 0, asesores: 0 };
+    if (u.rol === "admin") actual.admins += 1;
+    else actual.asesores += 1;
+    equipoPorTenant.set(u.tenant_id, actual);
+  }
+
   const mrr = dePago.reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
   const euros = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 
@@ -59,6 +74,7 @@ export default async function SuscripcionesPage() {
             <tr>
               <th className="px-3 py-2 font-medium">Cliente</th>
               <th className="px-3 py-2 font-medium">Plan</th>
+              <th className="px-3 py-2 font-medium">Equipo</th>
               <th className="px-3 py-2 font-medium">Precio</th>
               <th className="px-3 py-2 font-medium">Renovación</th>
               <th className="px-3 py-2 font-medium">Estado</th>
@@ -68,13 +84,14 @@ export default async function SuscripcionesPage() {
           <tbody className="divide-y">
             {todos.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
                   Todavía no hay tenants.
                 </td>
               </tr>
             ) : (
               todos.map((t) => {
                 const estado = ETIQUETA_ESTADO[t.estado] ?? ETIQUETA_ESTADO.activo;
+                const equipo = equipoPorTenant.get(t.id);
                 return (
                   <tr key={t.id}>
                     <td className="px-3 py-2 font-medium">
@@ -84,6 +101,11 @@ export default async function SuscripcionesPage() {
                     </td>
                     <td className="px-3 py-2 text-muted-foreground capitalize">
                       {t.tipo_plan} {t.plan_tarifa === "pago" ? "PRO" : "Gratis"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {t.tipo_plan === "inmobiliaria"
+                        ? `${equipo?.admins ?? 0} admin · ${equipo?.asesores ?? 0} asesores`
+                        : "—"}
                     </td>
                     <td className="px-3 py-2">{euros(precioMensualTotal(config, t))}</td>
                     <td className="px-3 py-2 text-muted-foreground">—</td>

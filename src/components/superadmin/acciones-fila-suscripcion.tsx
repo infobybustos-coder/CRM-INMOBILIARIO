@@ -1,11 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import {
-  cambiarEstadoTenant,
-  ajustarAsientosTenant,
-  type EstadoTenant,
-} from "@/app/superadmin/clientes/actions";
+import { cambiarEstadoTenant, type EstadoTenant } from "@/app/superadmin/clientes/actions";
 import { CambiarPlanBoton } from "@/components/superadmin/cambiar-plan-boton";
 
 export function AccionesFilaSuscripcion({
@@ -27,14 +23,6 @@ export function AccionesFilaSuscripcion({
       await cambiarEstadoTenant(tenantId, nuevo);
     });
   }
-
-  function ajustarAsiento(campo: "admins_extra" | "agentes_extra", delta: number) {
-    startTransition(async () => {
-      await ajustarAsientosTenant(tenantId, campo, delta);
-    });
-  }
-
-  const esInmobiliariaPro = tipoPlan === "inmobiliaria" && planTarifa === "pago";
 
   return (
     <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs">
@@ -58,42 +46,6 @@ export function AccionesFilaSuscripcion({
         >
           Renovar
         </button>
-      )}
-      {esInmobiliariaPro && (
-        <>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => ajustarAsiento("agentes_extra", 1)}
-            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
-          >
-            + Asesor
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => ajustarAsiento("agentes_extra", -1)}
-            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
-          >
-            − Asesor
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => ajustarAsiento("admins_extra", 1)}
-            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
-          >
-            + Admin
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => ajustarAsiento("admins_extra", -1)}
-            className="rounded-md border px-2 py-1 font-medium hover:bg-accent disabled:opacity-50"
-          >
-            − Admin
-          </button>
-        </>
       )}
     </div>
   );
