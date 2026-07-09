@@ -10,7 +10,8 @@ export default function NuevoClientePage() {
       <div>
         <h1 className="text-2xl font-semibold">Nuevo cliente</h1>
         <p className="text-sm text-muted-foreground">
-          Da de alta una cuenta manualmente — útil para altas asistidas o cuentas de demostración.
+          Pon los datos de contacto y le enviamos un email para que complete su registro él mismo
+          — elige Asesor o Inmobiliaria y su plan, igual que en el alta pública.
         </p>
       </div>
       <CrearClienteForm />

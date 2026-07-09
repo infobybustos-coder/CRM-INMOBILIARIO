@@ -2,59 +2,38 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { crearTenantManual, type CrearClienteState } from "@/app/superadmin/clientes/nuevo/actions";
+import { invitarClienteManual, type CrearClienteState } from "@/app/superadmin/clientes/nuevo/actions";
 import { PAISES, prefijoPais, banderaPais } from "@/lib/paises";
 import { formatearMientrasEscribe } from "@/lib/telefono";
-import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 export function CrearClienteForm() {
   const [state, formAction, pending] = useActionState<CrearClienteState, FormData>(
-    crearTenantManual,
+    invitarClienteManual,
     null
   );
   const [pais, setPais] = useState("ES");
   const [telefono, setTelefono] = useState("");
-  const [planTarifa, setPlanTarifa] = useState("gratis");
-  const [copiado, setCopiado] = useState(false);
 
   if (state && "ok" in state) {
     return (
       <div className="max-w-md space-y-4 rounded-lg border p-6">
-        <h2 className="text-lg font-semibold">Cliente creado</h2>
+        <h2 className="text-lg font-semibold">Invitación enviada</h2>
         <p className="text-sm text-muted-foreground">
-          Comparte esta contraseña temporal con el cliente para que inicie sesión — no volverá a
-          mostrarse.
+          Le hemos mandado un email al cliente para que complete su registro: elige él mismo si es
+          Asesor o Inmobiliaria y su plan, igual que en el alta pública.
         </p>
-        <div className="flex items-center gap-2">
-          <input
-            readOnly
-            value={state.password}
-            onFocus={(e) => e.target.select()}
-            className="flex-1 rounded-md border bg-muted px-2.5 py-1.5 font-mono text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard.writeText(state.password);
-              setCopiado(true);
-            }}
-            className="shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-          >
-            {copiado ? "Copiada" : "Copiar"}
-          </button>
-        </div>
         <div className="flex gap-2">
           <Link
-            href={`/superadmin/clientes/${state.tenantId}`}
+            href="/superadmin/clientes"
             className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            Ver ficha del cliente
+            Volver a Clientes
           </Link>
           <Link
-            href="/superadmin/clientes"
+            href="/superadmin/clientes/nuevo"
             className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
           >
-            Volver a Clientes
+            Invitar a otro cliente
           </Link>
         </div>
       </div>
@@ -138,58 +117,6 @@ export function CrearClienteForm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <label htmlFor="tipo_plan" className="text-sm font-medium">
-            Tipo
-          </label>
-          <select
-            id="tipo_plan"
-            name="tipo_plan"
-            defaultValue="asesor"
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          >
-            <option value="asesor">Asesor</option>
-            <option value="inmobiliaria">Inmobiliaria</option>
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="plan_tarifa" className="text-sm font-medium">
-            Plan
-          </label>
-          <select
-            id="plan_tarifa"
-            name="plan_tarifa"
-            value={planTarifa}
-            onChange={(e) => setPlanTarifa(e.target.value)}
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          >
-            <option value="gratis">Gratis</option>
-            <option value="pago">PRO</option>
-          </select>
-        </div>
-      </div>
-
-      {planTarifa === "pago" && (
-        <div className="space-y-2">
-          <label htmlFor="metodo_pago" className="text-sm font-medium">
-            Método de pago recibido
-          </label>
-          <select
-            id="metodo_pago"
-            name="metodo_pago"
-            defaultValue={METODOS_PAGO[0]}
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          >
-            {METODOS_PAGO.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {state && "error" in state && <p className="text-sm text-destructive">{state.error}</p>}
 
       <button
@@ -197,7 +124,7 @@ export function CrearClienteForm() {
         disabled={pending}
         className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {pending ? "Creando..." : "Crear cliente"}
+        {pending ? "Enviando invitación..." : "Enviar invitación"}
       </button>
     </form>
   );
