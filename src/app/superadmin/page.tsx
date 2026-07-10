@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Users, Crown, TrendingUp, Clock, UserPlus, UserMinus, type LucideIcon } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { precioMensualTotal } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
@@ -50,13 +51,43 @@ function bucketsDeRegistros(rango: Rango, tenants: TenantFila[]) {
   });
 }
 
-function Kpi({ label, valor, nota }: { label: string; valor: string | number; nota?: string }) {
+const COLORES_KPI = {
+  indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500",
+  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-500",
+  sky: "bg-sky-500/10 text-sky-600 dark:text-sky-500",
+  rose: "bg-rose-500/10 text-rose-600 dark:text-rose-500",
+};
+
+function Kpi({
+  label,
+  valor,
+  nota,
+  icon: Icon,
+  color,
+  href,
+}: {
+  label: string;
+  valor: string | number;
+  nota?: string;
+  icon: LucideIcon;
+  color: keyof typeof COLORES_KPI;
+  href: string;
+}) {
   return (
-    <div className="rounded-lg border p-4">
-      <p className="text-2xl font-semibold">{valor}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      {nota && <p className="mt-1 text-[10px] text-muted-foreground/70">{nota}</p>}
-    </div>
+    <Link
+      href={href}
+      className="group flex flex-col gap-2 rounded-lg border p-4 transition-colors hover:border-primary/40 hover:bg-accent/50"
+    >
+      <div className={cn("flex size-8 items-center justify-center rounded-md", COLORES_KPI[color])}>
+        <Icon className="size-4" />
+      </div>
+      <div>
+        <p className="text-2xl font-semibold">{valor}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {nota && <p className="mt-0.5 text-[10px] text-muted-foreground/70">{nota}</p>}
+      </div>
+    </Link>
   );
 }
 
@@ -101,7 +132,7 @@ function GraficoRegistros({
         {buckets.map((b, i) => (
           <div key={i} className="group relative flex h-full flex-1 flex-col items-center justify-end">
             <div
-              className="w-full max-w-6 rounded-t-sm bg-primary transition-colors group-hover:bg-primary/80"
+              className="w-full max-w-6 rounded-t-sm bg-indigo-500 transition-colors group-hover:bg-indigo-400"
               style={{ height: `${(b.valor / max) * 100}%`, minHeight: b.valor > 0 ? "2px" : "0" }}
             />
             <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs whitespace-nowrap text-background opacity-0 transition-opacity group-hover:opacity-100">
@@ -132,17 +163,18 @@ export default async function SuperadminPage({
   const admin = createAdminClient();
   const config = await obtenerConfigPlanes();
 
-  const inicioHoy = new Date();
-  inicioHoy.setHours(0, 0, 0, 0);
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
 
   const [
     { count: clientesActivos },
     { count: inmobiliarias },
     { count: asesores },
-    { count: registrosHoy },
+    { count: nuevosMes },
     { data: tenantsPago },
-    { count: clientesFree },
-    { count: cancelaciones },
+    { count: cancelados },
+    { count: pedidosPendientes },
     { data: todosTenants },
   ] = await Promise.all([
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
@@ -151,13 +183,13 @@ export default async function SuperadminPage({
     admin
       .from("tenants")
       .select("id", { count: "exact", head: true })
-      .gte("creado_en", inicioHoy.toISOString()),
+      .gte("creado_en", inicioMes.toISOString()),
     admin
       .from("tenants")
       .select("tipo_plan, plan_tarifa, admins_extra, agentes_extra")
       .eq("plan_tarifa", "pago"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("plan_tarifa", "gratis"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "cancelado"),
+    admin.from("pedidos").select("id", { count: "exact", head: true }).eq("estado", "iniciado"),
     admin
       .from("tenants")
       .select("id, nombre, tipo_plan, plan_tarifa, pais, creado_en")
@@ -167,26 +199,58 @@ export default async function SuperadminPage({
   const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
   const tenants = (todosTenants ?? []) as TenantFila[];
 
-  const kpisFila1 = [
-    { label: "Clientes activos", valor: clientesActivos ?? 0 },
-    { label: "Inmobiliarias", valor: inmobiliarias ?? 0 },
-    { label: "Asesores", valor: asesores ?? 0 },
-    { label: "Registros hoy", valor: registrosHoy ?? 0 },
-    { label: "MRR", valor: `${mrr.toFixed(2).replace(".", ",")}€` },
+  const kpis: {
+    label: string;
+    valor: string | number;
+    nota?: string;
+    icon: LucideIcon;
+    color: keyof typeof COLORES_KPI;
+    href: string;
+  }[] = [
     {
-      label: "Facturación del mes",
-      valor: `${mrr.toFixed(2).replace(".", ",")}€`,
-      nota: "estimado según planes activos",
+      label: "Clientes activos",
+      valor: clientesActivos ?? 0,
+      nota: `${inmobiliarias ?? 0} inmobiliarias · ${asesores ?? 0} asesores`,
+      icon: Users,
+      color: "indigo",
+      href: "/superadmin/clientes",
     },
-  ];
-
-  const kpisFila2 = [
-    { label: "Visitas web", valor: "—", nota: "sin analítica conectada" },
-    { label: "Conversión registro", valor: "—", nota: "sin analítica conectada" },
-    { label: "Clientes PRO", valor: tenantsPago?.length ?? 0 },
-    { label: "Clientes FREE", valor: clientesFree ?? 0 },
-    { label: "Cancelaciones", valor: cancelaciones ?? 0 },
-    { label: "Tickets abiertos", valor: "—", nota: "sin sistema de tickets" },
+    {
+      label: "Clientes PRO",
+      valor: tenantsPago?.length ?? 0,
+      icon: Crown,
+      color: "emerald",
+      href: "/superadmin/suscripciones",
+    },
+    {
+      label: "MRR",
+      valor: `${mrr.toFixed(2).replace(".", ",")}€`,
+      icon: TrendingUp,
+      color: "emerald",
+      href: "/superadmin/finanzas",
+    },
+    {
+      label: "Pedidos pendientes",
+      valor: pedidosPendientes ?? 0,
+      nota: pedidosPendientes ? "esperando tu confirmación" : undefined,
+      icon: Clock,
+      color: "amber",
+      href: "/superadmin/pedidos",
+    },
+    {
+      label: "Nuevos este mes",
+      valor: nuevosMes ?? 0,
+      icon: UserPlus,
+      color: "sky",
+      href: "/superadmin/clientes",
+    },
+    {
+      label: "Cancelados",
+      valor: cancelados ?? 0,
+      icon: UserMinus,
+      color: "rose",
+      href: "/superadmin/clientes",
+    },
   ];
 
   const buckets = bucketsDeRegistros(rango, tenants);
@@ -204,16 +268,11 @@ export default async function SuperadminPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Panel de Superadmin</h1>
-        <p className="text-sm text-muted-foreground">Vista general de todos los tenants del CRM.</p>
+        <p className="text-sm text-muted-foreground">Cómo va el negocio, de un vistazo.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        {kpisFila1.map((k) => (
-          <Kpi key={k.label} {...k} />
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        {kpisFila2.map((k) => (
+        {kpis.map((k) => (
           <Kpi key={k.label} {...k} />
         ))}
       </div>
@@ -240,7 +299,7 @@ export default async function SuperadminPage({
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-primary"
+                      className="h-full rounded-full bg-indigo-500"
                       style={{ width: `${(n / maxPais) * 100}%` }}
                     />
                   </div>
@@ -274,8 +333,17 @@ export default async function SuperadminPage({
                   <tr key={t.id}>
                     <td className="py-1.5 pr-2 font-medium">{t.nombre}</td>
                     <td className="py-1.5 pr-2 text-muted-foreground capitalize">{t.tipo_plan}</td>
-                    <td className="py-1.5 pr-2 text-muted-foreground">
-                      {t.plan_tarifa === "pago" ? "PRO" : "Gratis"}
+                    <td className="py-1.5 pr-2">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-medium",
+                          t.plan_tarifa === "pago"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {t.plan_tarifa === "pago" ? "PRO" : "Gratis"}
+                      </span>
                     </td>
                     <td className="py-1.5 pr-2 text-muted-foreground">{banderaPais(t.pais)}</td>
                     <td className="py-1.5 text-muted-foreground">
