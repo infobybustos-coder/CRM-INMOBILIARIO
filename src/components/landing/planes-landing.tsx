@@ -6,10 +6,10 @@ import { Check, UserRound, Building2 } from "lucide-react";
 import { type TipoPlan, type ConfigPlanes } from "@/lib/planes";
 import { cn } from "@/lib/utils";
 
-const euros = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
-
-export function PlanesLanding({ config }: { config: ConfigPlanes }) {
+export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda: "EUR" | "USD" }) {
   const [tipo, setTipo] = useState<TipoPlan>("asesor");
+  const simbolo = moneda === "USD" ? "$" : "€";
+  const formatearPrecio = (n: number) => `${n.toFixed(2).replace(".", ",")}${simbolo}`;
 
   const planes: Record<TipoPlan, { gratis: string[]; pago: string[]; precioPago: number }> = {
     asesor: {
@@ -37,8 +37,8 @@ export function PlanesLanding({ config }: { config: ConfigPlanes }) {
       pago: [
         "Propietarios, inmuebles y compradores ilimitados",
         `${config.inmobiliariaProAdminsIncluidos} administradores y ${config.inmobiliariaProAsesoresIncluidos} asesores incluidos`,
-        `Asesor adicional: ${euros(config.precioAsesorExtra)}/mes`,
-        `Administrador adicional: ${euros(config.precioAdminExtra)}/mes`,
+        `Asesor adicional: ${formatearPrecio(config.precioAsesorExtra)}/mes`,
+        `Administrador adicional: ${formatearPrecio(config.precioAdminExtra)}/mes`,
       ],
       precioPago: config.inmobiliariaProPrecio,
     },
@@ -75,7 +75,7 @@ export function PlanesLanding({ config }: { config: ConfigPlanes }) {
         <div className="flex flex-col gap-4 rounded-xl border p-6">
           <div>
             <h3 className="font-semibold">Gratis</h3>
-            <p className="mt-1 text-3xl font-semibold">0€</p>
+            <p className="mt-1 text-3xl font-semibold">{`0${simbolo}`}</p>
           </div>
           <ul className="flex-1 space-y-2 text-sm">
             {planes[tipo].gratis.map((c) => (
@@ -96,7 +96,7 @@ export function PlanesLanding({ config }: { config: ConfigPlanes }) {
           <div>
             <h3 className="font-semibold">PRO</h3>
             <p className="mt-1 text-3xl font-semibold">
-              {euros(planes[tipo].precioPago)}
+              {formatearPrecio(planes[tipo].precioPago)}
               <span className="text-sm font-normal text-muted-foreground">/mes</span>
             </p>
           </div>

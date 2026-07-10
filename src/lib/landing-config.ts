@@ -17,22 +17,22 @@ export type LandingConfig = {
 };
 
 export const CONFIG_LANDING_POR_DEFECTO: LandingConfig = {
-  heroTitulo: "El CRM que tu inmobiliaria necesita para vender más, sin caos",
+  heroTitulo: "Vende más inmuebles, con menos caos",
   heroSubtitulo:
-    "Gestiona propietarios, inmuebles, compradores y tu equipo desde un solo sitio. Empieza gratis, sin tarjeta de crédito.",
-  heroCtaPrincipal: "Empieza gratis",
+    "El CRM pensado para asesores e inmobiliarias: propietarios, inmuebles, compradores, visitas y tu equipo, todo en un solo lugar. Empieza gratis, sin tarjeta de crédito.",
+  heroCtaPrincipal: "Empieza gratis ahora",
   heroCtaSecundario: "Ver planes y precios",
-  caracteristica1Titulo: "Todo en un solo lugar",
+  caracteristica1Titulo: "Deja el Excel y el WhatsApp atrás",
   caracteristica1Descripcion:
-    "Propietarios, inmuebles, compradores y visitas organizados, sin hojas de cálculo ni WhatsApp perdido.",
-  caracteristica2Titulo: "Trabaja en equipo",
+    "Propietarios, inmuebles, compradores y visitas organizados en un mismo sitio, siempre al día.",
+  caracteristica2Titulo: "Trabaja en equipo, no en el caos",
   caracteristica2Descripcion:
     "Invita a tus asesores, reparte el trabajo y ve el rendimiento de cada uno en tiempo real.",
-  caracteristica3Titulo: "Crece a tu ritmo",
+  caracteristica3Titulo: "Crece sin sustos",
   caracteristica3Descripcion:
     "Empieza gratis y pasa a PRO cuando lo necesites, sin límite de propietarios, inmuebles ni compradores.",
-  ctaFinalTitulo: "¿Listo para ordenar tu negocio?",
-  ctaFinalSubtitulo: "Crea tu cuenta en menos de un minuto. Sin compromiso.",
+  ctaFinalTitulo: "¿Listo para dejar el caos atrás?",
+  ctaFinalSubtitulo: "Únete gratis en menos de un minuto. Sin tarjeta, sin compromiso.",
 };
 
 export async function obtenerConfigLanding(): Promise<LandingConfig> {
