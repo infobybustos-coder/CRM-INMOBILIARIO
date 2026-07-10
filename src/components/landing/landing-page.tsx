@@ -20,51 +20,7 @@ import { type ConfigPlanes } from "@/lib/planes";
 import { PlanesLanding } from "./planes-landing";
 
 const ICONOS_CARACTERISTICAS = [LayoutGrid, Users, Rocket];
-
-const PROBLEMAS = [
-  "Los datos de tus propietarios están repartidos entre WhatsApp, notas y hojas de cálculo.",
-  "No sabes qué inmuebles siguen disponibles sin llamar a alguien de tu equipo.",
-  "Se te escapan compradores porque nadie hizo seguimiento a tiempo.",
-  "No tienes ni idea de cuánto está vendiendo cada asesor.",
-];
-
-const MODULOS = [
-  { icon: UserRound, titulo: "Propietarios", descripcion: "Capta y organiza a tus propietarios sin perder ni un contacto." },
-  { icon: Home, titulo: "Inmuebles", descripcion: "Toda tu cartera en un mismo sitio, con el estado siempre al día." },
-  { icon: UserSearch, titulo: "Compradores", descripcion: "Haz seguimiento y no dejes escapar ninguna oportunidad." },
-  { icon: CalendarCheck, titulo: "Visitas y agenda", descripcion: "Planifica visitas y tareas sin depender de la memoria." },
-  { icon: UsersRound, titulo: "Equipo", descripcion: "Reparte el trabajo entre tus asesores y ve quién rinde más." },
-  { icon: BarChart3, titulo: "Rendimiento", descripcion: "Métricas claras de tu negocio, sin montar una hoja de cálculo." },
-];
-
-const PASOS = [
-  { numero: "1", titulo: "Crea tu cuenta gratis", descripcion: "Sin tarjeta de crédito, en menos de un minuto." },
-  { numero: "2", titulo: "Añade tu cartera", descripcion: "Propietarios, inmuebles y compradores, todo en su sitio." },
-  { numero: "3", titulo: "Vende con orden", descripcion: "Haz seguimiento, reparte tareas y cierra más operaciones." },
-];
-
-const PREGUNTAS = [
-  {
-    pregunta: "¿Necesito tarjeta de crédito para empezar?",
-    respuesta: "No. El plan Gratis no pide tarjeta ni ningún compromiso de pago.",
-  },
-  {
-    pregunta: "¿Puedo cancelar cuando quiera?",
-    respuesta: "Sí, puedes volver al plan Gratis cuando quieras desde tu propia cuenta.",
-  },
-  {
-    pregunta: "¿Sirve para un asesor independiente o solo para inmobiliarias?",
-    respuesta: "Para ambos: hay un plan pensado específicamente para cada caso.",
-  },
-  {
-    pregunta: "¿Mis datos están seguros y aislados de otras cuentas?",
-    respuesta: "Sí. Cada cuenta tiene sus datos completamente separados y protegidos.",
-  },
-  {
-    pregunta: "¿Qué pasa si supero el límite del plan Gratis?",
-    respuesta: "Te lo indicamos claramente, y puedes pasar a PRO cuando quieras: sin límite de propietarios, inmuebles ni compradores.",
-  },
-];
+const ICONOS_MODULOS = [UserRound, Home, UserSearch, CalendarCheck, UsersRound, BarChart3];
 
 export function LandingPage({
   config,
@@ -79,6 +35,31 @@ export function LandingPage({
     { titulo: config.caracteristica1Titulo, descripcion: config.caracteristica1Descripcion },
     { titulo: config.caracteristica2Titulo, descripcion: config.caracteristica2Descripcion },
     { titulo: config.caracteristica3Titulo, descripcion: config.caracteristica3Descripcion },
+  ];
+
+  const problemas = [config.problema1, config.problema2, config.problema3, config.problema4];
+
+  const modulos = [
+    { titulo: config.modulo1Titulo, descripcion: config.modulo1Descripcion },
+    { titulo: config.modulo2Titulo, descripcion: config.modulo2Descripcion },
+    { titulo: config.modulo3Titulo, descripcion: config.modulo3Descripcion },
+    { titulo: config.modulo4Titulo, descripcion: config.modulo4Descripcion },
+    { titulo: config.modulo5Titulo, descripcion: config.modulo5Descripcion },
+    { titulo: config.modulo6Titulo, descripcion: config.modulo6Descripcion },
+  ];
+
+  const pasos = [
+    { numero: "1", titulo: config.paso1Titulo, descripcion: config.paso1Descripcion },
+    { numero: "2", titulo: config.paso2Titulo, descripcion: config.paso2Descripcion },
+    { numero: "3", titulo: config.paso3Titulo, descripcion: config.paso3Descripcion },
+  ];
+
+  const preguntas = [
+    { pregunta: config.faq1Pregunta, respuesta: config.faq1Respuesta },
+    { pregunta: config.faq2Pregunta, respuesta: config.faq2Respuesta },
+    { pregunta: config.faq3Pregunta, respuesta: config.faq3Respuesta },
+    { pregunta: config.faq4Pregunta, respuesta: config.faq4Respuesta },
+    { pregunta: config.faq5Pregunta, respuesta: config.faq5Respuesta },
   ];
 
   return (
@@ -100,7 +81,7 @@ export function LandingPage({
 
       <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-24">
         <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-          <ShieldCheck className="size-3.5" /> Software de gestión inmobiliaria
+          <ShieldCheck className="size-3.5" /> {config.badgeTexto}
         </span>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">{config.heroTitulo}</h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">{config.heroSubtitulo}</p>
@@ -117,13 +98,13 @@ export function LandingPage({
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> Gratis para siempre en el plan básico
+            <Check className="size-3.5 text-emerald-600" /> {config.trust1}
           </span>
           <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> Sin tarjeta de crédito
+            <Check className="size-3.5 text-emerald-600" /> {config.trust2}
           </span>
           <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> Cancela cuando quieras
+            <Check className="size-3.5 text-emerald-600" /> {config.trust3}
           </span>
         </div>
       </section>
@@ -138,8 +119,8 @@ export function LandingPage({
               <UserRound className="size-5" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold">Soy asesor independiente</p>
-              <p className="text-sm text-muted-foreground">Trabajo por mi cuenta y gestiono mi propio negocio.</p>
+              <p className="font-semibold">{config.quickAsesorTitulo}</p>
+              <p className="text-sm text-muted-foreground">{config.quickAsesorDescripcion}</p>
             </div>
             <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </Link>
@@ -152,8 +133,8 @@ export function LandingPage({
               <Building2 className="size-5" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold">Tengo una inmobiliaria</p>
-              <p className="text-sm text-muted-foreground">Tengo un equipo de asesores que coordinar.</p>
+              <p className="font-semibold">{config.quickInmobiliariaTitulo}</p>
+              <p className="text-sm text-muted-foreground">{config.quickInmobiliariaDescripcion}</p>
             </div>
             <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </Link>
@@ -162,16 +143,16 @@ export function LandingPage({
 
       <section className="border-t py-16">
         <div className="mx-auto max-w-2xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">¿Te suena esto?</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">{config.problemaTitulo}</h2>
           <div className="mt-8 space-y-3 text-left">
-            {PROBLEMAS.map((p) => (
+            {problemas.map((p) => (
               <div key={p} className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3.5 text-sm">
                 <X className="mt-0.5 size-4 shrink-0 text-rose-500" />
                 {p}
               </div>
             ))}
           </div>
-          <p className="mt-6 text-base font-medium">Con CRM Inmobiliario, todo eso desaparece.</p>
+          <p className="mt-6 text-base font-medium">{config.transicionTexto}</p>
         </div>
       </section>
 
@@ -194,29 +175,32 @@ export function LandingPage({
 
       <section className="py-16">
         <div className="mx-auto max-w-4xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Todo lo que necesitas, en un solo sitio</h2>
-          <p className="mt-2 text-muted-foreground">Nada de herramientas sueltas ni suscripciones cruzadas.</p>
+          <h2 className="text-2xl font-semibold sm:text-3xl">{config.moduloTitulo}</h2>
+          <p className="mt-2 text-muted-foreground">{config.moduloSubtitulo}</p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {MODULOS.map((m) => (
-              <div key={m.titulo} className="flex items-start gap-3 rounded-xl border p-4 text-left">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <m.icon className="size-4" />
+            {modulos.map((m, i) => {
+              const Icono = ICONOS_MODULOS[i];
+              return (
+                <div key={m.titulo} className="flex items-start gap-3 rounded-xl border p-4 text-left">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icono className="size-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{m.titulo}</h3>
+                    <p className="text-sm text-muted-foreground">{m.descripcion}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">{m.titulo}</h3>
-                  <p className="text-sm text-muted-foreground">{m.descripcion}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
       <section className="border-t bg-muted/40 py-16">
         <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Empieza en tres pasos</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">{config.pasosTitulo}</h2>
           <div className="mt-10 grid gap-8 sm:grid-cols-3">
-            {PASOS.map((p) => (
+            {pasos.map((p) => (
               <div key={p.numero} className="space-y-2">
                 <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   {p.numero}
@@ -230,10 +214,8 @@ export function LandingPage({
       </section>
 
       <section id="planes" className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <h2 className="text-2xl font-semibold sm:text-3xl">Planes claros, sin sorpresas</h2>
-        <p className="mt-2 text-muted-foreground">
-          Empieza gratis. Sin permanencia — cambia o cancela cuando quieras.
-        </p>
+        <h2 className="text-2xl font-semibold sm:text-3xl">{config.planesTitulo}</h2>
+        <p className="mt-2 text-muted-foreground">{config.planesSubtitulo}</p>
         <div className="mt-8">
           <PlanesLanding config={planes} moneda={moneda} />
         </div>
@@ -241,9 +223,9 @@ export function LandingPage({
 
       <section className="border-t py-16">
         <div className="mx-auto max-w-2xl px-4">
-          <h2 className="text-center text-2xl font-semibold sm:text-3xl">Preguntas frecuentes</h2>
+          <h2 className="text-center text-2xl font-semibold sm:text-3xl">{config.faqTitulo}</h2>
           <div className="mt-8 divide-y rounded-xl border">
-            {PREGUNTAS.map((p) => (
+            {preguntas.map((p) => (
               <div key={p.pregunta} className="p-4">
                 <p className="font-medium">{p.pregunta}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{p.respuesta}</p>
