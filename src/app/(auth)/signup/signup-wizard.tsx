@@ -13,7 +13,13 @@ import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 const euros = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 
-export function SignupWizard({ config }: { config: ConfigPlanes }) {
+export function SignupWizard({
+  config,
+  tipoInicial,
+}: {
+  config: ConfigPlanes;
+  tipoInicial?: TipoPlan | null;
+}) {
   const [state, formAction, pending] = useActionState(signUp, null);
   const [, startTransition] = useTransition();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -27,7 +33,7 @@ export function SignupWizard({ config }: { config: ConfigPlanes }) {
   const [pais, setPais] = useState("ES");
   const [telefono, setTelefono] = useState("");
   const [terminos, setTerminos] = useState(false);
-  const [tipoPlan, setTipoPlan] = useState<TipoPlan>("asesor");
+  const [tipoPlan, setTipoPlan] = useState<TipoPlan>(tipoInicial ?? "asesor");
   const [metodoPago, setMetodoPago] = useState<string>(METODOS_PAGO[0]);
 
   const errorPassword = useMemo(
@@ -107,7 +113,7 @@ export function SignupWizard({ config }: { config: ConfigPlanes }) {
       return;
     }
     setErrorPaso1(null);
-    setStep(2);
+    setStep(tipoInicial ? 3 : 2);
   }
 
   function enviar(planTarifa: PlanTarifa) {
@@ -403,7 +409,7 @@ export function SignupWizard({ config }: { config: ConfigPlanes }) {
 
             <button
               type="button"
-              onClick={() => setStep(2)}
+              onClick={() => setStep(tipoInicial ? 1 : 2)}
               disabled={pending}
               className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
             >

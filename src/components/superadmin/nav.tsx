@@ -10,6 +10,7 @@ import {
   Users,
   CreditCard,
   Headset,
+  Globe,
   Settings,
   Menu,
   X,
@@ -22,6 +23,7 @@ const ENLACES = [
   { href: "/superadmin/pedidos", label: "Pedidos", icon: ShoppingCart },
   { href: "/superadmin/clientes", label: "Clientes", icon: Users },
   { href: "/superadmin/suscripciones", label: "Suscripciones", icon: CreditCard },
+  { href: "/superadmin/landing", label: "Landing", icon: Globe },
   { href: "/superadmin/soporte", label: "Soporte", icon: Headset },
   { href: "/superadmin/configuracion", label: "Configuración", icon: Settings },
 ];
