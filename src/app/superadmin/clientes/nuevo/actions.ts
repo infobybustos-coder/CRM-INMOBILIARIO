@@ -51,11 +51,12 @@ export async function invitarClienteManual(
   });
 
   if (inviteError || !invitado.user) {
+    console.error("inviteUserByEmail error:", inviteError);
     return {
       error:
         inviteError?.message === "User already registered"
           ? "Ya existe una cuenta con ese email."
-          : "No se pudo enviar la invitación. Inténtalo de nuevo.",
+          : `No se pudo enviar la invitación: ${inviteError?.message ?? "error desconocido"}`,
     };
   }
 
