@@ -9,7 +9,6 @@ import { PAISES, prefijoPais, banderaPais } from "@/lib/paises";
 import { telefonoValido, formatearMientrasEscribe } from "@/lib/telefono";
 import { validarPassword } from "@/lib/validacion";
 import { type TipoPlan, type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
-import { METODOS_PAGO } from "@/lib/metodos-pago";
 
 const euros = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 
@@ -34,7 +33,6 @@ export function SignupWizard({
   const [telefono, setTelefono] = useState("");
   const [terminos, setTerminos] = useState(false);
   const [tipoPlan, setTipoPlan] = useState<TipoPlan>(tipoInicial ?? "asesor");
-  const [metodoPago, setMetodoPago] = useState<string>(METODOS_PAGO[0]);
 
   const errorPassword = useMemo(
     () => (password ? validarPassword(password) : null),
@@ -128,7 +126,7 @@ export function SignupWizard({
     fd.set("terminos", terminos ? "on" : "off");
     fd.set("tipo_plan", tipoPlan);
     fd.set("plan_tarifa", planTarifa);
-    fd.set("metodo_pago", metodoPago);
+    fd.set("metodo_pago", "Otro");
     startTransition(() => {
       formAction(fd);
     });
@@ -374,26 +372,9 @@ export function SignupWizard({
                   ))}
                 </ul>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Todavía no hay una pasarela de pago automática conectada. Elige cómo vas a pagar:
-                  tu cuenta se crea en Gratis y pasa a Profesional en cuanto confirmemos el pago.
+                  Todavía no hay una pasarela de pago automática conectada. Tu cuenta se crea en
+                  Gratis y pasa a Profesional en cuanto confirmemos el pago contigo.
                 </p>
-                <div className="mt-3 space-y-1.5">
-                  <label htmlFor="metodo_pago_signup" className="text-xs font-medium">
-                    ¿Cómo vas a pagar?
-                  </label>
-                  <select
-                    id="metodo_pago_signup"
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
-                  >
-                    {METODOS_PAGO.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
                 <Button
                   type="button"
                   onClick={() => enviar("pago")}
