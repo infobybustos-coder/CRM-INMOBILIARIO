@@ -2,12 +2,18 @@ import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/administradores/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
+import { AsientoPagadoBanner } from "@/components/inmobiliaria/equipo/asiento-pagado-banner";
 import { limiteAdmins } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AdminFila } from "./constantes";
 
-export default async function AdministradoresPage() {
+export default async function AdministradoresPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ asiento_pagado?: string }>;
+}) {
   const usuario = await requireAdminInmobiliaria();
+  const { asiento_pagado: asientoPagado } = await searchParams;
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
 
@@ -40,6 +46,8 @@ export default async function AdministradoresPage() {
         </div>
         <NuevoMiembro rol="admin" etiqueta="administrador" />
       </div>
+
+      {asientoPagado && <AsientoPagadoBanner tenantId={usuario.tenant_id} />}
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">

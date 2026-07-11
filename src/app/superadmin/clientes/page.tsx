@@ -6,6 +6,7 @@ import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
 import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
+import { EliminarTenantBoton } from "@/components/superadmin/eliminar-tenant-boton";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
@@ -86,12 +87,22 @@ export default async function ClientesPage({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Clientes</h1>
-        <Link
-          href="/superadmin/clientes/nuevo"
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          + Nuevo cliente
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/superadmin/clientes/exportar?${new URLSearchParams(
+              Object.entries(params).filter((entry): entry is [string, string] => Boolean(entry[1]))
+            ).toString()}`}
+            className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+          >
+            Exportar a Excel
+          </Link>
+          <Link
+            href="/superadmin/clientes/nuevo"
+            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            + Nuevo cliente
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -118,12 +129,13 @@ export default async function ClientesPage({
               <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Estado</th>
               <th className="px-3 py-2 font-medium">Registro</th>
+              <th className="px-3 py-2 font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {(tenants ?? []).length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
                   No hay tenants con esos filtros.
                 </td>
               </tr>
@@ -172,6 +184,9 @@ export default async function ClientesPage({
                         month: "short",
                         year: "numeric",
                       })}
+                    </td>
+                    <td className="px-3 py-2">
+                      <EliminarTenantBoton tenantId={t.id} nombreTenant={t.nombre} />
                     </td>
                   </tr>
                 );

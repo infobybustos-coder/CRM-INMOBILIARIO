@@ -10,6 +10,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { stripe } from "@/lib/stripe";
+import { siteUrl } from "@/lib/site-url";
+import { monedaVisitante } from "@/lib/geo";
+import { lineItemMultimoneda } from "@/lib/stripe-checkout";
 
 export type RolInvitable = "empleado" | "admin";
 
@@ -57,8 +60,7 @@ async function cobrarAsientoExtra(
 ): Promise<AsientoResultado> {
   const esAdmin = rol === "admin";
   const esPago = usuario.tenant?.plan_tarifa === "pago";
-  const subscriptionId = usuario.tenant?.stripe_subscription_id as string | null | undefined;
-  if (!esPago || !subscriptionId) return { requierePlanPro: true };
+  if (!esPago) return { requierePlanPro: true };
 
   const extraPriceId = esAdmin ? config.adminExtraStripePriceId : config.asesorExtraStripePriceId;
   if (!extraPriceId) {
@@ -68,6 +70,60 @@ async function cobrarAsientoExtra(
   }
 
   const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
+  const subscriptionId = usuario.tenant?.stripe_subscription_id as string | null | undefined;
+
+  // Si el PRO se activó a mano (antes de conectar Stripe, o por un
+  // superadmin), el tenant no tiene una suscripción de Stripe real a la
+  // que añadir el asiento: en ese caso abrimos un checkout de verdad en
+  // vez de intentar un cobro silencioso en segundo plano.
+  if (!subscriptionId) {
+    let checkoutUrl: string;
+    try {
+      const admin = createAdminClient();
+      let customerId = usuario.tenant?.stripe_customer_id as string | null | undefined;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: usuario.email,
+          metadata: { tenant_id: usuario.tenant_id },
+        });
+        customerId = customer.id;
+        await admin.from("tenants").update({ stripe_customer_id: customerId }).eq("id", usuario.tenant_id);
+      }
+
+      const url = await siteUrl();
+      const moneda = await monedaVisitante();
+      const destino = esAdmin ? "administradores" : "agentes";
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: customerId,
+        line_items: [await lineItemMultimoneda(extraPriceId, moneda, precio)],
+        custom_fields: [
+          {
+            key: "email_invitado",
+            label: { type: "custom", custom: `Email del ${esAdmin ? "administrador" : "asesor"} a añadir` },
+            type: "text",
+            text: { minimum_length: 5, maximum_length: 200 },
+          },
+        ],
+        success_url: `${url}/inmobiliaria/${destino}?asiento_pagado=1`,
+        cancel_url: `${url}/inmobiliaria/${destino}`,
+        metadata: {
+          tenant_id: usuario.tenant_id,
+          tipo_plan: esAdmin ? "admin_extra" : "asesor_extra",
+          invitado_por: usuario.id,
+        },
+        subscription_data: {
+          metadata: { tenant_id: usuario.tenant_id, tipo_plan: esAdmin ? "admin_extra" : "asesor_extra" },
+        },
+      });
+      if (!session.url) return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+      checkoutUrl = session.url;
+    } catch (err) {
+      console.error("Stripe: no se pudo iniciar el pago del asiento extra:", err);
+      return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+    }
+    redirect(checkoutUrl);
+  }
 
   try {
     // El importe se genera al vuelo con price_data (mismo producto, mismo
