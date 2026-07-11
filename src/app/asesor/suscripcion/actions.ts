@@ -103,7 +103,7 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
         customer: customerId,
         line_items: [{ price: config.asesorProStripePriceId, quantity: 1 }],
         success_url: `${url}/asesor/ajustes?pago=exito`,
-        cancel_url: `${url}/asesor/suscripcion/pago?pago=cancelado`,
+        cancel_url: `${url}/asesor/ajustes?pago=cancelado`,
         metadata: { tenant_id: usuario.tenant_id, tipo_plan: "asesor" },
         subscription_data: { metadata: { tenant_id: usuario.tenant_id, tipo_plan: "asesor" } },
       });

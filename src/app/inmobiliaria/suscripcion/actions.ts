@@ -108,7 +108,7 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
         customer: customerId,
         line_items: [{ price: config.inmobiliariaProStripePriceId, quantity: 1 }],
         success_url: `${url}/inmobiliaria/suscripcion?pago=exito`,
-        cancel_url: `${url}/inmobiliaria/suscripcion/pago?pago=cancelado`,
+        cancel_url: `${url}/inmobiliaria/suscripcion?pago=cancelado`,
         metadata: { tenant_id: usuario.tenant_id, tipo_plan: "inmobiliaria" },
         subscription_data: { metadata: { tenant_id: usuario.tenant_id, tipo_plan: "inmobiliaria" } },
       });

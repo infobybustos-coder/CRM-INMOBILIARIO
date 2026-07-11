@@ -2,6 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // Las rutas de API gestionan su propia autenticación (p. ej. el webhook
+  // de Stripe verifica la firma de la petición) y nunca llevan cookie de
+  // sesión de usuario, así que no deben pasar por la redirección a /login.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

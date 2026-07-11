@@ -7,9 +7,15 @@ import { SelectorPlan } from "@/components/asesor/suscripcion/selector-plan";
 import { esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 
-export default async function AjustesPage() {
+export default async function AjustesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pago?: string }>;
+}) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
+
+  const { pago } = await searchParams;
 
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
@@ -44,6 +50,17 @@ export default async function AjustesPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Configuración</h1>
+
+      {pago === "exito" && (
+        <p className="max-w-lg rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-500">
+          Pago confirmado — tu plan ya es PRO.
+        </p>
+      )}
+      {pago === "cancelado" && (
+        <p className="max-w-lg rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
+          Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
+        </p>
+      )}
 
       <div className="max-w-lg rounded-lg border p-4">
         <h2 className="text-sm font-medium">Tu plan</h2>
@@ -82,8 +99,9 @@ export default async function AjustesPage() {
           pedidoPendiente={(pedidosPendientes ?? 0) > 0}
         />
         <p className="text-xs text-muted-foreground">
-          No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un
-          administrador confirma el pago manualmente antes de activar el plan.
+          {config.asesorProStripePriceId
+            ? "El pago se procesa de forma segura con Stripe y tu plan se activa automáticamente al confirmarse."
+            : "No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un administrador confirma el pago manualmente antes de activar el plan."}
         </p>
       </div>
 

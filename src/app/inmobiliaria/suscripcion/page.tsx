@@ -15,8 +15,13 @@ const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
   impago: "Impago",
 };
 
-export default async function SuscripcionPage() {
+export default async function SuscripcionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pago?: string }>;
+}) {
   const usuario = await requireAdminInmobiliaria();
+  const { pago } = await searchParams;
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
 
@@ -62,6 +67,17 @@ export default async function SuscripcionPage() {
       <ConfiguracionTabs />
 
       <h2 className="text-lg font-semibold">Suscripción</h2>
+
+      {pago === "exito" && (
+        <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-500">
+          Pago confirmado — tu plan ya es PRO.
+        </p>
+      )}
+      {pago === "cancelado" && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
+          Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
+        </p>
+      )}
 
       <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <div>
@@ -156,9 +172,9 @@ export default async function SuscripcionPage() {
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un
-        administrador confirma el pago manualmente antes de activar el plan. La gestión de pago y
-        las facturas estarán disponibles próximamente.
+        {config.inmobiliariaProStripePriceId
+          ? "El pago se procesa de forma segura con Stripe y tu plan se activa automáticamente al confirmarse. La gestión de pago y las facturas estarán disponibles próximamente."
+          : "No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un administrador confirma el pago manualmente antes de activar el plan. La gestión de pago y las facturas estarán disponibles próximamente."}
       </p>
     </div>
   );
