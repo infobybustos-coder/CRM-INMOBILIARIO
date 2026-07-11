@@ -18,6 +18,8 @@ import {
 import { type LandingConfig } from "@/lib/landing-config";
 import { type ConfigPlanes } from "@/lib/planes";
 import { PlanesLanding } from "./planes-landing";
+import { WhatsAppFlotante } from "./whatsapp-flotante";
+import { ProductoPreview } from "./producto-preview";
 
 const ICONOS_CARACTERISTICAS = [LayoutGrid, Users, Rocket];
 const ICONOS_MODULOS = [UserRound, Home, UserSearch, CalendarCheck, UsersRound, BarChart3];
@@ -204,6 +206,8 @@ export function LandingPage({
         </div>
       </section>
 
+      <ProductoPreview />
+
       <section className="border-t bg-muted/40 py-16">
         <div className="mx-auto max-w-3xl px-4 text-center">
           <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.pasosTitulo}</h2>
@@ -265,6 +269,8 @@ export function LandingPage({
           </Link>
         </div>
       </footer>
+
+      <WhatsAppFlotante />
     </div>
   );
 }
