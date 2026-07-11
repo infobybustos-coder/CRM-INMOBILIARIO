@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono, telefonoValido } from "@/lib/telefono";
 import { siteUrl } from "@/lib/site-url";
 
-export type CrearClienteState = { error: string } | { ok: true } | null;
+export type CrearClienteState = { error: string } | { ok: true; link: string | null; telefono: string } | null;
 
 export async function invitarClienteManual(
   _prev: CrearClienteState,
@@ -37,8 +37,10 @@ export async function invitarClienteManual(
     return { error: "Ya existe una cuenta con ese teléfono." };
   }
 
+  const redirectTo = `${await siteUrl()}/auth/callback?next=/completar-cuenta`;
+
   const { data: invitado, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${await siteUrl()}/auth/callback?next=/completar-cuenta`,
+    redirectTo,
   });
 
   if (inviteError || !invitado.user) {
@@ -64,5 +66,20 @@ export async function invitarClienteManual(
     return { error: "No se pudo registrar la invitación. Inténtalo de nuevo." };
   }
 
-  return { ok: true };
+  // El email ya se ha enviado arriba. Generamos además el mismo tipo de
+  // enlace de acceso para poder compartirlo a mano por WhatsApp — si por
+  // lo que sea falla, no se bloquea el alta: el email ya salió.
+  let link: string | null = null;
+  try {
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo },
+    });
+    if (!linkError) link = linkData?.properties?.action_link ?? null;
+  } catch (err) {
+    console.error("generateLink error:", err);
+  }
+
+  return { ok: true, link, telefono };
 }

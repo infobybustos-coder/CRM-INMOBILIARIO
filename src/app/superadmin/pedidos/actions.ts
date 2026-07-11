@@ -60,3 +60,28 @@ export async function cancelarPedido(pedidoId: string) {
   await admin.from("pedidos").update({ estado: "cancelado" }).eq("id", pedidoId);
   revalidarPedidos(pedido.tenant_id);
 }
+
+// Borra el registro por completo (a diferencia de cancelar, que solo
+// cambia el estado). Pensado para limpiar pedidos de prueba: no revierte
+// nada del plan del tenant, solo elimina el registro del pedido.
+export async function eliminarPedido(pedidoId: string) {
+  const superadmin = await requireSuperadmin();
+  const admin = createAdminClient();
+
+  const { data: pedido } = await admin
+    .from("pedidos")
+    .select("tenant_id, concepto")
+    .eq("id", pedidoId)
+    .maybeSingle();
+  if (!pedido) return;
+
+  await admin.from("pedidos").delete().eq("id", pedidoId);
+
+  await admin.from("superadmin_auditoria").insert({
+    accion: "eliminar_pedido",
+    detalle: `Pedido "${pedido.concepto}" (${pedidoId}) eliminado.`,
+    actor_email: superadmin.email,
+  });
+
+  revalidarPedidos(pedido.tenant_id);
+}

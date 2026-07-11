@@ -114,11 +114,7 @@ export default async function PedidosPage() {
                       })}
                     </td>
                     <td className="px-3 py-2">
-                      {p.estado === "iniciado" ? (
-                        <AccionesPedido pedidoId={p.id} />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <AccionesPedido pedidoId={p.id} estado={p.estado} />
                     </td>
                   </tr>
                 );

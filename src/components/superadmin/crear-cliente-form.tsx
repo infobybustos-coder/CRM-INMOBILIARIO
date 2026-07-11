@@ -2,9 +2,11 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { Copy, Check } from "lucide-react";
 import { invitarClienteManual, type CrearClienteState } from "@/app/superadmin/clientes/nuevo/actions";
 import { PAISES, prefijoPais, banderaPais } from "@/lib/paises";
 import { formatearMientrasEscribe } from "@/lib/telefono";
+import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
 
 export function CrearClienteForm() {
   const [state, formAction, pending] = useActionState<CrearClienteState, FormData>(
@@ -13,8 +15,13 @@ export function CrearClienteForm() {
   );
   const [pais, setPais] = useState("ES");
   const [telefono, setTelefono] = useState("");
+  const [copiado, setCopiado] = useState(false);
 
   if (state && "ok" in state) {
+    const mensajeWhatsapp = state.link
+      ? `Hola, para completar el alta en CRM Inmobiliario entra aquí y dinos si eres asesor o inmobiliaria: ${state.link}`
+      : undefined;
+
     return (
       <div className="max-w-md space-y-4 rounded-lg border p-6">
         <h2 className="text-lg font-semibold">Invitación enviada</h2>
@@ -22,6 +29,34 @@ export function CrearClienteForm() {
           Le hemos mandado un email al cliente para que complete su registro: elige él mismo si es
           Asesor o Inmobiliaria y su plan, igual que en el alta pública.
         </p>
+
+        {state.link && (
+          <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+            <p className="text-xs font-medium text-muted-foreground">
+              También puedes compartir el mismo enlace a mano:
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                readOnly
+                value={state.link}
+                className="w-full min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(state.link!);
+                  setCopiado(true);
+                }}
+                className="flex size-8 shrink-0 items-center justify-center rounded-md border hover:bg-accent"
+                aria-label="Copiar enlace"
+              >
+                {copiado ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+              </button>
+            </div>
+            <WhatsAppBoton telefono={state.telefono} mensaje={mensajeWhatsapp} etiqueta="Enviar por WhatsApp" />
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Link
             href="/superadmin/clientes"

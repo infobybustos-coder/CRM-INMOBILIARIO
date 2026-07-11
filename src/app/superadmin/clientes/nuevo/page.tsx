@@ -11,7 +11,8 @@ export default function NuevoClientePage() {
         <h1 className="text-2xl font-semibold">Nuevo cliente</h1>
         <p className="text-sm text-muted-foreground">
           Pon los datos de contacto y le enviamos un email para que complete su registro él mismo
-          — elige Asesor o Inmobiliaria y su plan, igual que en el alta pública.
+          — elige Asesor o Inmobiliaria y su plan, igual que en el alta pública. También podrás
+          compartirle el mismo enlace por WhatsApp.
         </p>
       </div>
       <CrearClienteForm />

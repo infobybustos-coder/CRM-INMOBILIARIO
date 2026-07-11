@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { precioMensualTotal, precioPlan } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { banderaPais, nombrePais } from "@/lib/paises";
+import { BorrarHistorialMrrBoton } from "@/components/superadmin/borrar-historial-mrr-boton";
 
 type Tenant = {
   id: string;
@@ -141,7 +142,10 @@ export default async function FinanzasPage() {
       </div>
 
       <div className="rounded-lg border p-4">
-        <h2 className="mb-1 text-sm font-semibold">Evolución del MRR</h2>
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Evolución del MRR</h2>
+          {puntos.length > 0 && <BorrarHistorialMrrBoton />}
+        </div>
         <p className="mb-3 text-xs text-muted-foreground">
           Se registra una foto diaria a partir de hoy — todavía no hay histórico anterior.
         </p>
