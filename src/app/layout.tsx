@@ -18,7 +18,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "CRM Inmobiliario",
+  title: "Ambraio",
   description: "El CRM que tu inmobiliaria necesita para vender más, sin caos.",
 };
 

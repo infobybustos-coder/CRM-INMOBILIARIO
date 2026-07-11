@@ -42,7 +42,7 @@ function MarcoNavegador({ titulo, children }: { titulo: string; children: React.
 
 function MockCentroControl() {
   return (
-    <MarcoNavegador titulo="tuinmobiliaria.crminmobiliario.com/centro-de-control">
+    <MarcoNavegador titulo="tuinmobiliaria.ambraio.com/centro-de-control">
       <p className="text-[11px] font-medium text-neutral-400">Centro de Control</p>
       <p className="mt-0.5 text-sm font-semibold">Buenas tardes, Marta</p>
 
@@ -92,7 +92,7 @@ function MockAgenda() {
   const conEventos = new Set([3, 6, 11, 14, 19, 24]);
 
   return (
-    <MarcoNavegador titulo="tuinmobiliaria.crminmobiliario.com/agenda">
+    <MarcoNavegador titulo="tuinmobiliaria.ambraio.com/agenda">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-medium text-neutral-400">Agenda y Tareas</p>
         <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[9px] font-medium text-neutral-500">

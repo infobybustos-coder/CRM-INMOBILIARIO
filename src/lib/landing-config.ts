@@ -83,7 +83,7 @@ export const CONFIG_LANDING_POR_DEFECTO: LandingConfig = {
   problema2: "No sabes qué inmuebles siguen disponibles sin llamar a alguien de tu equipo.",
   problema3: "Se te escapan compradores porque nadie hizo seguimiento a tiempo.",
   problema4: "No tienes ni idea de cuánto está vendiendo cada asesor.",
-  transicionTexto: "Con CRM Inmobiliario, todo eso desaparece.",
+  transicionTexto: "Con Ambraio, todo eso desaparece.",
   caracteristica1Titulo: "Deja el Excel y el WhatsApp atrás",
   caracteristica1Descripcion:
     "Propietarios, inmuebles, compradores y visitas organizados en un mismo sitio, siempre al día.",

@@ -19,7 +19,7 @@ export function CrearClienteForm() {
 
   if (state && "ok" in state) {
     const mensajeWhatsapp = state.link
-      ? `Hola, para completar el alta en CRM Inmobiliario entra aquí y dinos si eres asesor o inmobiliaria: ${state.link}`
+      ? `Hola, para completar el alta en Ambraio entra aquí y dinos si eres asesor o inmobiliaria: ${state.link}`
       : undefined;
 
     return (

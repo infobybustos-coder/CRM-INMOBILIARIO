@@ -67,7 +67,7 @@ export function LandingPage({
   return (
     <div className="tema-landing min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
-        <span className="font-serif text-xl font-semibold tracking-tight">CRM Inmobiliario</span>
+        <span className="font-serif text-xl font-semibold tracking-tight">Ambraio</span>
         <nav className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Iniciar sesión
@@ -259,7 +259,7 @@ export function LandingPage({
       </section>
 
       <footer className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:justify-between">
-        <span>© {new Date().getFullYear()} CRM Inmobiliario</span>
+        <span>© {new Date().getFullYear()} Ambraio</span>
         <div className="flex gap-4">
           <Link href="/terminos" className="hover:text-foreground">
             Términos y Condiciones

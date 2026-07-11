@@ -2,7 +2,7 @@ import { MessageCircle } from "lucide-react";
 
 const NUMERO_WHATSAPP = "34681810919";
 const MENSAJE_POR_DEFECTO =
-  "Hola 👋, estoy mirando el CRM Inmobiliario y tengo una duda antes de crear mi cuenta.";
+  "Hola 👋, estoy mirando Ambraio y tengo una duda antes de crear mi cuenta.";
 
 export function WhatsAppFlotante() {
   const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(MENSAJE_POR_DEFECTO)}`;
