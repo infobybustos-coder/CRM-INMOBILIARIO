@@ -16,7 +16,7 @@ export default async function LandingConfigPage() {
           </p>
         </div>
         <Link
-          href="/"
+          href="/landing-preview"
           target="_blank"
           className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
         >

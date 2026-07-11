@@ -19,7 +19,12 @@ export function VistaPreviaLanding() {
         </button>
       </div>
       <div className="overflow-hidden rounded-lg border">
-        <iframe key={key} src="/" title="Vista previa de la landing" className="h-[80vh] w-full" />
+        <iframe
+          key={key}
+          src="/landing-preview"
+          title="Vista previa de la landing"
+          className="h-[80vh] w-full"
+        />
       </div>
       <p className="text-xs text-muted-foreground">
         Guarda los cambios y pulsa &quot;Actualizar&quot; para verlos aquí.
