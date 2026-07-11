@@ -56,7 +56,7 @@ export default async function AjustesPage({
           Pago confirmado — tu plan ya es PRO.
         </p>
       )}
-      {pago === "cancelado" && (
+      {pago === "cancelado" && !ilimitado && (
         <p className="max-w-lg rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
           Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
         </p>

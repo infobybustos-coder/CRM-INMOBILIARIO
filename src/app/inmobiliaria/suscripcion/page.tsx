@@ -73,7 +73,7 @@ export default async function SuscripcionPage({
           Pago confirmado — tu plan ya es PRO.
         </p>
       )}
-      {pago === "cancelado" && (
+      {pago === "cancelado" && tenant.plan_tarifa !== "pago" && (
         <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
           Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
         </p>
