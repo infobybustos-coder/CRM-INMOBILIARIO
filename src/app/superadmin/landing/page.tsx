@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { obtenerConfigLanding } from "@/lib/landing-config";
 import { LandingEditor } from "@/components/superadmin/landing-editor";
+import { VistaPreviaLanding } from "@/components/superadmin/vista-previa-landing";
 
 export default async function LandingConfigPage() {
   const config = await obtenerConfigLanding();
@@ -19,10 +20,13 @@ export default async function LandingConfigPage() {
           target="_blank"
           className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
         >
-          Ver la landing →
+          Abrir en pestaña nueva →
         </Link>
       </div>
-      <LandingEditor config={config} />
+      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+        <LandingEditor config={config} />
+        <VistaPreviaLanding />
+      </div>
     </div>
   );
 }
