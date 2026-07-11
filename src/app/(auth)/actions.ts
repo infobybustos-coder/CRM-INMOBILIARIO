@@ -8,6 +8,8 @@ import { validarPassword } from "@/lib/validacion";
 import { slugify } from "@/lib/slug";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
+import { stripe } from "@/lib/stripe";
+import { siteUrl } from "@/lib/site-url";
 
 export type AuthActionState = { error: string } | null;
 
@@ -108,19 +110,48 @@ export async function signUp(
     };
   }
 
-  if (planTarifaDeseada === "pago" && METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
-    const config = await obtenerConfigPlanes();
-    await admin.from("pedidos").insert({
-      tenant_id: tenant.id,
-      tipo: "plan_pro",
-      concepto: tipoPlan === "inmobiliaria" ? "Cambio a Inmobiliaria PRO" : "Cambio a Asesor PRO",
-      importe: tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio,
-      metodo_pago: metodoPago,
-    });
-  }
-
   const supabase = await createClient();
   await supabase.auth.signInWithPassword({ email, password });
+
+  if (planTarifaDeseada === "pago") {
+    const config = await obtenerConfigPlanes();
+    const priceId = tipoPlan === "inmobiliaria" ? config.inmobiliariaProStripePriceId : config.asesorProStripePriceId;
+
+    // Si hay Stripe conectado, el pago es real: se redirige a Checkout y es
+    // el webhook quien activa el plan al confirmarse. Si todavía no hay
+    // pasarela, se mantiene el flujo manual de pedido pendiente.
+    if (priceId) {
+      let checkoutUrl: string | null = null;
+      try {
+        const customer = await stripe.customers.create({ email, metadata: { tenant_id: tenant.id } });
+        await admin.from("tenants").update({ stripe_customer_id: customer.id }).eq("id", tenant.id);
+
+        const url = await siteUrl();
+        const destino = tipoPlan === "inmobiliaria" ? "/inmobiliaria/suscripcion" : "/asesor/ajustes";
+        const session = await stripe.checkout.sessions.create({
+          mode: "subscription",
+          customer: customer.id,
+          line_items: [{ price: priceId, quantity: 1 }],
+          success_url: `${url}${destino}?pago=exito`,
+          cancel_url: `${url}${destino}?pago=cancelado`,
+          metadata: { tenant_id: tenant.id, tipo_plan: tipoPlan },
+          subscription_data: { metadata: { tenant_id: tenant.id, tipo_plan: tipoPlan } },
+        });
+        checkoutUrl = session.url;
+      } catch (err) {
+        console.error("Stripe checkout error en signup:", err);
+      }
+      if (checkoutUrl) redirect(checkoutUrl);
+    } else if (METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
+      await admin.from("pedidos").insert({
+        tenant_id: tenant.id,
+        tipo: "plan_pro",
+        concepto: tipoPlan === "inmobiliaria" ? "Cambio a Inmobiliaria PRO" : "Cambio a Asesor PRO",
+        importe: tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio,
+        metodo_pago: metodoPago,
+      });
+    }
+  }
 
   redirect(tipoPlan === "asesor" ? "/asesor" : "/inmobiliaria");
 }
