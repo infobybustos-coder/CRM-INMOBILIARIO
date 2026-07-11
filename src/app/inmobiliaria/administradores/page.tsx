@@ -52,6 +52,7 @@ export default async function AdministradoresPage({
   }));
 
   const limite = limiteAdmins(config, usuario.tenant ?? {});
+  const activosCount = filas.filter((f) => f.activo).length;
 
   return (
     <div className="space-y-5">
@@ -59,8 +60,8 @@ export default async function AdministradoresPage({
         <div>
           <h1 className="text-2xl font-semibold">Administradores</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {filas.length + pendientes.length} de {limite} administradores incluidos en tu plan
-            (activos, inactivos e invitaciones pendientes)
+            {activosCount + pendientes.length} de {limite} administradores incluidos en tu plan
+            (activos e invitaciones pendientes; los inactivos no ocupan asiento)
           </p>
         </div>
         <NuevoMiembro rol="admin" etiqueta="administrador" />

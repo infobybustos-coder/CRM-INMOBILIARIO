@@ -32,15 +32,13 @@ export type InvitarState =
 type AsientoResultado = { error: string } | { requierePlanPro: true } | { ok: true };
 export type AmpliarState = AsientoResultado | null;
 
-// Un administrador o asesor desactivado sigue contando como asiento
-// ocupado (no se libera al desactivar): así nadie puede rotar cuentas
-// para esquivar el límite del plan sin pagar. Solo se libera si el
-// usuario se elimina de verdad, no al desactivarlo.
-//
-// Las invitaciones pendientes de aceptar TAMBIÉN cuentan como asiento
-// ocupado: si no fuera así, se podría invitar a cuantos administradores
-// o asesores se quisiera sin pagar nunca, ya que hasta que no aceptan no
-// existe fila en "usuarios". Solo dejan de contar si expiran o se cancelan.
+// Cuenta asientos realmente ocupados: administradores/asesores activos
+// más invitaciones todavía pendientes de aceptar (sin esto último se
+// podría invitar sin límite, porque hasta que no se acepta no existe
+// fila en "usuarios"). Un miembro eliminado o una invitación cancelada
+// dejan de contar de inmediato, y el asiento extra pagado por ellos se
+// libera en Stripe (ver liberarAsientoExtra) para que el mes siguiente
+// no se vuelva a cobrar.
 async function contarMiembros(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string,
@@ -51,7 +49,8 @@ async function contarMiembros(
       .from("usuarios")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", tenantId)
-      .eq("rol", rol),
+      .eq("rol", rol)
+      .eq("activo", true),
     supabase
       .from("invitaciones")
       .select("id", { count: "exact", head: true })
@@ -204,6 +203,59 @@ async function cobrarAsientoExtra(
   return { ok: true };
 }
 
+// Reduce en 1 la cantidad del ítem de suscripción del asiento extra en
+// Stripe (con proration_behavior por defecto, que genera un crédito por
+// lo que quede del periodo actual y reduce el importe del próximo
+// cobro), y baja el contador admins_extra/agentes_extra del tenant. Se
+// llama al eliminar un miembro o cancelar una invitación pendiente: solo
+// hace algo si el tenant tenía algún asiento extra pagado que liberar.
+async function liberarAsientoExtra(tenantId: string, rol: RolInvitable, config: Awaited<ReturnType<typeof obtenerConfigPlanes>>) {
+  const admin = createAdminClient();
+  const esAdmin = rol === "admin";
+  const campo = esAdmin ? "admins_extra" : "agentes_extra";
+
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("admins_extra, agentes_extra, plan_tarifa, stripe_subscription_id")
+    .eq("id", tenantId)
+    .maybeSingle();
+  if (!tenant || tenant.plan_tarifa !== "pago") return;
+
+  const extraActual = esAdmin ? (tenant.admins_extra ?? 0) : (tenant.agentes_extra ?? 0);
+  if (extraActual <= 0) return;
+
+  const extraPriceId = esAdmin ? config.adminExtraStripePriceId : config.asesorExtraStripePriceId;
+  const subscriptionId = tenant.stripe_subscription_id as string | null;
+
+  if (subscriptionId && extraPriceId) {
+    try {
+      const precioBase = await stripe.prices.retrieve(extraPriceId);
+      const productId = typeof precioBase.product === "string" ? precioBase.product : precioBase.product.id;
+      const items = await stripe.subscriptionItems.list({ subscription: subscriptionId, limit: 100 });
+      const existente = items.data.find((i) => {
+        const prodId = typeof i.price.product === "string" ? i.price.product : i.price.product.id;
+        return prodId === productId;
+      });
+      if (existente) {
+        const nuevaCantidad = (existente.quantity ?? 1) - 1;
+        if (nuevaCantidad > 0) {
+          await stripe.subscriptions.update(subscriptionId, {
+            items: [{ id: existente.id, quantity: nuevaCantidad }],
+          });
+        } else {
+          await stripe.subscriptionItems.del(existente.id);
+        }
+      }
+    } catch (err) {
+      // No bloqueamos la baja del miembro por un fallo al ajustar Stripe,
+      // pero queda registrado para revisarlo a mano si hiciera falta.
+      console.error("Stripe: no se pudo liberar el asiento extra:", err);
+    }
+  }
+
+  await admin.from("tenants").update({ [campo]: extraActual - 1 }).eq("id", tenantId);
+}
+
 // Se llama ANTES de pedir el email: si ya se ha llegado al límite, cobra
 // el asiento extra (o avisa de que hace falta plan PRO) sin haber
 // recogido todavía ningún dato del nuevo miembro.
@@ -284,31 +336,56 @@ export async function invitarMiembro(
 
 // Como una invitación pendiente ocupa un asiento del plan, cancelarla
 // es la única forma de liberarlo si te equivocaste de email o ya no
-// quieres invitar a esa persona.
+// quieres invitar a esa persona. Si ese asiento se había cobrado como
+// extra, se libera en Stripe: el mes siguiente ya no se cobra por él.
 export async function cancelarInvitacion(id: string) {
   const usuario = await requireAdminInmobiliaria();
   const supabase = await createClient();
 
+  const { data: invitacion } = await supabase
+    .from("invitaciones")
+    .select("rol")
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id)
+    .maybeSingle();
+  if (!invitacion) return;
+
   await supabase.from("invitaciones").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
+
+  const config = await obtenerConfigPlanes();
+  await liberarAsientoExtra(usuario.tenant_id, invitacion.rol as RolInvitable, config);
 
   revalidarEquipo();
   revalidatePath("/inmobiliaria/suscripcion");
 }
 
+// Desactivar libera el asiento: deja de contar para el límite del plan
+// (ver contarMiembros) y, si era un asiento extra pagado, se libera
+// también en Stripe para que el mes siguiente no se vuelva a cobrar. Se
+// mantiene como baja lógica (no se borra la fila) para no perder el
+// histórico de propietarios/inmuebles/compradores/tareas asignados.
 export async function eliminarMiembro(id: string) {
   const usuario = await requireAdminInmobiliaria();
   if (id === usuario.id) return;
 
   const supabase = await createClient();
 
-  // Desactivar NO libera el asiento (sigue contando para el límite del
-  // plan, ver contarMiembros): ya se cobró por él y evita que se pueda
-  // esquivar el pago desactivando y volviendo a invitar sin parar.
+  const { data: miembro } = await supabase
+    .from("usuarios")
+    .select("rol")
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id)
+    .maybeSingle();
+  if (!miembro) return;
+
   await supabase
     .from("usuarios")
     .update({ activo: false })
     .eq("id", id)
     .eq("tenant_id", usuario.tenant_id);
+
+  const config = await obtenerConfigPlanes();
+  await liberarAsientoExtra(usuario.tenant_id, miembro.rol as RolInvitable, config);
 
   revalidarEquipo();
   revalidatePath("/inmobiliaria/suscripcion");
