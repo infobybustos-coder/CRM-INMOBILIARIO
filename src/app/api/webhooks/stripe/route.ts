@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
@@ -6,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 async function activarPlanPro(session: Stripe.Checkout.Session) {
   const tenantId = session.metadata?.tenant_id;
   const tipoPlan = session.metadata?.tipo_plan;
-  if (!tenantId || !tipoPlan) return;
+  if (!tenantId || (tipoPlan !== "asesor" && tipoPlan !== "inmobiliaria")) return;
 
   const admin = createAdminClient();
   const subscriptionId =
@@ -40,6 +41,55 @@ async function activarPlanPro(session: Stripe.Checkout.Session) {
     tenant_id: tenantId,
     tipo: "plan",
     descripcion: `Pago confirmado por Stripe: ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (${importe.toFixed(2)}€).`,
+  });
+}
+
+async function activarAsientoExtra(session: Stripe.Checkout.Session) {
+  const tenantId = session.metadata?.tenant_id;
+  const tipoPlan = session.metadata?.tipo_plan;
+  const email = session.metadata?.email;
+  const rol = session.metadata?.rol;
+  const invitadoPor = session.metadata?.invitado_por ?? null;
+  if (!tenantId || !email || !rol || (tipoPlan !== "admin_extra" && tipoPlan !== "asesor_extra")) return;
+
+  const admin = createAdminClient();
+  const esAdmin = tipoPlan === "admin_extra";
+  const campo = esAdmin ? "admins_extra" : "agentes_extra";
+
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("admins_extra, agentes_extra")
+    .eq("id", tenantId)
+    .maybeSingle();
+  const extraActual = (esAdmin ? tenant?.admins_extra : tenant?.agentes_extra) ?? 0;
+  await admin.from("tenants").update({ [campo]: extraActual + 1 }).eq("id", tenantId);
+
+  const token = randomUUID();
+  await admin.from("invitaciones").insert({
+    tenant_id: tenantId,
+    email,
+    rol,
+    token,
+    invitado_por: invitadoPor,
+  });
+
+  const importe = (session.amount_total ?? 0) / 100;
+  await admin.from("pedidos").insert({
+    tenant_id: tenantId,
+    tipo: "ajuste_manual",
+    concepto: esAdmin ? "Administrador adicional" : "Asesor adicional",
+    importe,
+    metodo_pago: "Tarjeta (Stripe)",
+    estado: "pagado",
+    confirmado_en: new Date().toISOString(),
+    confirmado_por: "Stripe (automático)",
+    stripe_checkout_session_id: session.id,
+  });
+
+  await admin.from("tenant_eventos").insert({
+    tenant_id: tenantId,
+    tipo: "plan",
+    descripcion: `Pago confirmado por Stripe: ${esAdmin ? "administrador" : "asesor"} adicional (${importe.toFixed(2)}€).`,
   });
 }
 
@@ -82,9 +132,16 @@ export async function POST(request: Request) {
   }
 
   switch (event.type) {
-    case "checkout.session.completed":
-      await activarPlanPro(event.data.object as Stripe.Checkout.Session);
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const tipoPlan = session.metadata?.tipo_plan;
+      if (tipoPlan === "admin_extra" || tipoPlan === "asesor_extra") {
+        await activarAsientoExtra(session);
+      } else {
+        await activarPlanPro(session);
+      }
       break;
+    }
     case "customer.subscription.deleted":
       await cancelarPorSuscripcion(event.data.object as Stripe.Subscription);
       break;

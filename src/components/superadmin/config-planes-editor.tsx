@@ -148,6 +148,12 @@ export function ConfigPlanesEditor({ config }: { config: ConfigPlanes }) {
           valorInicial={config.precioAdminExtra}
           step={0.01}
         />
+        <CampoTexto
+          label="Stripe Price ID (administrador adicional)"
+          name="stripe_price_id_admin_extra"
+          valorInicial={config.adminExtraStripePriceId}
+          placeholder="price_..."
+        />
         <Campo
           label="Asesor adicional (€/mes)"
           name="precio_asesor_extra"
@@ -155,7 +161,13 @@ export function ConfigPlanesEditor({ config }: { config: ConfigPlanes }) {
           step={0.01}
         />
         <CampoTexto
-          label="Stripe Price ID"
+          label="Stripe Price ID (asesor adicional)"
+          name="stripe_price_id_asesor_extra"
+          valorInicial={config.asesorExtraStripePriceId}
+          placeholder="price_..."
+        />
+        <CampoTexto
+          label="Stripe Price ID (plan base)"
           name="stripe_price_id"
           valorInicial={config.inmobiliariaProStripePriceId}
           placeholder="price_..."

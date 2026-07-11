@@ -82,5 +82,7 @@ export async function guardarInmobiliariaPro(
     inmobiliaria_pro_precio_admin_extra: numero(formData, "precio_admin_extra"),
     inmobiliaria_pro_precio_asesor_extra: numero(formData, "precio_asesor_extra"),
     inmobiliaria_pro_stripe_price_id: textoONull(formData, "stripe_price_id"),
+    admin_extra_stripe_price_id: textoONull(formData, "stripe_price_id_admin_extra"),
+    asesor_extra_stripe_price_id: textoONull(formData, "stripe_price_id_asesor_extra"),
   });
 }

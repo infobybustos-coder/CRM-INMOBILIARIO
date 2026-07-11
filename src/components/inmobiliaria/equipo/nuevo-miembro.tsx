@@ -20,10 +20,9 @@ export function NuevoMiembro({
   const [copiado, setCopiado] = useState(false);
   const rol = rolFijo ?? rolElegido;
 
-  function enviar(confirmarExtra: boolean) {
+  function enviar() {
     const formData = new FormData();
     formData.set("email", email);
-    formData.set("confirmarExtra", confirmarExtra ? "true" : "false");
     startTransition(async () => {
       const resultado = await invitarMiembro(rol, null, formData);
       setEstado(resultado);
@@ -118,31 +117,6 @@ export function NuevoMiembro({
                   </button>
                 </div>
               </div>
-            ) : estado && "requierePago" in estado ? (
-              <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-                <p>
-                  Ya tienes el máximo de {rol === "admin" ? "administradores" : "asesores"} incluidos en tu
-                  plan. Añadir uno más cuesta{" "}
-                  <span className="font-semibold">{estado.precio.toFixed(2).replace(".", ",")}€/mes</span>.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => enviar(true)}
-                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                  >
-                    {pending ? "Añadiendo..." : "Añadir a mi plan e invitar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cerrar}
-                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
             ) : (
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -178,7 +152,7 @@ export function NuevoMiembro({
                 <button
                   type="button"
                   disabled={pending || !email.trim()}
-                  onClick={() => enviar(false)}
+                  onClick={enviar}
                   className="w-full rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {pending ? "Enviando..." : "Invitar"}

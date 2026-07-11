@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { adminsIncluidos, limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { stripe } from "@/lib/stripe";
+import { siteUrl } from "@/lib/site-url";
 
 export type RolInvitable = "empleado" | "admin";
 
@@ -22,7 +24,6 @@ function revalidarEquipo(id?: string) {
 export type InvitarState =
   | { error: string }
   | { requierePlanPro: true }
-  | { requierePago: true; precio: number }
   | { ok: true; link: string }
   | null;
 
@@ -33,7 +34,6 @@ export async function invitarMiembro(
 ): Promise<InvitarState> {
   const usuario = await requireAdminInmobiliaria();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const confirmarExtra = formData.get("confirmarExtra") === "true";
 
   if (!email || !email.includes("@")) return { error: "Pon un email válido." };
 
@@ -59,22 +59,58 @@ export async function invitarMiembro(
   // Los asientos extra solo cuentan si el plan es de pago; en Gratis nunca
   // se pueden comprar, así que el límite se calcula igual en ambos casos con
   // las mismas funciones que usan Administradores/Agentes/Suscripción.
-  const extra = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
   const limite = esAdmin ? limiteAdmins(config, usuario.tenant ?? {}) : limiteEmpleados(config, usuario.tenant ?? {});
-  const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
 
   if ((activos ?? 0) >= limite) {
     const esPago = usuario.tenant?.plan_tarifa === "pago";
     if (!esPago) return { requierePlanPro: true };
-    if (!confirmarExtra) return { requierePago: true, precio };
 
-    const admin = createAdminClient();
-    const campo = esAdmin ? "admins_extra" : "agentes_extra";
-    const { error: errorExtra } = await admin
-      .from("tenants")
-      .update({ [campo]: extra + 1 })
-      .eq("id", usuario.tenant_id);
-    if (errorExtra) return { error: "No se pudo ampliar el plan." };
+    const extraPriceId = esAdmin ? config.adminExtraStripePriceId : config.asesorExtraStripePriceId;
+    if (!extraPriceId) {
+      return {
+        error: `Ya tienes el máximo de ${esAdmin ? "administradores" : "asesores"} incluidos en tu plan y todavía no se puede ampliar automáticamente. Contacta con soporte.`,
+      };
+    }
+
+    // Nunca se crea la invitación ni se amplía el asiento sin que Stripe
+    // confirme el cobro real: se abre un checkout y es el webhook quien,
+    // al confirmarse el pago, amplía el asiento y crea la invitación.
+    let checkoutUrl: string;
+    try {
+      let customerId = usuario.tenant?.stripe_customer_id as string | null | undefined;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: usuario.email,
+          metadata: { tenant_id: usuario.tenant_id },
+        });
+        customerId = customer.id;
+        const admin = createAdminClient();
+        await admin.from("tenants").update({ stripe_customer_id: customerId }).eq("id", usuario.tenant_id);
+      }
+
+      const url = await siteUrl();
+      const destino = esAdmin ? "administradores" : "agentes";
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: customerId,
+        line_items: [{ price: extraPriceId, quantity: 1 }],
+        success_url: `${url}/inmobiliaria/${destino}?asiento_pagado=${encodeURIComponent(email)}`,
+        cancel_url: `${url}/inmobiliaria/${destino}`,
+        metadata: {
+          tenant_id: usuario.tenant_id,
+          tipo_plan: esAdmin ? "admin_extra" : "asesor_extra",
+          invitado_por: usuario.id,
+          email,
+          rol,
+        },
+      });
+      if (!session.url) return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+      checkoutUrl = session.url;
+    } catch (err) {
+      console.error("Stripe checkout error (asiento extra):", err);
+      return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+    }
+    redirect(checkoutUrl);
   }
 
   const token = randomUUID();

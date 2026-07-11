@@ -19,6 +19,8 @@ export type ConfigPlanes = {
   precioAsesorExtra: number;
   asesorProStripePriceId: string | null;
   inmobiliariaProStripePriceId: string | null;
+  adminExtraStripePriceId: string | null;
+  asesorExtraStripePriceId: string | null;
 };
 
 export const CONFIG_PLANES_POR_DEFECTO: ConfigPlanes = {
@@ -32,6 +34,8 @@ export const CONFIG_PLANES_POR_DEFECTO: ConfigPlanes = {
   precioAsesorExtra: 7.99,
   asesorProStripePriceId: null,
   inmobiliariaProStripePriceId: null,
+  adminExtraStripePriceId: null,
+  asesorExtraStripePriceId: null,
 };
 
 export function adminsIncluidos(config: ConfigPlanes, tenant: { plan_tarifa?: string | null }) {

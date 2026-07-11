@@ -28,5 +28,7 @@ export async function obtenerConfigPlanes(): Promise<ConfigPlanes> {
     precioAsesorExtra: Number(data.inmobiliaria_pro_precio_asesor_extra),
     asesorProStripePriceId: data.asesor_pro_stripe_price_id ?? null,
     inmobiliariaProStripePriceId: data.inmobiliaria_pro_stripe_price_id ?? null,
+    adminExtraStripePriceId: data.admin_extra_stripe_price_id ?? null,
+    asesorExtraStripePriceId: data.asesor_extra_stripe_price_id ?? null,
   };
 }

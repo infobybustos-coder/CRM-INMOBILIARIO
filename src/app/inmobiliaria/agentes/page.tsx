@@ -4,6 +4,7 @@ import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/agentes/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
+import { AsientoPagadoBanner } from "@/components/inmobiliaria/equipo/asiento-pagado-banner";
 import { limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AgenteFila } from "./constantes";
@@ -23,8 +24,13 @@ function contarPorId(filas: { id: string | null }[]) {
   return mapa;
 }
 
-export default async function AgentesPage() {
+export default async function AgentesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ asiento_pagado?: string }>;
+}) {
   const usuario = await requireAdminInmobiliaria();
+  const { asiento_pagado: asientoPagado } = await searchParams;
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
 
@@ -226,6 +232,8 @@ export default async function AgentesPage() {
         </div>
         <NuevoMiembro rol="empleado" etiqueta="agente" />
       </div>
+
+      {asientoPagado && <AsientoPagadoBanner tenantId={usuario.tenant_id} email={asientoPagado} />}
 
       {errorAgentes && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">
