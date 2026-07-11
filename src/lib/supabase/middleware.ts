@@ -39,7 +39,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/signup") ||
     request.nextUrl.pathname.startsWith("/invitar") ||
     request.nextUrl.pathname.startsWith("/terminos") ||
-    request.nextUrl.pathname.startsWith("/privacidad");
+    request.nextUrl.pathname.startsWith("/privacidad") ||
+    request.nextUrl.pathname.startsWith("/recuperar-contrasena") ||
+    request.nextUrl.pathname.startsWith("/restablecer-contrasena");
 
   if (!user && !isAuthRoute && request.nextUrl.pathname !== "/") {
     const url = request.nextUrl.clone();

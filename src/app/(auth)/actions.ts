@@ -196,3 +196,50 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+export type RecuperacionState = { error: string } | { ok: true } | null;
+
+export async function solicitarRecuperacion(
+  _prevState: RecuperacionState,
+  formData: FormData
+): Promise<RecuperacionState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email || !email.includes("@")) return { error: "Pon un email válido." };
+
+  const supabase = await createClient();
+  const url = await siteUrl();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${url}/auth/callback?next=/restablecer-contrasena`,
+  });
+
+  // Siempre se responde con éxito, exista o no esa cuenta, para no revelar
+  // qué emails están registrados.
+  return { ok: true };
+}
+
+export async function restablecerContrasena(
+  _prevState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const password = String(formData.get("password") ?? "");
+  const passwordConfirmacion = String(formData.get("password_confirmacion") ?? "");
+
+  const errorPassword = validarPassword(password);
+  if (errorPassword) return { error: errorPassword };
+  if (password !== passwordConfirmacion) {
+    return { error: "Las contraseñas no coinciden." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "El enlace de recuperación ha caducado. Solicita uno nuevo." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: "No se pudo actualizar la contraseña. Inténtalo de nuevo." };
+
+  redirect("/login");
+}
