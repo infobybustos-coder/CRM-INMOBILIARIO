@@ -40,6 +40,34 @@ function Campo({
   );
 }
 
+function CampoTexto({
+  label,
+  name,
+  valorInicial,
+  placeholder,
+}: {
+  label: string;
+  name: string;
+  valorInicial: string | null;
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label htmlFor={name} className="text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="text"
+        defaultValue={valorInicial ?? ""}
+        placeholder={placeholder}
+        className="w-full rounded-md border px-2.5 py-1.5 font-mono text-sm"
+      />
+    </div>
+  );
+}
+
 function BotonGuardar({ pending, state }: { pending: boolean; state: GuardarConfigState }) {
   return (
     <div className="space-y-1">
@@ -75,6 +103,12 @@ export function ConfigPlanesEditor({ config }: { config: ConfigPlanes }) {
       <form action={asesorProAction} className="space-y-3 rounded-lg border p-4">
         <h3 className="font-semibold">Plan Asesor PRO</h3>
         <Campo label="Precio (€/mes)" name="precio" valorInicial={config.asesorProPrecio} step={0.01} />
+        <CampoTexto
+          label="Stripe Price ID"
+          name="stripe_price_id"
+          valorInicial={config.asesorProStripePriceId}
+          placeholder="price_..."
+        />
         <p className="text-xs text-muted-foreground">
           Propietarios, inmuebles y compradores: ilimitados (no editable).
         </p>
@@ -119,6 +153,12 @@ export function ConfigPlanesEditor({ config }: { config: ConfigPlanes }) {
           name="precio_asesor_extra"
           valorInicial={config.precioAsesorExtra}
           step={0.01}
+        />
+        <CampoTexto
+          label="Stripe Price ID"
+          name="stripe_price_id"
+          valorInicial={config.inmobiliariaProStripePriceId}
+          placeholder="price_..."
         />
         <p className="text-xs text-muted-foreground">
           Propietarios, inmuebles y compradores: ilimitados (no editable).

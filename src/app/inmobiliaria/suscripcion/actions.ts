@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireAdminInmobiliaria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { type PlanTarifa } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
+import { stripe } from "@/lib/stripe";
+import { siteUrl } from "@/lib/site-url";
 
 export type CambiarPlanState = { error: string } | { ok: true };
 
@@ -78,11 +81,49 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
   if (usuario.tenant?.plan_tarifa === "pago") {
     return { error: "Ya tienes el plan PRO." };
   }
+
+  const admin = createAdminClient();
+  const config = await obtenerConfigPlanes();
+
+  // Si hay una pasarela de Stripe conectada (price ID configurado en
+  // Suscripciones), el pago es real: se redirige a Stripe Checkout y es
+  // el webhook quien confirma el pedido y activa el plan. Si todavía no
+  // hay pasarela, se mantiene el flujo manual de siempre.
+  if (config.inmobiliariaProStripePriceId) {
+    let checkoutUrl: string;
+    try {
+      let customerId = usuario.tenant?.stripe_customer_id as string | null | undefined;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: usuario.email,
+          metadata: { tenant_id: usuario.tenant_id },
+        });
+        customerId = customer.id;
+        await admin.from("tenants").update({ stripe_customer_id: customerId }).eq("id", usuario.tenant_id);
+      }
+
+      const url = await siteUrl();
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: customerId,
+        line_items: [{ price: config.inmobiliariaProStripePriceId, quantity: 1 }],
+        success_url: `${url}/inmobiliaria/suscripcion?pago=exito`,
+        cancel_url: `${url}/inmobiliaria/suscripcion/pago?pago=cancelado`,
+        metadata: { tenant_id: usuario.tenant_id, tipo_plan: "inmobiliaria" },
+        subscription_data: { metadata: { tenant_id: usuario.tenant_id, tipo_plan: "inmobiliaria" } },
+      });
+      if (!session.url) return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+      checkoutUrl = session.url;
+    } catch (err) {
+      console.error("Stripe checkout error:", err);
+      return { error: "No se pudo iniciar el pago. Revisa la configuración de Stripe e inténtalo de nuevo." };
+    }
+    redirect(checkoutUrl);
+  }
+
   if (!METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
     return { error: "Elige un método de pago válido." };
   }
-
-  const admin = createAdminClient();
 
   const { count: pendientes } = await admin
     .from("pedidos")
@@ -93,7 +134,6 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
     return { error: "Ya tienes un pago en revisión. Te avisaremos cuando se confirme." };
   }
 
-  const config = await obtenerConfigPlanes();
   const { error } = await admin.from("pedidos").insert({
     tenant_id: usuario.tenant_id,
     tipo: "plan_pro",

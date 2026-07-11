@@ -1,20 +1,11 @@
 "use server";
 
-import { headers } from "next/headers";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono, telefonoValido } from "@/lib/telefono";
+import { siteUrl } from "@/lib/site-url";
 
 export type CrearClienteState = { error: string } | { ok: true } | null;
-
-async function baseUrl() {
-  const listaHeaders = await headers();
-  const origin = listaHeaders.get("origin");
-  if (origin) return origin;
-  const host = listaHeaders.get("host") ?? "localhost:3000";
-  const protocolo = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
-  return `${protocolo}://${host}`;
-}
 
 export async function invitarClienteManual(
   _prev: CrearClienteState,
@@ -47,7 +38,7 @@ export async function invitarClienteManual(
   }
 
   const { data: invitado, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${await baseUrl()}/auth/callback?next=/completar-cuenta`,
+    redirectTo: `${await siteUrl()}/auth/callback?next=/completar-cuenta`,
   });
 
   if (inviteError || !invitado.user) {

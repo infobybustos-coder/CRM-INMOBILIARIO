@@ -11,7 +11,14 @@ function numero(formData: FormData, campo: string): number {
   return Number.isFinite(valor) && valor >= 0 ? valor : 0;
 }
 
-async function actualizarConfig(valores: Record<string, number>): Promise<GuardarConfigState> {
+function textoONull(formData: FormData, campo: string): string | null {
+  const valor = String(formData.get(campo) ?? "").trim();
+  return valor || null;
+}
+
+async function actualizarConfig(
+  valores: Record<string, number | string | null>
+): Promise<GuardarConfigState> {
   await requireSuperadmin();
 
   const admin = createAdminClient();
@@ -47,6 +54,7 @@ export async function guardarAsesorPro(
 ): Promise<GuardarConfigState> {
   return actualizarConfig({
     asesor_pro_precio: numero(formData, "precio"),
+    asesor_pro_stripe_price_id: textoONull(formData, "stripe_price_id"),
   });
 }
 
@@ -73,5 +81,6 @@ export async function guardarInmobiliariaPro(
     inmobiliaria_pro_asesores: numero(formData, "asesores_incluidos"),
     inmobiliaria_pro_precio_admin_extra: numero(formData, "precio_admin_extra"),
     inmobiliaria_pro_precio_asesor_extra: numero(formData, "precio_asesor_extra"),
+    inmobiliaria_pro_stripe_price_id: textoONull(formData, "stripe_price_id"),
   });
 }
