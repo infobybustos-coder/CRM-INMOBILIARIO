@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cambiarPlanTarifa } from "@/app/asesor/suscripcion/actions";
 import { type PlanTarifa, type ConfigPlanes } from "@/lib/planes";
+import { formatearPrecio } from "@/lib/precio";
 import { cn } from "@/lib/utils";
 
 export function SelectorPlan({
   planActual,
   config,
   pedidoPendiente,
+  moneda,
 }: {
   planActual: PlanTarifa;
   config: ConfigPlanes;
   pedidoPendiente?: boolean;
+  moneda: "EUR" | "USD";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -87,7 +90,7 @@ export function SelectorPlan({
               )}
             </div>
             <p className="text-2xl font-semibold">
-              {plan.precio === 0 ? "Gratis" : `${plan.precio.toFixed(2).replace(".", ",")}€`}
+              {plan.precio === 0 ? "Gratis" : formatearPrecio(plan.precio, moneda)}
               {plan.precio > 0 && <span className="text-sm font-normal text-muted-foreground">/mes</span>}
             </p>
             <ul className="flex-1 space-y-1.5 text-sm">

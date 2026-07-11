@@ -10,6 +10,8 @@ import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
 import { stripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site-url";
+import { lineItemMultimoneda } from "@/lib/stripe-checkout";
+import { monedaVisitante } from "@/lib/geo";
 
 export type AuthActionState = { error: string } | null;
 
@@ -127,11 +129,14 @@ export async function signUp(
         await admin.from("tenants").update({ stripe_customer_id: customer.id }).eq("id", tenant.id);
 
         const url = await siteUrl();
+        const moneda = await monedaVisitante();
+        const precio = tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio;
+        const lineItem = await lineItemMultimoneda(priceId, moneda, precio);
         const destino = tipoPlan === "inmobiliaria" ? "/inmobiliaria/suscripcion" : "/asesor/ajustes";
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           customer: customer.id,
-          line_items: [{ price: priceId, quantity: 1 }],
+          line_items: [lineItem],
           success_url: `${url}${destino}?pago=exito`,
           cancel_url: `${url}${destino}?pago=cancelado`,
           metadata: { tenant_id: tenant.id, tipo_plan: tipoPlan },

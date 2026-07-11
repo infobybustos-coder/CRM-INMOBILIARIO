@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { ConfirmarPago } from "@/components/asesor/suscripcion/confirmar-pago";
 import { solicitarUpgradePro } from "@/app/asesor/suscripcion/actions";
+import { formatearPrecio } from "@/lib/precio";
+import { monedaVisitante } from "@/lib/geo";
 
 export default async function PagoPage() {
   const usuario = await getUsuarioConTenant();
@@ -53,7 +55,7 @@ export default async function PagoPage() {
           <h1 className="text-xl font-semibold">Cambiar a Asesor PRO</h1>
         </div>
         <p className="text-2xl font-semibold">
-          {config.asesorProPrecio.toFixed(2).replace(".", ",")}€
+          {formatearPrecio(config.asesorProPrecio, await monedaVisitante())}
           <span className="text-sm font-normal text-muted-foreground">/mes</span>
         </p>
 

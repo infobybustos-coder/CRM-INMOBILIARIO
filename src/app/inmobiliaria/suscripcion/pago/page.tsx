@@ -6,6 +6,8 @@ import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { redirect } from "next/navigation";
 import { ConfirmarPago } from "@/components/inmobiliaria/suscripcion/confirmar-pago";
 import { solicitarUpgradePro } from "@/app/inmobiliaria/suscripcion/actions";
+import { formatearPrecio } from "@/lib/precio";
+import { monedaVisitante } from "@/lib/geo";
 
 export default async function PagoPage() {
   const usuario = await requireAdminInmobiliaria();
@@ -51,7 +53,7 @@ export default async function PagoPage() {
           <h1 className="text-xl font-semibold">Cambiar a Inmobiliaria PRO</h1>
         </div>
         <p className="text-2xl font-semibold">
-          {config.inmobiliariaProPrecio.toFixed(2).replace(".", ",")}€
+          {formatearPrecio(config.inmobiliariaProPrecio, await monedaVisitante())}
           <span className="text-sm font-normal text-muted-foreground">/mes</span>
         </p>
 

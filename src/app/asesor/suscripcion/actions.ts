@@ -10,6 +10,8 @@ import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
 import { stripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site-url";
+import { lineItemMultimoneda } from "@/lib/stripe-checkout";
+import { monedaVisitante } from "@/lib/geo";
 
 export type CambiarPlanState = { error: string } | { ok: true };
 
@@ -98,10 +100,16 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
       }
 
       const url = await siteUrl();
+      const moneda = await monedaVisitante();
+      const lineItem = await lineItemMultimoneda(
+        config.asesorProStripePriceId,
+        moneda,
+        config.asesorProPrecio
+      );
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         customer: customerId,
-        line_items: [{ price: config.asesorProStripePriceId, quantity: 1 }],
+        line_items: [lineItem],
         success_url: `${url}/asesor/ajustes?pago=exito`,
         cancel_url: `${url}/asesor/ajustes?pago=cancelado`,
         metadata: { tenant_id: usuario.tenant_id, tipo_plan: "asesor" },

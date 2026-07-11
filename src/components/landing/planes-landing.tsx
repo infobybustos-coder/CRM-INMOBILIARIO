@@ -4,12 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, UserRound, Building2 } from "lucide-react";
 import { type TipoPlan, type ConfigPlanes } from "@/lib/planes";
+import { formatearPrecio as formatearPrecioBase } from "@/lib/precio";
 import { cn } from "@/lib/utils";
 
 export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda: "EUR" | "USD" }) {
   const [tipo, setTipo] = useState<TipoPlan>("asesor");
-  const simbolo = moneda === "USD" ? "$" : "€";
-  const formatearPrecio = (n: number) => `${n.toFixed(2).replace(".", ",")}${simbolo}`;
+  const formatearPrecio = (n: number) => formatearPrecioBase(n, moneda);
 
   const planes: Record<TipoPlan, { gratis: string[]; pago: string[]; precioPago: number }> = {
     asesor: {
@@ -75,7 +75,7 @@ export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda
         <div className="flex flex-col gap-4 rounded-xl border p-6">
           <div>
             <h3 className="font-semibold">Gratis</h3>
-            <p className="mt-1 text-3xl font-semibold">{`0${simbolo}`}</p>
+            <p className="mt-1 text-3xl font-semibold">{`0${moneda === "USD" ? "$" : "€"}`}</p>
           </div>
           <ul className="flex-1 space-y-2 text-sm">
             {planes[tipo].gratis.map((c) => (

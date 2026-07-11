@@ -5,6 +5,8 @@ import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-pla
 import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
 import { limiteAdmins, limiteEmpleados, etiquetaPlan, type PlanTarifa } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { formatearPrecio } from "@/lib/precio";
+import { monedaVisitante } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
@@ -24,6 +26,7 @@ export default async function SuscripcionPage({
   const { pago } = await searchParams;
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
+  const moneda = await monedaVisitante();
 
   const { data: suscripcion } = await supabase
     .from("suscripciones")
@@ -130,8 +133,7 @@ export default async function SuscripcionPage({
             <p className="font-medium">
               {agentesExtra > 0 && `${agentesExtra} agente(s)`}
               {agentesExtra > 0 && adminsExtra > 0 && " · "}
-              {adminsExtra > 0 && `${adminsExtra} admin(es)`} (+{costeExtra.toFixed(2).replace(".", ",")}
-              €/mes)
+              {adminsExtra > 0 && `${adminsExtra} admin(es)`} (+{formatearPrecio(costeExtra, moneda)}/mes)
             </p>
           </div>
         )}
@@ -150,6 +152,7 @@ export default async function SuscripcionPage({
           planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"}
           config={config}
           pedidoPendiente={(pedidosPendientes ?? 0) > 0}
+          moneda={moneda}
         />
       </div>
 

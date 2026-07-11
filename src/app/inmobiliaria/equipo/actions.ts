@@ -67,15 +67,37 @@ async function cobrarAsientoExtra(
     };
   }
 
+  const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
+
   try {
+    // El importe se genera al vuelo con price_data (mismo producto, mismo
+    // importe numérico) porque cada suscripción de Stripe tiene una única
+    // moneda fija: hay que usar la que ya tenga la suscripción del
+    // tenant, no la del visitante actual (puede que quien compre el
+    // asiento extra no esté en el mismo país que cuando se dio de alta).
+    const precioBase = await stripe.prices.retrieve(extraPriceId);
+    const productId = typeof precioBase.product === "string" ? precioBase.product : precioBase.product.id;
+
     const items = await stripe.subscriptionItems.list({ subscription: subscriptionId, limit: 100 });
-    const existente = items.data.find((i) => i.price.id === extraPriceId);
+    const existente = items.data.find((i) => {
+      const prodId = typeof i.price.product === "string" ? i.price.product : i.price.product.id;
+      return prodId === productId;
+    });
+    const monedaSuscripcion = items.data[0]?.price.currency ?? "eur";
 
     await stripe.subscriptions.update(subscriptionId, {
       items: [
         existente
           ? { id: existente.id, quantity: (existente.quantity ?? 0) + 1 }
-          : { price: extraPriceId, quantity: 1 },
+          : {
+              price_data: {
+                currency: monedaSuscripcion,
+                product: productId,
+                unit_amount: Math.round(precio * 100),
+                recurring: { interval: "month" },
+              },
+              quantity: 1,
+            },
       ],
       proration_behavior: "always_invoice",
       payment_behavior: "error_if_incomplete",
@@ -95,7 +117,6 @@ async function cobrarAsientoExtra(
     .eq("id", usuario.tenant_id);
   if (errorExtra) return { error: "El pago se cobró pero no se pudo ampliar el plan. Contacta con soporte." };
 
-  const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
   await admin.from("pedidos").insert({
     tenant_id: usuario.tenant_id,
     tipo: "ajuste_manual",

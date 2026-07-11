@@ -6,6 +6,8 @@ import { AjustesForm } from "@/components/asesor/ajustes-form";
 import { SelectorPlan } from "@/components/asesor/suscripcion/selector-plan";
 import { esIlimitado, etiquetaPlan, precioPlan, type PlanTarifa } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { formatearPrecio } from "@/lib/precio";
+import { monedaVisitante } from "@/lib/geo";
 
 export default async function AjustesPage({
   searchParams,
@@ -19,6 +21,7 @@ export default async function AjustesPage({
 
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
+  const moneda = await monedaVisitante();
   const ilimitado = esIlimitado(usuario.tenant ?? {});
   const limites =
     usuario.tenant?.tipo_plan === "inmobiliaria" ? config.inmobiliariaFree : config.asesorFree;
@@ -68,7 +71,7 @@ export default async function AjustesPage({
           {etiquetaPlan(usuario.tenant ?? {})}
           {ilimitado && (
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {precioPlan(config, usuario.tenant ?? {}).toFixed(2)}€/mes
+              {formatearPrecio(precioPlan(config, usuario.tenant ?? {}), moneda)}/mes
             </span>
           )}
         </p>
@@ -97,6 +100,7 @@ export default async function AjustesPage({
           planActual={(usuario.tenant?.plan_tarifa as PlanTarifa) ?? "gratis"}
           config={config}
           pedidoPendiente={(pedidosPendientes ?? 0) > 0}
+          moneda={moneda}
         />
         <p className="text-xs text-muted-foreground">
           {config.asesorProStripePriceId
