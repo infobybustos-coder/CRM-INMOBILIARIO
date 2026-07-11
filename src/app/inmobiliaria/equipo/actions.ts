@@ -10,7 +10,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { adminsIncluidos, limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { stripe } from "@/lib/stripe";
-import { siteUrl } from "@/lib/site-url";
 
 export type RolInvitable = "empleado" | "admin";
 
@@ -61,9 +60,12 @@ export async function invitarMiembro(
   // las mismas funciones que usan Administradores/Agentes/Suscripción.
   const limite = esAdmin ? limiteAdmins(config, usuario.tenant ?? {}) : limiteEmpleados(config, usuario.tenant ?? {});
 
+  const admin = createAdminClient();
+
   if ((activos ?? 0) >= limite) {
     const esPago = usuario.tenant?.plan_tarifa === "pago";
-    if (!esPago) return { requierePlanPro: true };
+    const subscriptionId = usuario.tenant?.stripe_subscription_id as string | null | undefined;
+    if (!esPago || !subscriptionId) return { requierePlanPro: true };
 
     const extraPriceId = esAdmin ? config.adminExtraStripePriceId : config.asesorExtraStripePriceId;
     if (!extraPriceId) {
@@ -72,45 +74,49 @@ export async function invitarMiembro(
       };
     }
 
-    // Nunca se crea la invitación ni se amplía el asiento sin que Stripe
-    // confirme el cobro real: se abre un checkout y es el webhook quien,
-    // al confirmarse el pago, amplía el asiento y crea la invitación.
-    let checkoutUrl: string;
+    // El asiento extra se factura como una línea más dentro de la MISMA
+    // suscripción del plan PRO (no una suscripción aparte): así, si el
+    // cliente cancela el PRO, los asientos extra se cancelan con él. El
+    // cobro se intenta al instante; si falla, no se concede el asiento ni
+    // se crea la invitación.
     try {
-      let customerId = usuario.tenant?.stripe_customer_id as string | null | undefined;
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          email: usuario.email,
-          metadata: { tenant_id: usuario.tenant_id },
-        });
-        customerId = customer.id;
-        const admin = createAdminClient();
-        await admin.from("tenants").update({ stripe_customer_id: customerId }).eq("id", usuario.tenant_id);
-      }
+      const items = await stripe.subscriptionItems.list({ subscription: subscriptionId, limit: 100 });
+      const existente = items.data.find((i) => i.price.id === extraPriceId);
 
-      const url = await siteUrl();
-      const destino = esAdmin ? "administradores" : "agentes";
-      const session = await stripe.checkout.sessions.create({
-        mode: "subscription",
-        customer: customerId,
-        line_items: [{ price: extraPriceId, quantity: 1 }],
-        success_url: `${url}/inmobiliaria/${destino}?asiento_pagado=${encodeURIComponent(email)}`,
-        cancel_url: `${url}/inmobiliaria/${destino}`,
-        metadata: {
-          tenant_id: usuario.tenant_id,
-          tipo_plan: esAdmin ? "admin_extra" : "asesor_extra",
-          invitado_por: usuario.id,
-          email,
-          rol,
-        },
+      await stripe.subscriptions.update(subscriptionId, {
+        items: [
+          existente
+            ? { id: existente.id, quantity: (existente.quantity ?? 0) + 1 }
+            : { price: extraPriceId, quantity: 1 },
+        ],
+        proration_behavior: "always_invoice",
+        payment_behavior: "error_if_incomplete",
       });
-      if (!session.url) return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
-      checkoutUrl = session.url;
     } catch (err) {
-      console.error("Stripe checkout error (asiento extra):", err);
-      return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+      console.error("Stripe: no se pudo cobrar el asiento extra:", err);
+      return {
+        error: "No se pudo cobrar el asiento adicional. Comprueba el método de pago de tu suscripción e inténtalo de nuevo.",
+      };
     }
-    redirect(checkoutUrl);
+
+    const extraActual = esAdmin ? (usuario.tenant?.admins_extra ?? 0) : (usuario.tenant?.agentes_extra ?? 0);
+    const { error: errorExtra } = await admin
+      .from("tenants")
+      .update({ [esAdmin ? "admins_extra" : "agentes_extra"]: extraActual + 1 })
+      .eq("id", usuario.tenant_id);
+    if (errorExtra) return { error: "El pago se cobró pero no se pudo ampliar el plan. Contacta con soporte." };
+
+    const precio = esAdmin ? config.precioAdminExtra : config.precioAsesorExtra;
+    await admin.from("pedidos").insert({
+      tenant_id: usuario.tenant_id,
+      tipo: "ajuste_manual",
+      concepto: esAdmin ? "Administrador adicional" : "Asesor adicional",
+      importe: precio,
+      metodo_pago: "Tarjeta (Stripe)",
+      estado: "pagado",
+      confirmado_en: new Date().toISOString(),
+      confirmado_por: "Stripe (automático)",
+    });
   }
 
   const token = randomUUID();
