@@ -117,6 +117,86 @@ function FiltroRango({ actual }: { actual: Rango }) {
   );
 }
 
+function bucketsDeVisitas(porFecha: Map<string, number>) {
+  return Array.from({ length: 30 }, (_, i) => {
+    const offset = 29 - i;
+    const dia = new Date();
+    dia.setHours(0, 0, 0, 0);
+    dia.setDate(dia.getDate() - offset);
+    const clave = dia.toISOString().slice(0, 10);
+    return {
+      etiqueta: dia.toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
+      valor: porFecha.get(clave) ?? 0,
+    };
+  });
+}
+
+function FiltroDominio({ dominios, actual }: { dominios: string[]; actual: string }) {
+  if (dominios.length === 0) return null;
+  const opciones = dominios.length > 1 ? ["todos", ...dominios] : dominios;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {opciones.map((d) => (
+        <Link
+          key={d}
+          href={`/superadmin?dominio=${encodeURIComponent(d)}`}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+            actual === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          )}
+        >
+          {d === "todos" ? "Todos los dominios" : d}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function GraficoLinea({ buckets }: { buckets: { etiqueta: string; valor: number }[] }) {
+  const max = Math.max(1, ...buckets.map((b) => b.valor));
+  const w = 100;
+  const h = 32;
+  const stepX = buckets.length > 1 ? w / (buckets.length - 1) : 0;
+  const puntos = buckets.map((b, i) => ({
+    x: i * stepX,
+    y: h - (b.valor / max) * h,
+    ...b,
+  }));
+  const linea = puntos.map((p) => `${p.x},${p.y}`).join(" ");
+  const area = `0,${h} ${linea} ${w},${h}`;
+
+  return (
+    <div>
+      <div className="relative h-40 w-full text-sky-500">
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-full w-full overflow-visible">
+          <polygon points={area} className="fill-sky-500/10" />
+          <polyline
+            points={linea}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="0.6"
+            vectorEffect="non-scaling-stroke"
+          />
+          {puntos.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r="0.7" vectorEffect="non-scaling-stroke" fill="currentColor">
+              <title>
+                {p.etiqueta}: {p.valor} visitas
+              </title>
+            </circle>
+          ))}
+        </svg>
+      </div>
+      <div className="mt-1 flex gap-1 text-[10px] text-muted-foreground">
+        {buckets.map((b, i) => (
+          <div key={i} className="flex-1 truncate text-center">
+            {i % 5 === 0 ? b.etiqueta : ""}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function GraficoRegistros({
   buckets,
   rango,
@@ -176,6 +256,7 @@ export default async function SuperadminPage({
     { count: cancelados },
     { count: pedidosPendientes },
     { data: todosTenants },
+    { data: visitasData },
   ] = await Promise.all([
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "inmobiliaria"),
@@ -194,6 +275,7 @@ export default async function SuperadminPage({
       .from("tenants")
       .select("id, nombre, tipo_plan, plan_tarifa, pais, creado_en")
       .order("creado_en", { ascending: false }),
+    admin.from("landing_visitas").select("fecha, dominio, visitas").order("fecha", { ascending: true }),
   ]);
 
   const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
@@ -264,6 +346,29 @@ export default async function SuperadminPage({
 
   const ultimosRegistros = tenants.slice(0, 10);
 
+  const visitas = visitasData ?? [];
+  const dominios = [...new Set(visitas.map((v) => v.dominio))].sort();
+  const dominioSeleccionado =
+    params.dominio && (params.dominio === "todos" || dominios.includes(params.dominio))
+      ? params.dominio
+      : "todos";
+  const visitasFiltradas =
+    dominioSeleccionado === "todos" ? visitas : visitas.filter((v) => v.dominio === dominioSeleccionado);
+
+  const visitasPorFecha = new Map<string, number>();
+  for (const v of visitasFiltradas) {
+    visitasPorFecha.set(v.fecha, (visitasPorFecha.get(v.fecha) ?? 0) + v.visitas);
+  }
+  const bucketsVisitas = bucketsDeVisitas(visitasPorFecha);
+
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const inicioMesStr = inicioMes.toISOString().slice(0, 10);
+  const visitasHoy = visitasPorFecha.get(hoyStr) ?? 0;
+  const visitasMes = [...visitasPorFecha.entries()]
+    .filter(([fecha]) => fecha >= inicioMesStr)
+    .reduce((suma, [, v]) => suma + v, 0);
+  const visitasTotal = visitasFiltradas.reduce((suma, v) => suma + v.visitas, 0);
+
   return (
     <div className="space-y-6">
       <div>
@@ -283,6 +388,37 @@ export default async function SuperadminPage({
           <FiltroRango actual={rango} />
         </div>
         <GraficoRegistros buckets={buckets} rango={rango} />
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Visitas a la landing</h2>
+          <FiltroDominio dominios={dominios} actual={dominioSeleccionado} />
+        </div>
+        {dominios.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Todavía no hay visitas registradas. Se empiezan a contar solas en cuanto alguien entre en
+            la landing pública.
+          </p>
+        ) : (
+          <>
+            <div className="mb-4 grid grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xl font-semibold">{visitasHoy}</p>
+                <p className="text-xs text-muted-foreground">Visitas hoy</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xl font-semibold">{visitasMes}</p>
+                <p className="text-xs text-muted-foreground">Este mes</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xl font-semibold">{visitasTotal}</p>
+                <p className="text-xs text-muted-foreground">Total histórico</p>
+              </div>
+            </div>
+            <GraficoLinea buckets={bucketsVisitas} />
+          </>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
