@@ -5,12 +5,32 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { redirect } from "next/navigation";
 import { ConfirmarPago } from "@/components/inmobiliaria/suscripcion/confirmar-pago";
+import { solicitarUpgradePro } from "@/app/inmobiliaria/suscripcion/actions";
 
 export default async function PagoPage() {
   const usuario = await requireAdminInmobiliaria();
   if (usuario.tenant?.plan_tarifa === "pago") redirect("/inmobiliaria/suscripcion");
 
   const config = await obtenerConfigPlanes();
+
+  // Si hay una pasarela de Stripe conectada, no mostramos el formulario
+  // manual: se inicia el checkout real directamente y Stripe redirige.
+  if (config.inmobiliariaProStripePriceId) {
+    const resultado = await solicitarUpgradePro("Tarjeta (Stripe)");
+    if (resultado && "error" in resultado) {
+      return (
+        <div className="mx-auto max-w-md space-y-4">
+          <Link href="/inmobiliaria/suscripcion" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Volver a Suscripción
+          </Link>
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {resultado.error}
+          </p>
+        </div>
+      );
+    }
+  }
+
   const admin = createAdminClient();
   const { data: pedidoPendiente } = await admin
     .from("pedidos")

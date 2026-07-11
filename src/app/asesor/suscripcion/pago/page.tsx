@@ -5,6 +5,7 @@ import { getUsuarioConTenant } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { ConfirmarPago } from "@/components/asesor/suscripcion/confirmar-pago";
+import { solicitarUpgradePro } from "@/app/asesor/suscripcion/actions";
 
 export default async function PagoPage() {
   const usuario = await getUsuarioConTenant();
@@ -13,6 +14,25 @@ export default async function PagoPage() {
   if (usuario.tenant?.plan_tarifa === "pago") redirect("/asesor/ajustes");
 
   const config = await obtenerConfigPlanes();
+
+  // Si hay una pasarela de Stripe conectada, no mostramos el formulario
+  // manual: se inicia el checkout real directamente y Stripe redirige.
+  if (config.asesorProStripePriceId) {
+    const resultado = await solicitarUpgradePro("Tarjeta (Stripe)");
+    if (resultado && "error" in resultado) {
+      return (
+        <div className="mx-auto max-w-md space-y-4">
+          <Link href="/asesor/ajustes" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Volver a Configuración
+          </Link>
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {resultado.error}
+          </p>
+        </div>
+      );
+    }
+  }
+
   const admin = createAdminClient();
   const { data: pedidoPendiente } = await admin
     .from("pedidos")
