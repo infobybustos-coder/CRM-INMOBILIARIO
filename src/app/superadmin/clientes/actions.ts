@@ -62,6 +62,7 @@ export async function cambiarPlanTenant(
       tipo: "ajuste_manual",
       concepto: `Cambio a ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (manual)`,
       importe: precioPlan(config, { tipo_plan: tipoPlan, plan_tarifa: planTarifa }),
+      moneda: "EUR",
       metodo_pago: metodoPago,
       estado: "pagado",
       confirmado_en: new Date().toISOString(),

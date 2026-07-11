@@ -125,6 +125,8 @@ async function cobrarAsientoExtra(
     redirect(checkoutUrl);
   }
 
+  let monedaSuscripcion = "eur";
+
   try {
     // El importe se genera al vuelo con price_data (mismo producto, mismo
     // importe numérico) porque cada suscripción de Stripe tiene una única
@@ -139,7 +141,7 @@ async function cobrarAsientoExtra(
       const prodId = typeof i.price.product === "string" ? i.price.product : i.price.product.id;
       return prodId === productId;
     });
-    const monedaSuscripcion = items.data[0]?.price.currency ?? "eur";
+    monedaSuscripcion = items.data[0]?.price.currency ?? "eur";
 
     await stripe.subscriptions.update(subscriptionId, {
       items: [
@@ -178,6 +180,7 @@ async function cobrarAsientoExtra(
     tipo: "ajuste_manual",
     concepto: esAdmin ? "Administrador adicional" : "Asesor adicional",
     importe: precio,
+    moneda: monedaSuscripcion.toUpperCase(),
     metodo_pago: "Tarjeta (Stripe)",
     estado: "pagado",
     confirmado_en: new Date().toISOString(),

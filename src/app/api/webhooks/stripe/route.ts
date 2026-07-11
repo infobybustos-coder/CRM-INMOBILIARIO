@@ -13,11 +13,13 @@ async function activarPlanPro(session: Stripe.Checkout.Session) {
   const subscriptionId =
     typeof session.subscription === "string" ? session.subscription : (session.subscription?.id ?? null);
   const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
+  const moneda = (session.currency ?? "eur").toUpperCase();
 
   await admin
     .from("tenants")
     .update({
       plan_tarifa: "pago",
+      moneda,
       ...(subscriptionId ? { stripe_subscription_id: subscriptionId } : {}),
       ...(customerId ? { stripe_customer_id: customerId } : {}),
     })
@@ -30,6 +32,7 @@ async function activarPlanPro(session: Stripe.Checkout.Session) {
     tipo: "plan_pro",
     concepto: tipoPlan === "inmobiliaria" ? "Cambio a Inmobiliaria PRO" : "Cambio a Asesor PRO",
     importe,
+    moneda,
     metodo_pago: "Tarjeta (Stripe)",
     estado: "pagado",
     confirmado_en: new Date().toISOString(),
@@ -114,6 +117,7 @@ async function activarAsientoExtra(session: Stripe.Checkout.Session) {
     tipo: "ajuste_manual",
     concepto: esAdmin ? "Administrador adicional" : "Asesor adicional",
     importe,
+    moneda: (session.currency ?? "eur").toUpperCase(),
     metodo_pago: "Tarjeta (Stripe)",
     estado: "pagado",
     confirmado_en: new Date().toISOString(),

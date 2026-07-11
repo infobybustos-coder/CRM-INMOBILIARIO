@@ -10,12 +10,50 @@ type Tenant = {
   tipo_plan: string;
   plan_tarifa: string;
   pais: string;
+  moneda: string | null;
   admins_extra: number | null;
   agentes_extra: number | null;
 };
 
+type Moneda = "EUR" | "USD";
+
+function importeEn(n: number, moneda: Moneda) {
+  const simbolo = moneda === "USD" ? "$" : "€";
+  return `${n.toFixed(2).replace(".", ",")}${simbolo}`;
+}
+
 function euros(n: number) {
-  return `${n.toFixed(2).replace(".", ",")}€`;
+  return importeEn(n, "EUR");
+}
+
+const RANGOS = [
+  { valor: "dia", etiqueta: "Hoy" },
+  { valor: "mes", etiqueta: "Este mes" },
+  { valor: "3meses", etiqueta: "Últimos 3 meses" },
+  { valor: "1ano", etiqueta: "Último año" },
+  { valor: "todo", etiqueta: "Todo" },
+] as const;
+
+type Rango = (typeof RANGOS)[number]["valor"];
+
+function esRango(v: string | undefined): v is Rango {
+  return RANGOS.some((r) => r.valor === v);
+}
+
+function fechaDesde(rango: Rango): string | null {
+  const hoy = new Date();
+  switch (rango) {
+    case "dia":
+      return new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
+    case "mes":
+      return new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
+    case "3meses":
+      return new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate()).toISOString();
+    case "1ano":
+      return new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate()).toISOString();
+    default:
+      return null;
+  }
 }
 
 function Kpi({ label, valor, nota }: { label: string; valor: string | number; nota?: string }) {
@@ -24,6 +62,24 @@ function Kpi({ label, valor, nota }: { label: string; valor: string | number; no
       <p className="text-2xl font-semibold">{valor}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
       {nota && <p className="mt-1 text-[10px] text-muted-foreground/70">{nota}</p>}
+    </div>
+  );
+}
+
+function FiltrosRango({ rango }: { rango: Rango }) {
+  return (
+    <div className="flex flex-wrap gap-1 rounded-lg border p-1 text-sm">
+      {RANGOS.map((r) => (
+        <Link
+          key={r.valor}
+          href={r.valor === "todo" ? "/superadmin/finanzas" : `/superadmin/finanzas?rango=${r.valor}`}
+          className={`rounded-md px-3 py-1.5 transition-colors ${
+            rango === r.valor ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+          }`}
+        >
+          {r.etiqueta}
+        </Link>
+      ))}
     </div>
   );
 }
@@ -50,17 +106,31 @@ function GraficoMRR({ puntos }: { puntos: { fecha: string; mrr: number }[] }) {
   );
 }
 
-export default async function FinanzasPage() {
+export default async function FinanzasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rango?: string }>;
+}) {
+  const { rango: rangoParam } = await searchParams;
+  const rango: Rango = esRango(rangoParam) ? rangoParam : "todo";
+  const desde = fechaDesde(rango);
+
   const admin = createAdminClient();
   const config = await obtenerConfigPlanes();
 
   const { data: tenantsData } = await admin
     .from("tenants")
-    .select("id, tipo_plan, plan_tarifa, pais, admins_extra, agentes_extra");
+    .select("id, tipo_plan, plan_tarifa, pais, moneda, admins_extra, agentes_extra");
   const tenants = (tenantsData ?? []) as Tenant[];
   const dePago = tenants.filter((t) => t.plan_tarifa === "pago");
 
   const mrr = dePago.reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
+  const mrrEur = dePago
+    .filter((t) => t.moneda !== "USD")
+    .reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
+  const mrrUsd = dePago
+    .filter((t) => t.moneda === "USD")
+    .reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
   const ingresosAsesor = dePago
     .filter((t) => t.tipo_plan === "asesor")
     .reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
@@ -102,16 +172,21 @@ export default async function FinanzasPage() {
   const paisesOrdenados = [...ingresoPorPais.entries()].sort((a, b) => b[1] - a[1]);
   const maxPais = Math.max(1, ...paisesOrdenados.map(([, n]) => n));
 
-  const { data: pagosConfirmados } = await admin
-    .from("pedidos")
-    .select("importe, metodo_pago")
-    .eq("estado", "pagado");
+  let pedidosQuery = admin.from("pedidos").select("importe, metodo_pago, moneda").eq("estado", "pagado");
+  if (desde) pedidosQuery = pedidosQuery.gte("confirmado_en", desde);
+  const { data: pagosConfirmados } = await pedidosQuery;
+
   const importePorMetodo = new Map<string, number>();
+  const importePorMoneda = new Map<Moneda, number>();
   for (const p of pagosConfirmados ?? []) {
     importePorMetodo.set(p.metodo_pago, (importePorMetodo.get(p.metodo_pago) ?? 0) + Number(p.importe));
+    const moneda: Moneda = p.moneda === "USD" ? "USD" : "EUR";
+    importePorMoneda.set(moneda, (importePorMoneda.get(moneda) ?? 0) + Number(p.importe));
   }
   const metodosOrdenados = [...importePorMetodo.entries()].sort((a, b) => b[1] - a[1]);
   const maxMetodo = Math.max(1, ...metodosOrdenados.map(([, n]) => n));
+  const ingresosHistoricoEur = importePorMoneda.get("EUR") ?? 0;
+  const ingresosHistoricoUsd = importePorMoneda.get("USD") ?? 0;
 
   const kpis = [
     { label: "MRR", valor: euros(mrr) },
@@ -139,6 +214,18 @@ export default async function FinanzasPage() {
         {kpis.map((k) => (
           <Kpi key={k.label} {...k} />
         ))}
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <h2 className="mb-3 text-sm font-semibold">MRR por moneda</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Mismo importe numérico, pasarela distinta según el país del cliente: sin conversión de
+          cambio real.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Kpi label="MRR cobrado en euros" valor={importeEn(mrrEur, "EUR")} />
+          <Kpi label="MRR cobrado en dólares" valor={importeEn(mrrUsd, "USD")} />
+        </div>
       </div>
 
       <div className="rounded-lg border p-4">
@@ -216,13 +303,23 @@ export default async function FinanzasPage() {
         </div>
 
         <div className="rounded-lg border p-4 lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold">Ingresos por método de pago (histórico)</h2>
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Ingresos históricos</h2>
+            <FiltrosRango rango={rango} />
+          </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Suma de todos los pedidos marcados como pagados alguna vez, no solo los activos ahora
-            mismo.
+            Suma de todos los pedidos marcados como pagados en el periodo elegido, no solo los
+            planes activos ahora mismo.
           </p>
+
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <Kpi label="Cobrado en euros" valor={importeEn(ingresosHistoricoEur, "EUR")} />
+            <Kpi label="Cobrado en dólares" valor={importeEn(ingresosHistoricoUsd, "USD")} />
+          </div>
+
+          <h3 className="mb-2 text-xs font-semibold text-muted-foreground">Por método de pago</h3>
           {metodosOrdenados.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Todavía no hay pagos confirmados.</p>
+            <p className="text-sm text-muted-foreground">No hay pagos confirmados en este periodo.</p>
           ) : (
             <div className="space-y-2">
               {metodosOrdenados.map(([metodo, valor]) => (

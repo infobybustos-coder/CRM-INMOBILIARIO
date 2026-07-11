@@ -142,6 +142,7 @@ export async function solicitarUpgradePro(metodoPago: string): Promise<CambiarPl
     tipo: "plan_pro",
     concepto: "Cambio a Asesor PRO",
     importe: config.asesorProPrecio,
+    moneda: await monedaVisitante(),
     metodo_pago: metodoPago,
   });
   if (error) return { error: "No se pudo registrar la solicitud. Inténtalo de nuevo." };

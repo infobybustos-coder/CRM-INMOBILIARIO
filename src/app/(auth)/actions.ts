@@ -153,6 +153,7 @@ export async function signUp(
         tipo: "plan_pro",
         concepto: tipoPlan === "inmobiliaria" ? "Cambio a Inmobiliaria PRO" : "Cambio a Asesor PRO",
         importe: tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio,
+        moneda: await monedaVisitante(),
         metodo_pago: metodoPago,
       });
     }
