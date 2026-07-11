@@ -80,7 +80,7 @@ export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda
           <ul className="flex-1 space-y-2 text-sm">
             {planes[tipo].gratis.map((c) => (
               <li key={c} className="flex items-start gap-2">
-                <Check className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {c}
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" /> {c}
               </li>
             ))}
           </ul>
@@ -103,7 +103,7 @@ export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda
           <ul className="flex-1 space-y-2 text-sm">
             {planes[tipo].pago.map((c) => (
               <li key={c} className="flex items-start gap-2">
-                <Check className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {c}
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" /> {c}
               </li>
             ))}
           </ul>

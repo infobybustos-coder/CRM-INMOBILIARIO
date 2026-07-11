@@ -63,9 +63,9 @@ export function LandingPage({
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="tema-landing min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
-        <span className="text-lg font-semibold">CRM Inmobiliario</span>
+        <span className="font-serif text-xl font-semibold tracking-tight">CRM Inmobiliario</span>
         <nav className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Iniciar sesión
@@ -79,33 +79,41 @@ export function LandingPage({
         </nav>
       </header>
 
-      <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-24">
-        <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-          <ShieldCheck className="size-3.5" /> {config.badgeTexto}
-        </span>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">{config.heroTitulo}</h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">{config.heroSubtitulo}</p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            href="/signup"
-            className="flex items-center gap-1.5 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            {config.heroCtaPrincipal} <ArrowRight className="size-4" />
-          </Link>
-          <Link href="#planes" className="rounded-md border px-6 py-3 text-sm font-medium hover:bg-accent">
-            {config.heroCtaSecundario}
-          </Link>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> {config.trust1}
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-primary/10 blur-3xl"
+        />
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-24">
+          <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <ShieldCheck className="size-3.5" /> {config.badgeTexto}
           </span>
-          <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> {config.trust2}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Check className="size-3.5 text-emerald-600" /> {config.trust3}
-          </span>
+          <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight sm:text-6xl">
+            {config.heroTitulo}
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">{config.heroSubtitulo}</p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/signup"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
+            >
+              {config.heroCtaPrincipal} <ArrowRight className="size-4" />
+            </Link>
+            <Link href="#planes" className="rounded-md border px-6 py-3 text-sm font-medium hover:bg-accent">
+              {config.heroCtaSecundario}
+            </Link>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-primary" /> {config.trust1}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-primary" /> {config.trust2}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-primary" /> {config.trust3}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -143,11 +151,11 @@ export function LandingPage({
 
       <section className="border-t py-16">
         <div className="mx-auto max-w-2xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">{config.problemaTitulo}</h2>
+          <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.problemaTitulo}</h2>
           <div className="mt-8 space-y-3 text-left">
             {problemas.map((p) => (
               <div key={p} className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3.5 text-sm">
-                <X className="mt-0.5 size-4 shrink-0 text-rose-500" />
+                <X className="mt-0.5 size-4 shrink-0 text-destructive" />
                 {p}
               </div>
             ))}
@@ -175,7 +183,7 @@ export function LandingPage({
 
       <section className="py-16">
         <div className="mx-auto max-w-4xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">{config.moduloTitulo}</h2>
+          <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.moduloTitulo}</h2>
           <p className="mt-2 text-muted-foreground">{config.moduloSubtitulo}</p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {modulos.map((m, i) => {
@@ -198,7 +206,7 @@ export function LandingPage({
 
       <section className="border-t bg-muted/40 py-16">
         <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">{config.pasosTitulo}</h2>
+          <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.pasosTitulo}</h2>
           <div className="mt-10 grid gap-8 sm:grid-cols-3">
             {pasos.map((p) => (
               <div key={p.numero} className="space-y-2">
@@ -214,7 +222,7 @@ export function LandingPage({
       </section>
 
       <section id="planes" className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <h2 className="text-2xl font-semibold sm:text-3xl">{config.planesTitulo}</h2>
+        <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.planesTitulo}</h2>
         <p className="mt-2 text-muted-foreground">{config.planesSubtitulo}</p>
         <div className="mt-8">
           <PlanesLanding config={planes} moneda={moneda} />
@@ -223,7 +231,7 @@ export function LandingPage({
 
       <section className="border-t py-16">
         <div className="mx-auto max-w-2xl px-4">
-          <h2 className="text-center text-2xl font-semibold sm:text-3xl">{config.faqTitulo}</h2>
+          <h2 className="text-center font-serif text-2xl font-semibold sm:text-3xl">{config.faqTitulo}</h2>
           <div className="mt-8 divide-y rounded-xl border">
             {preguntas.map((p) => (
               <div key={p.pregunta} className="p-4">
@@ -236,7 +244,7 @@ export function LandingPage({
       </section>
 
       <section className="border-t bg-muted/40 py-16 text-center">
-        <h2 className="text-2xl font-semibold sm:text-3xl">{config.ctaFinalTitulo}</h2>
+        <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{config.ctaFinalTitulo}</h2>
         <p className="mt-2 text-muted-foreground">{config.ctaFinalSubtitulo}</p>
         <Link
           href="/signup"
