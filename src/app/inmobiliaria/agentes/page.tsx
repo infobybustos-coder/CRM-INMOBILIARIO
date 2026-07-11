@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/agentes/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
 import { AsientoPagadoBanner } from "@/components/inmobiliaria/equipo/asiento-pagado-banner";
+import { InvitacionesPendientes } from "@/components/inmobiliaria/equipo/invitaciones-pendientes";
 import { limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AgenteFila } from "./constantes";
@@ -54,6 +55,7 @@ export default async function AgentesPage({
     { data: seguimientosMes },
     { data: visitasMes },
     { data: tareasCompletadasMes },
+    { data: invitacionesPendientes },
   ] = await Promise.all([
     supabase
       .from("usuarios")
@@ -122,7 +124,22 @@ export default async function AgentesPage({
       .eq("tenant_id", usuario.tenant_id)
       .eq("estado", "completada")
       .gte("completada_en", inicioMes.toISOString()),
+    supabase
+      .from("invitaciones")
+      .select("id, email, creado_en, expira_en")
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "empleado")
+      .is("usado_en", null)
+      .gt("expira_en", new Date().toISOString())
+      .order("creado_en", { ascending: false }),
   ]);
+
+  const pendientes = (invitacionesPendientes ?? []).map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    creadoEn: inv.creado_en,
+    expiraEn: inv.expira_en,
+  }));
 
   const propietariosPorAgente = new Map<string, number>();
   for (const p of propietarios ?? []) {
@@ -227,13 +244,16 @@ export default async function AgentesPage({
         <div>
           <h1 className="text-2xl font-semibold">Agentes</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {(agentes ?? []).length} de {limiteAgentes} agentes incluidos en tu plan (activos e inactivos)
+            {(agentes ?? []).length + pendientes.length} de {limiteAgentes} agentes incluidos en tu
+            plan (activos, inactivos e invitaciones pendientes)
           </p>
         </div>
         <NuevoMiembro rol="empleado" etiqueta="agente" />
       </div>
 
       {asientoPagado && <AsientoPagadoBanner tenantId={usuario.tenant_id} />}
+
+      <InvitacionesPendientes invitaciones={pendientes} />
 
       {errorAgentes && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">

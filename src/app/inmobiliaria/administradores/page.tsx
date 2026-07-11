@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Tabla } from "@/components/inmobiliaria/administradores/tabla";
 import { NuevoMiembro } from "@/components/inmobiliaria/equipo/nuevo-miembro";
 import { AsientoPagadoBanner } from "@/components/inmobiliaria/equipo/asiento-pagado-banner";
+import { InvitacionesPendientes } from "@/components/inmobiliaria/equipo/invitaciones-pendientes";
 import { limiteAdmins } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import type { AdminFila } from "./constantes";
@@ -17,12 +18,22 @@ export default async function AdministradoresPage({
   const supabase = await createClient();
   const config = await obtenerConfigPlanes();
 
-  const { data: admins, error } = await supabase
-    .from("usuarios")
-    .select("id, nombre_completo, email, activo, ultimo_acceso, creado_en")
-    .eq("tenant_id", usuario.tenant_id)
-    .eq("rol", "admin")
-    .order("nombre_completo");
+  const [{ data: admins, error }, { data: invitacionesPendientes }] = await Promise.all([
+    supabase
+      .from("usuarios")
+      .select("id, nombre_completo, email, activo, ultimo_acceso, creado_en")
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "admin")
+      .order("nombre_completo"),
+    supabase
+      .from("invitaciones")
+      .select("id, email, creado_en, expira_en")
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "admin")
+      .is("usado_en", null)
+      .gt("expira_en", new Date().toISOString())
+      .order("creado_en", { ascending: false }),
+  ]);
 
   const filas: AdminFila[] = (admins ?? []).map((a) => ({
     id: a.id,
@@ -33,6 +44,13 @@ export default async function AdministradoresPage({
     creadoEn: a.creado_en,
   }));
 
+  const pendientes = (invitacionesPendientes ?? []).map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    creadoEn: inv.creado_en,
+    expiraEn: inv.expira_en,
+  }));
+
   const limite = limiteAdmins(config, usuario.tenant ?? {});
 
   return (
@@ -41,13 +59,16 @@ export default async function AdministradoresPage({
         <div>
           <h1 className="text-2xl font-semibold">Administradores</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {filas.length} de {limite} administradores incluidos en tu plan (activos e inactivos)
+            {filas.length + pendientes.length} de {limite} administradores incluidos en tu plan
+            (activos, inactivos e invitaciones pendientes)
           </p>
         </div>
         <NuevoMiembro rol="admin" etiqueta="administrador" />
       </div>
 
       {asientoPagado && <AsientoPagadoBanner tenantId={usuario.tenant_id} />}
+
+      <InvitacionesPendientes invitaciones={pendientes} />
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600">

@@ -36,17 +36,31 @@ export type AmpliarState = AsientoResultado | null;
 // ocupado (no se libera al desactivar): así nadie puede rotar cuentas
 // para esquivar el límite del plan sin pagar. Solo se libera si el
 // usuario se elimina de verdad, no al desactivarlo.
+//
+// Las invitaciones pendientes de aceptar TAMBIÉN cuentan como asiento
+// ocupado: si no fuera así, se podría invitar a cuantos administradores
+// o asesores se quisiera sin pagar nunca, ya que hasta que no aceptan no
+// existe fila en "usuarios". Solo dejan de contar si expiran o se cancelan.
 async function contarMiembros(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string,
   rol: RolInvitable
 ) {
-  const { count } = await supabase
-    .from("usuarios")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .eq("rol", rol);
-  return count ?? 0;
+  const [{ count: countUsuarios }, { count: countInvitaciones }] = await Promise.all([
+    supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("rol", rol),
+    supabase
+      .from("invitaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("rol", rol)
+      .is("usado_en", null)
+      .gt("expira_en", new Date().toISOString()),
+  ]);
+  return (countUsuarios ?? 0) + (countInvitaciones ?? 0);
 }
 
 // Cobra un asiento extra contra la MISMA suscripción de Stripe del plan
@@ -266,6 +280,19 @@ export async function invitarMiembro(
 
   revalidarEquipo();
   return { ok: true, link };
+}
+
+// Como una invitación pendiente ocupa un asiento del plan, cancelarla
+// es la única forma de liberarlo si te equivocaste de email o ya no
+// quieres invitar a esa persona.
+export async function cancelarInvitacion(id: string) {
+  const usuario = await requireAdminInmobiliaria();
+  const supabase = await createClient();
+
+  await supabase.from("invitaciones").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
+
+  revalidarEquipo();
+  revalidatePath("/inmobiliaria/suscripcion");
 }
 
 export async function eliminarMiembro(id: string) {
