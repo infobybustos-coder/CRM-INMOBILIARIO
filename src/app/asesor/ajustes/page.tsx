@@ -64,6 +64,12 @@ export default async function AjustesPage({
           Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
         </p>
       )}
+      {pago === "error" && !ilimitado && (
+        <p className="max-w-lg rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          No se pudo iniciar el pago. Tu cuenta se ha creado en el plan Gratis — elige el plan PRO
+          abajo para intentarlo de nuevo.
+        </p>
+      )}
 
       <div className="max-w-lg rounded-lg border p-4">
         <h2 className="text-sm font-medium">Tu plan</h2>

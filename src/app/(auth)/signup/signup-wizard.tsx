@@ -84,6 +84,10 @@ export function SignupWizard({
     inmobiliaria: config.inmobiliariaProPrecio,
   };
 
+  const stripeConectado = Boolean(
+    tipoPlan === "inmobiliaria" ? config.inmobiliariaProStripePriceId : config.asesorProStripePriceId
+  );
+
   function siguientePaso1() {
     if (!nombre.trim() || !email.trim() || !password || !telefono.trim()) {
       setErrorPaso1("Rellena todos los campos obligatorios.");
@@ -372,8 +376,9 @@ export function SignupWizard({
                   ))}
                 </ul>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Todavía no hay una pasarela de pago automática conectada. Tu cuenta se crea en
-                  Gratis y pasa a Profesional en cuanto confirmemos el pago contigo.
+                  {stripeConectado
+                    ? "Al confirmar te llevamos directamente a la pasarela de pago segura."
+                    : "Todavía no hay una pasarela de pago automática conectada. Tu cuenta se crea en Gratis y pasa a Profesional en cuanto confirmemos el pago contigo."}
                 </p>
                 <Button
                   type="button"

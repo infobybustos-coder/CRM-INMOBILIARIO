@@ -123,6 +123,7 @@ export async function signUp(
     // el webhook quien activa el plan al confirmarse. Si todavía no hay
     // pasarela, se mantiene el flujo manual de pedido pendiente.
     if (priceId) {
+      const destino = tipoPlan === "inmobiliaria" ? "/inmobiliaria/suscripcion" : "/asesor/ajustes";
       let checkoutUrl: string | null = null;
       try {
         const customer = await stripe.customers.create({ email, metadata: { tenant_id: tenant.id } });
@@ -132,7 +133,6 @@ export async function signUp(
         const moneda = await monedaVisitante();
         const precio = tipoPlan === "inmobiliaria" ? config.inmobiliariaProPrecio : config.asesorProPrecio;
         const lineItem = await lineItemMultimoneda(priceId, moneda, precio);
-        const destino = tipoPlan === "inmobiliaria" ? "/inmobiliaria/suscripcion" : "/asesor/ajustes";
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           customer: customer.id,
@@ -146,7 +146,10 @@ export async function signUp(
       } catch (err) {
         console.error("Stripe checkout error en signup:", err);
       }
-      if (checkoutUrl) redirect(checkoutUrl);
+      // Nunca dejamos que un fallo de Stripe caiga en silencio al panel
+      // Gratis: si no se pudo generar el checkout, avisamos para que pueda
+      // reintentar el pago desde su panel en vez de quedarse sin PRO sin saberlo.
+      redirect(checkoutUrl ?? `${destino}?pago=error`);
     } else if (METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
       await admin.from("pedidos").insert({
         tenant_id: tenant.id,

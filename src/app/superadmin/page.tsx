@@ -131,27 +131,6 @@ function bucketsDeVisitas(porFecha: Map<string, number>) {
   });
 }
 
-function FiltroDominio({ dominios, actual }: { dominios: string[]; actual: string }) {
-  if (dominios.length === 0) return null;
-  const opciones = dominios.length > 1 ? ["todos", ...dominios] : dominios;
-  return (
-    <div className="flex flex-wrap gap-1">
-      {opciones.map((d) => (
-        <Link
-          key={d}
-          href={`/superadmin?dominio=${encodeURIComponent(d)}`}
-          className={cn(
-            "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-            actual === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
-          )}
-        >
-          {d === "todos" ? "Todos los dominios" : d}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
 function GraficoLinea({ buckets }: { buckets: { etiqueta: string; valor: number }[] }) {
   const max = Math.max(1, ...buckets.map((b) => b.valor));
   const w = 100;
@@ -347,16 +326,9 @@ export default async function SuperadminPage({
   const ultimosRegistros = tenants.slice(0, 10);
 
   const visitas = visitasData ?? [];
-  const dominios = [...new Set(visitas.map((v) => v.dominio))].sort();
-  const dominioSeleccionado =
-    params.dominio && (params.dominio === "todos" || dominios.includes(params.dominio))
-      ? params.dominio
-      : "todos";
-  const visitasFiltradas =
-    dominioSeleccionado === "todos" ? visitas : visitas.filter((v) => v.dominio === dominioSeleccionado);
 
   const visitasPorFecha = new Map<string, number>();
-  for (const v of visitasFiltradas) {
+  for (const v of visitas) {
     visitasPorFecha.set(v.fecha, (visitasPorFecha.get(v.fecha) ?? 0) + v.visitas);
   }
   const bucketsVisitas = bucketsDeVisitas(visitasPorFecha);
@@ -367,7 +339,7 @@ export default async function SuperadminPage({
   const visitasMes = [...visitasPorFecha.entries()]
     .filter(([fecha]) => fecha >= inicioMesStr)
     .reduce((suma, [, v]) => suma + v, 0);
-  const visitasTotal = visitasFiltradas.reduce((suma, v) => suma + v.visitas, 0);
+  const visitasTotal = visitas.reduce((suma, v) => suma + v.visitas, 0);
 
   return (
     <div className="space-y-6">
@@ -391,11 +363,10 @@ export default async function SuperadminPage({
       </div>
 
       <div className="rounded-lg border p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Visitas a la landing</h2>
-          <FiltroDominio dominios={dominios} actual={dominioSeleccionado} />
         </div>
-        {dominios.length === 0 ? (
+        {visitas.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Todavía no hay visitas registradas. Se empiezan a contar solas en cuanto alguien entre en
             la landing pública.

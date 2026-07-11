@@ -81,6 +81,12 @@ export default async function SuscripcionPage({
           Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
         </p>
       )}
+      {pago === "error" && tenant.plan_tarifa !== "pago" && (
+        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          No se pudo iniciar el pago. Tu cuenta se ha creado en el plan Gratis — elige el plan PRO
+          abajo para intentarlo de nuevo.
+        </p>
+      )}
 
       <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <div>
