@@ -2,8 +2,14 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Plus, X, Copy, Check, Lock } from "lucide-react";
-import { invitarMiembro, type InvitarState, type RolInvitable } from "@/app/inmobiliaria/equipo/actions";
+import { Plus, X, Copy, Check, Lock, Loader2 } from "lucide-react";
+import {
+  ampliarAsientoSiHaceFalta,
+  invitarMiembro,
+  type AmpliarState,
+  type InvitarState,
+  type RolInvitable,
+} from "@/app/inmobiliaria/equipo/actions";
 
 export function NuevoMiembro({
   rol: rolFijo,
@@ -18,9 +24,34 @@ export function NuevoMiembro({
   const [estado, setEstado] = useState<InvitarState>(null);
   const [pending, startTransition] = useTransition();
   const [copiado, setCopiado] = useState(false);
-  const rol = rolFijo ?? rolElegido;
+
+  // Comprobamos y, si hace falta, cobramos el asiento extra ANTES de
+  // mostrar el formulario de email: así el pago se pide primero y nunca
+  // se llega a invitar a nadie sin haberlo confirmado.
+  const [comprobando, setComprobando] = useState(false);
+  const [asiento, setAsiento] = useState<AmpliarState>(null);
+
+  function verificar(rolActual: RolInvitable) {
+    setComprobando(true);
+    setAsiento(null);
+    ampliarAsientoSiHaceFalta(rolActual).then((resultado) => {
+      setAsiento(resultado);
+      setComprobando(false);
+    });
+  }
+
+  function abrir() {
+    setAbierto(true);
+    verificar(rolFijo ?? rolElegido);
+  }
+
+  function cambiarRol(nuevoRol: RolInvitable) {
+    setRolElegido(nuevoRol);
+    verificar(nuevoRol);
+  }
 
   function enviar() {
+    const rol = rolFijo ?? rolElegido;
     const formData = new FormData();
     formData.set("email", email);
     startTransition(async () => {
@@ -35,13 +66,17 @@ export function NuevoMiembro({
     setRolElegido("empleado");
     setEstado(null);
     setCopiado(false);
+    setComprobando(false);
+    setAsiento(null);
   }
+
+  const rol = rolFijo ?? rolElegido;
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setAbierto(true)}
+        onClick={abrir}
         className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
       >
         <Plus className="size-4" /> Nuevo {etiqueta}
@@ -93,7 +128,11 @@ export function NuevoMiembro({
                   Cerrar
                 </button>
               </div>
-            ) : estado && "requierePlanPro" in estado ? (
+            ) : comprobando || !asiento ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" /> Comprobando tu plan...
+              </div>
+            ) : "requierePlanPro" in asiento ? (
               <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
                 <p className="flex items-start gap-2">
                   <Lock className="mt-0.5 size-4 shrink-0 text-amber-600" />
@@ -108,6 +147,26 @@ export function NuevoMiembro({
                   >
                     Ver plan PRO
                   </Link>
+                  <button
+                    type="button"
+                    onClick={cerrar}
+                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : "error" in asiento ? (
+              <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                <p className="text-destructive">{asiento.error}</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => verificar(rol)}
+                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Reintentar
+                  </button>
                   <button
                     type="button"
                     onClick={cerrar}
@@ -140,7 +199,7 @@ export function NuevoMiembro({
                     <select
                       id="rol-nuevo-miembro"
                       value={rolElegido}
-                      onChange={(e) => setRolElegido(e.target.value as RolInvitable)}
+                      onChange={(e) => cambiarRol(e.target.value as RolInvitable)}
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     >
                       <option value="empleado">Asesor</option>

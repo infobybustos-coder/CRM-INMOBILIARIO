@@ -27,7 +27,6 @@ export default async function AdministradoresPage() {
     creadoEn: a.creado_en,
   }));
 
-  const activos = (admins ?? []).filter((a) => a.activo);
   const limite = limiteAdmins(config, usuario.tenant ?? {});
 
   return (
@@ -36,7 +35,7 @@ export default async function AdministradoresPage() {
         <div>
           <h1 className="text-2xl font-semibold">Administradores</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {activos.length} de {limite} administradores incluidos en tu plan
+            {filas.length} de {limite} administradores incluidos en tu plan (activos e inactivos)
           </p>
         </div>
         <NuevoMiembro rol="admin" etiqueta="administrador" />

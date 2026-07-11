@@ -221,7 +221,7 @@ export default async function AgentesPage() {
         <div>
           <h1 className="text-2xl font-semibold">Agentes</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {activos.length} de {limiteAgentes} agentes incluidos en tu plan
+            {(agentes ?? []).length} de {limiteAgentes} agentes incluidos en tu plan (activos e inactivos)
           </p>
         </div>
         <NuevoMiembro rol="empleado" etiqueta="agente" />
