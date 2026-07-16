@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
+import { enviarCorreo } from "@/lib/correos/enviar";
 
 function revalidarPedidos(tenantId: string) {
   revalidatePath("/superadmin/pedidos");
@@ -33,7 +35,31 @@ export async function confirmarPedido(pedidoId: string) {
     .eq("id", pedidoId);
 
   if (pedido.tipo === "plan_pro") {
+    const { data: tenantAntes } = await admin
+      .from("tenants")
+      .select("nombre, tipo_plan, plan_tarifa")
+      .eq("id", pedido.tenant_id)
+      .maybeSingle();
+
     await admin.from("tenants").update({ plan_tarifa: "pago" }).eq("id", pedido.tenant_id);
+
+    if (tenantAntes && tenantAntes.plan_tarifa !== "pago") {
+      const { data: contacto } = await admin
+        .from("usuarios")
+        .select("nombre_completo, email")
+        .eq("tenant_id", pedido.tenant_id)
+        .order("rol", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (contacto) {
+        await enviarCorreo("cambio_plan", contacto.email, {
+          nombre: contacto.nombre_completo ?? "",
+          empresa: tenantAntes.nombre,
+          plan: `Plan ${tenantAntes.tipo_plan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO`,
+          app_url: await siteUrl(),
+        });
+      }
+    }
   }
 
   await admin.from("tenant_eventos").insert({

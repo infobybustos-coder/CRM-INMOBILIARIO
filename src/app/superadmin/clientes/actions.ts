@@ -4,11 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { precioPlan } from "@/lib/planes";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
 import { siteUrl } from "@/lib/site-url";
+import { enviarCorreo, enviarCorreoRecuperacion } from "@/lib/correos/enviar";
 
 export type EstadoTenant = "activo" | "suspendido" | "cancelado";
 
@@ -25,16 +25,40 @@ function revalidarCliente(tenantId: string) {
   revalidatePath("/superadmin");
 }
 
+async function contactoTenant(admin: ReturnType<typeof createAdminClient>, tenantId: string) {
+  const { data } = await admin
+    .from("usuarios")
+    .select("nombre_completo, email")
+    .eq("tenant_id", tenantId)
+    .order("rol", { ascending: true }) // "admin" antes que "empleado"
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
 export async function cambiarEstadoTenant(tenantId: string, nuevoEstado: EstadoTenant) {
   await requireSuperadmin();
 
   const admin = createAdminClient();
+  const { data: tenant } = await admin.from("tenants").select("nombre").eq("id", tenantId).maybeSingle();
+
   await admin.from("tenants").update({ estado: nuevoEstado }).eq("id", tenantId);
   await admin.from("tenant_eventos").insert({
     tenant_id: tenantId,
     tipo: "estado",
     descripcion: `Estado cambiado a ${ETIQUETA_ESTADO[nuevoEstado]}.`,
   });
+
+  if (nuevoEstado === "cancelado") {
+    const contacto = await contactoTenant(admin, tenantId);
+    if (contacto) {
+      await enviarCorreo("cancelacion_plan", contacto.email, {
+        nombre: contacto.nombre_completo ?? "",
+        empresa: tenant?.nombre ?? "",
+        fecha: new Date().toLocaleDateString("es-ES"),
+      });
+    }
+  }
 
   revalidarCliente(tenantId);
 }
@@ -48,6 +72,12 @@ export async function cambiarPlanTenant(
   const superadmin = await requireSuperadmin();
 
   const admin = createAdminClient();
+  const { data: tenantAntes } = await admin
+    .from("tenants")
+    .select("nombre, plan_tarifa")
+    .eq("id", tenantId)
+    .maybeSingle();
+
   await admin.from("tenants").update({ tipo_plan: tipoPlan, plan_tarifa: planTarifa }).eq("id", tenantId);
   await admin.from("tenant_eventos").insert({
     tenant_id: tenantId,
@@ -56,6 +86,18 @@ export async function cambiarPlanTenant(
       planTarifa === "pago" ? "PRO" : "Gratis"
     } (manual, por soporte).`,
   });
+
+  if (planTarifa === "pago" && tenantAntes?.plan_tarifa !== "pago") {
+    const contacto = await contactoTenant(admin, tenantId);
+    if (contacto) {
+      await enviarCorreo("cambio_plan", contacto.email, {
+        nombre: contacto.nombre_completo ?? "",
+        empresa: tenantAntes?.nombre ?? "",
+        plan: `Plan ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO`,
+        app_url: await siteUrl(),
+      });
+    }
+  }
 
   if (planTarifa === "pago" && metodoPago && METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
     const config = await obtenerConfigPlanes();
@@ -114,12 +156,8 @@ export async function restablecerContrasenaUsuario(usuarioId: string, tenantId: 
     .maybeSingle();
   if (!usuario) return { error: "No se encontró el usuario." };
 
-  const supabase = await createClient();
-  const url = await siteUrl();
-  const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, {
-    redirectTo: `${url}/auth/callback?next=/restablecer-contrasena`,
-  });
-  if (error) return { error: "No se pudo enviar el correo de restablecimiento." };
+  const resultado = await enviarCorreoRecuperacion(usuario.email, usuario.nombre_completo);
+  if ("error" in resultado) return { error: "No se pudo enviar el correo de restablecimiento." };
 
   await admin.from("tenant_eventos").insert({
     tenant_id: tenantId,
