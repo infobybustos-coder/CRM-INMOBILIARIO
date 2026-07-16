@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan, limiteRecurso, limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
-import { estaConectado, tiempoDesde } from "@/lib/actividad";
+import { estaConectado, tiempoDesde } from "@/lib/actividad-tiempo";
 import { listarConversacionesTenant } from "@/lib/soporte/db";
 import { cn } from "@/lib/utils";
 import { EstadoTenantAcciones } from "@/components/superadmin/estado-tenant-acciones";
