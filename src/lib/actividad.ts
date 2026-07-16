@@ -14,5 +14,9 @@ export async function registrarActividad() {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("usuarios").update({ ultima_actividad: new Date().toISOString() }).eq("id", user.id);
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ ultima_actividad: new Date().toISOString() })
+    .eq("id", user.id);
+  if (error) console.error("registrarActividad:", error.message);
 }
