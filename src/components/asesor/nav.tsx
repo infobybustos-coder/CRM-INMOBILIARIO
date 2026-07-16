@@ -12,6 +12,7 @@ import {
   CalendarDays,
   BarChart3,
   Settings,
+  Headset,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -47,6 +48,10 @@ const GRUPOS_ASESOR: Grupo[] = [
   {
     titulo: "Rendimiento",
     enlaces: [{ href: "/asesor/rendimiento", label: "Rendimiento", icon: BarChart3 }],
+  },
+  {
+    titulo: "Centro de ayuda",
+    enlaces: [{ href: "/asesor/soporte", label: "Soporte", icon: Headset }],
   },
   {
     titulo: "Configuración",
