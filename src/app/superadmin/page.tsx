@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { precioMensualTotal } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { banderaPais, nombrePais } from "@/lib/paises";
+import { MINUTOS_CONECTADO } from "@/lib/actividad-tiempo";
 import { cn } from "@/lib/utils";
 
 type Rango = "7d" | "30d" | "12m";
@@ -226,6 +227,9 @@ export default async function SuperadminPage({
   inicioMes.setDate(1);
   inicioMes.setHours(0, 0, 0, 0);
 
+  const umbralConectado = new Date();
+  umbralConectado.setMinutes(umbralConectado.getMinutes() - MINUTOS_CONECTADO);
+
   const [
     { count: clientesActivos },
     { count: inmobiliarias },
@@ -236,6 +240,7 @@ export default async function SuperadminPage({
     { count: pedidosPendientes },
     { data: todosTenants },
     { data: visitasData },
+    { count: usuariosConectados },
   ] = await Promise.all([
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
     admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "inmobiliaria"),
@@ -255,6 +260,7 @@ export default async function SuperadminPage({
       .select("id, nombre, tipo_plan, plan_tarifa, pais, creado_en")
       .order("creado_en", { ascending: false }),
     admin.from("landing_visitas").select("fecha, dominio, visitas").order("fecha", { ascending: true }),
+    admin.from("usuarios").select("id", { count: "exact", head: true }).gte("ultima_actividad", umbralConectado.toISOString()),
   ]);
 
   const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);
@@ -343,9 +349,21 @@ export default async function SuperadminPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Panel de Superadmin</h1>
-        <p className="text-sm text-muted-foreground">Cómo va el negocio, de un vistazo.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Panel de Superadmin</h1>
+          <p className="text-sm text-muted-foreground">Cómo va el negocio, de un vistazo.</p>
+        </div>
+        <Link
+          href="/superadmin/clientes"
+          className="flex items-center gap-1.5 rounded-full border bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-500"
+        >
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+          </span>
+          {usuariosConectados ?? 0} {usuariosConectados === 1 ? "usuario conectado" : "usuarios conectados"}
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
