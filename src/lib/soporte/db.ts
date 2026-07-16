@@ -128,6 +128,15 @@ export async function tieneRespuestaSinLeer(admin: AdminClient, usuarioId: strin
   return false;
 }
 
+export async function listarConversacionesTenant(admin: AdminClient, tenantId: string): Promise<Conversacion[]> {
+  const { data } = await admin
+    .from("conversaciones")
+    .select("id, asunto, estado, creado_en, actualizado_en")
+    .eq("tenant_id", tenantId)
+    .order("actualizado_en", { ascending: false });
+  return (data ?? []).map(mapConversacion);
+}
+
 export async function listarConversacionesAdmin(admin: AdminClient): Promise<ConversacionConCliente[]> {
   const { data } = await admin
     .from("conversaciones")

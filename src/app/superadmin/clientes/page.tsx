@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { estaConectado, tiempoDesde } from "@/lib/actividad";
 import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
 import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
@@ -61,13 +62,19 @@ export default async function ClientesPage({
 
   const { data: usuarios } = await admin
     .from("usuarios")
-    .select("id, tenant_id, nombre_completo, email, telefono, rol")
+    .select("id, tenant_id, nombre_completo, email, telefono, rol, ultima_actividad")
     .in("tenant_id", (tenants ?? []).map((t) => t.id));
 
   const contactoPorTenant = new Map<string, NonNullable<typeof usuarios>[number]>();
+  const actividadPorTenant = new Map<string, string | null>();
   for (const u of usuarios ?? []) {
     const actual = contactoPorTenant.get(u.tenant_id);
     if (!actual || u.rol === "admin") contactoPorTenant.set(u.tenant_id, u);
+
+    const previa = actividadPorTenant.get(u.tenant_id);
+    if (u.ultima_actividad && (!previa || u.ultima_actividad > previa)) {
+      actividadPorTenant.set(u.tenant_id, u.ultima_actividad);
+    }
   }
 
   const paisesDisponibles = [...new Set((todosPaises ?? []).map((t) => t.pais))].sort((a, b) =>
@@ -128,6 +135,7 @@ export default async function ClientesPage({
               <th className="px-3 py-2 font-medium">WhatsApp</th>
               <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Estado</th>
+              <th className="px-3 py-2 font-medium">Actividad</th>
               <th className="px-3 py-2 font-medium">Registro</th>
               <th className="px-3 py-2 font-medium">Acciones</th>
             </tr>
@@ -135,7 +143,7 @@ export default async function ClientesPage({
           <tbody className="divide-y">
             {(tenants ?? []).length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">
                   No hay tenants con esos filtros.
                 </td>
               </tr>
@@ -143,6 +151,8 @@ export default async function ClientesPage({
               (tenants ?? []).map((t) => {
                 const contacto = contactoPorTenant.get(t.id);
                 const estado = ETIQUETA_ESTADO[t.estado] ?? ETIQUETA_ESTADO.activo;
+                const ultimaActividad = actividadPorTenant.get(t.id) ?? null;
+                const conectado = estaConectado(ultimaActividad);
                 return (
                   <tr key={t.id} className="hover:bg-accent/50">
                     <td className="px-3 py-2">
@@ -177,6 +187,17 @@ export default async function ClientesPage({
                       <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", estado.clase)}>
                         {estado.texto}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "size-2 rounded-full",
+                            conectado ? "bg-emerald-500" : "bg-muted-foreground/30"
+                          )}
+                        />
+                        {conectado ? "Conectado" : tiempoDesde(ultimaActividad)}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
                       {new Date(t.creado_en).toLocaleDateString("es-ES", {

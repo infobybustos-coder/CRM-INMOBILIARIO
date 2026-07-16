@@ -34,7 +34,8 @@ export function Documentos({
     entidadId: string,
     nombreArchivo: string,
     urlStorage: string,
-    tipoDocumento: string | null
+    tipoDocumento: string | null,
+    tamanoBytes?: number
   ) => Promise<void>;
   eliminarDocumentoAction: (documentoId: string, entidadId: string, urlStorage: string) => Promise<void>;
 }) {
@@ -59,7 +60,7 @@ export function Documentos({
     }
 
     try {
-      await registrarDocumentoAction(entidadId, file.name, ruta, tipo || null);
+      await registrarDocumentoAction(entidadId, file.name, ruta, tipo || null, file.size);
       setLista((prev) => [
         {
           id: ruta,

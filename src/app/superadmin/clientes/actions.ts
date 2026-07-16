@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { precioPlan } from "@/lib/planes";
 import { METODOS_PAGO } from "@/lib/metodos-pago";
+import { siteUrl } from "@/lib/site-url";
 
 export type EstadoTenant = "activo" | "suspendido" | "cancelado";
 
@@ -99,6 +101,39 @@ export async function agregarNota(tenantId: string, texto: string) {
   });
 
   revalidarCliente(tenantId);
+}
+
+export async function restablecerContrasenaUsuario(usuarioId: string, tenantId: string) {
+  const superadmin = await requireSuperadmin();
+
+  const admin = createAdminClient();
+  const { data: usuario } = await admin
+    .from("usuarios")
+    .select("email, nombre_completo")
+    .eq("id", usuarioId)
+    .maybeSingle();
+  if (!usuario) return { error: "No se encontró el usuario." };
+
+  const supabase = await createClient();
+  const url = await siteUrl();
+  const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, {
+    redirectTo: `${url}/auth/callback?next=/restablecer-contrasena`,
+  });
+  if (error) return { error: "No se pudo enviar el correo de restablecimiento." };
+
+  await admin.from("tenant_eventos").insert({
+    tenant_id: tenantId,
+    tipo: "soporte",
+    descripcion: `Restablecimiento de contraseña enviado a ${usuario.nombre_completo ?? usuario.email} (por soporte).`,
+  });
+  await admin.from("superadmin_auditoria").insert({
+    accion: "restablecer_password",
+    detalle: `Correo de restablecimiento enviado a ${usuario.email} (usuario ${usuarioId}).`,
+    actor_email: superadmin.email,
+  });
+
+  revalidarCliente(tenantId);
+  return { ok: true } as const;
 }
 
 export async function eliminarTenant(tenantId: string, confirmacionNombre: string) {
