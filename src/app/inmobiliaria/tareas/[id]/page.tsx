@@ -91,7 +91,9 @@ export default async function TareaPage({
             </Link>
           )}
         </div>
-        <CompartirEnMensajesBoton entidadTipo="tarea" entidadId={id} />
+        {usuario.tenant?.plan_tarifa === "pago" && (
+          <CompartirEnMensajesBoton entidadTipo="tarea" entidadId={id} />
+        )}
       </div>
 
       <FormularioTarea

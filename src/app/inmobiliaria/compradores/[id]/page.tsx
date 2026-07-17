@@ -112,7 +112,9 @@ export default async function CompradorPage({
             Score: {calcularCompraScore(comprador)}
           </span>
         </div>
-        <CompartirEnMensajesBoton entidadTipo="comprador" entidadId={id} />
+        {usuario.tenant?.plan_tarifa === "pago" && (
+          <CompartirEnMensajesBoton entidadTipo="comprador" entidadId={id} />
+        )}
       </div>
 
       <FormularioComprador

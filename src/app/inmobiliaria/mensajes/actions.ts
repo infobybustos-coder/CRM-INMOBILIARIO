@@ -16,6 +16,7 @@ async function requireUsuario() {
   const usuario = await getUsuarioEfectivo();
   if (!usuario) throw new Error("No autenticado");
   if (usuario.tenant?.tipo_plan !== "inmobiliaria") throw new Error("Mensajes no está disponible para este plan.");
+  if (usuario.tenant?.plan_tarifa !== "pago") throw new Error("Mensajes es una función del Plan PRO.");
   return usuario;
 }
 

@@ -111,7 +111,9 @@ export default async function PropietarioPage({
             Score: {calcularCaptacionScore(propietario)}
           </span>
         </div>
-        <CompartirEnMensajesBoton entidadTipo="propietario" entidadId={id} />
+        {usuario.tenant?.plan_tarifa === "pago" && (
+          <CompartirEnMensajesBoton entidadTipo="propietario" entidadId={id} />
+        )}
       </div>
 
       <SiguientePaso

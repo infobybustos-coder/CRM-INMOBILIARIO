@@ -26,6 +26,7 @@ export default async function InmobiliariaLayout({
 
   const usuario = objetivo ?? real;
   const esAdmin = usuario.rol === "admin";
+  const esPro = usuario.tenant?.plan_tarifa === "pago";
 
   let hayTareasHoy = false;
   if (esAdmin) {
@@ -49,7 +50,8 @@ export default async function InmobiliariaLayout({
   const admin = createAdminClient();
   const [avisoSoporte, avisoMensajes] = await Promise.all([
     tieneRespuestaSinLeer(admin, usuario.id),
-    tieneMensajeSinLeer(admin, usuario.id),
+    // Mensajes es una función PRO: en Gratis no hay nada que avisar.
+    esPro ? tieneMensajeSinLeer(admin, usuario.id) : Promise.resolve(false),
   ]);
   const avisos: Record<string, boolean> = {
     "/inmobiliaria/soporte": avisoSoporte,
@@ -96,7 +98,7 @@ export default async function InmobiliariaLayout({
         </div>
       )}
       <main className="p-4 pb-24 md:pb-6">{children}</main>
-      <InmobiliariaNav esAdmin={esAdmin} avisos={avisos} />
+      <InmobiliariaNav esAdmin={esAdmin} esPro={esPro} avisos={avisos} />
       <HeartbeatActividad />
     </div>
   );

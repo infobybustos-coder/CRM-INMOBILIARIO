@@ -5,6 +5,7 @@ import { obtenerConfigPlanes } from "@/lib/planes-config";
 import { cn } from "@/lib/utils";
 import { AccionesFilaSuscripcion } from "@/components/superadmin/acciones-fila-suscripcion";
 import { ConfigPlanesEditor } from "@/components/superadmin/config-planes-editor";
+import { ComparativaPlanes } from "@/components/superadmin/comparativa-planes";
 import type { EstadoTenant } from "../clientes/actions";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
@@ -128,6 +129,17 @@ export default async function SuscripcionesPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Qué incluye cada plan</h2>
+          <p className="text-sm text-muted-foreground">
+            Comparativa de límites y funciones — por ejemplo, Mensajes internos es exclusivo de
+            Inmobiliaria PRO, no está disponible en el plan Gratis.
+          </p>
+        </div>
+        <ComparativaPlanes config={config} />
       </div>
 
       <div className="space-y-3">
