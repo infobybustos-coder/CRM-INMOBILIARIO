@@ -5,6 +5,7 @@ import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { verificarUmbralesLimite } from "@/lib/limite-aviso";
 
 async function requireUsuario() {
   const usuario = await getUsuarioEfectivo();
@@ -290,12 +291,14 @@ export async function crearInmuebleRapido(
 
   const config = await obtenerConfigPlanes();
   const limite = limiteRecurso(config, usuario.tenant ?? {}, "inmuebles");
+  let conteoActual = 0;
   if (limite !== null) {
     const { count } = await supabase
       .from("inmuebles")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", usuario.tenant_id);
-    if ((count ?? 0) >= limite) {
+    conteoActual = count ?? 0;
+    if (conteoActual >= limite) {
       return {
         error: `Has llegado al límite de ${limite} inmuebles del plan Gratis.`,
         limite: true,
@@ -315,6 +318,10 @@ export async function crearInmuebleRapido(
     return error.code === "23505"
       ? { error: "Esa referencia ya existe." }
       : { error: "No se pudo guardar el inmueble." };
+  }
+
+  if (limite !== null) {
+    await verificarUmbralesLimite(usuario, "inmuebles", config, conteoActual + 1);
   }
 
   revalidarInmueble();

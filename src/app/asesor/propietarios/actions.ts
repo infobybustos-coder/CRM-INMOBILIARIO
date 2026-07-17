@@ -5,6 +5,7 @@ import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { verificarUmbralesLimite } from "@/lib/limite-aviso";
 
 async function requireUsuario() {
   const usuario = await getUsuarioEfectivo();
@@ -333,12 +334,14 @@ export async function crearPropietarioRapido(
 
   const config = await obtenerConfigPlanes();
   const limite = limiteRecurso(config, usuario.tenant ?? {}, "propietarios");
+  let conteoActual = 0;
   if (limite !== null) {
     const { count } = await supabase
       .from("propietarios")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", usuario.tenant_id);
-    if ((count ?? 0) >= limite) {
+    conteoActual = count ?? 0;
+    if (conteoActual >= limite) {
       return {
         error: `Has llegado al límite de ${limite} captaciones del plan Gratis.`,
         limite: true,
@@ -355,6 +358,12 @@ export async function crearPropietarioRapido(
   });
 
   if (error) return { error: "No se pudo guardar el propietario." };
+
+  if (limite !== null) {
+    // Se espera (no fire-and-forget) porque en un entorno serverless una
+    // promesa sin await puede quedar cortada al terminar la función.
+    await verificarUmbralesLimite(usuario, "propietarios", config, conteoActual + 1);
+  }
 
   revalidarPropietario();
   return { ok: true };

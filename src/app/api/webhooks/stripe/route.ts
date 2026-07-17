@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
+import { enviarCorreo } from "@/lib/correos/enviar";
+
+async function contactoTenant(admin: ReturnType<typeof createAdminClient>, tenantId: string) {
+  const { data } = await admin
+    .from("usuarios")
+    .select("nombre_completo, email")
+    .eq("tenant_id", tenantId)
+    .order("rol", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
 
 async function activarPlanPro(session: Stripe.Checkout.Session) {
   const tenantId = session.metadata?.tenant_id;
@@ -45,6 +58,19 @@ async function activarPlanPro(session: Stripe.Checkout.Session) {
     tipo: "plan",
     descripcion: `Pago confirmado por Stripe: ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO (${importe.toFixed(2)}€).`,
   });
+
+  const [contacto, tenant] = await Promise.all([
+    contactoTenant(admin, tenantId),
+    admin.from("tenants").select("nombre").eq("id", tenantId).maybeSingle().then((r) => r.data),
+  ]);
+  if (contacto) {
+    await enviarCorreo("cambio_plan", contacto.email, {
+      nombre: contacto.nombre_completo ?? "",
+      empresa: tenant?.nombre ?? "",
+      plan: `Plan ${tipoPlan === "inmobiliaria" ? "Inmobiliaria" : "Asesor"} PRO`,
+      app_url: await siteUrl(),
+    });
+  }
 }
 
 // Caso de respaldo: un tenant con PRO activado a mano (sin suscripción de
@@ -136,7 +162,7 @@ async function cancelarPorSuscripcion(subscription: Stripe.Subscription) {
   const admin = createAdminClient();
   const { data: tenant } = await admin
     .from("tenants")
-    .select("id")
+    .select("id, nombre")
     .eq("stripe_subscription_id", subscription.id)
     .maybeSingle();
   if (!tenant) return;
@@ -151,6 +177,15 @@ async function cancelarPorSuscripcion(subscription: Stripe.Subscription) {
     tipo: "plan",
     descripcion: "Suscripción de Stripe cancelada: el plan ha vuelto a Gratis.",
   });
+
+  const contacto = await contactoTenant(admin, tenant.id);
+  if (contacto) {
+    await enviarCorreo("cancelacion_plan", contacto.email, {
+      nombre: contacto.nombre_completo ?? "",
+      empresa: tenant.nombre,
+      fecha: new Date().toLocaleDateString("es-ES"),
+    });
+  }
 }
 
 export async function POST(request: Request) {

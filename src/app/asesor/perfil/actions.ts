@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { enviarCorreo } from "@/lib/correos/enviar";
 
 export type PerfilState = { error: string } | { ok: true } | null;
 
@@ -62,6 +63,12 @@ export async function actualizarContrasena(
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) return { error: "No se pudo cambiar la contraseña." };
+
+  await enviarCorreo("password_cambiada", usuario.email, {
+    nombre: usuario.nombre_completo ?? "",
+    email: usuario.email,
+    fecha: new Date().toLocaleDateString("es-ES"),
+  });
 
   return { ok: true };
 }

@@ -12,6 +12,7 @@ import { stripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site-url";
 import { lineItemMultimoneda } from "@/lib/stripe-checkout";
 import { monedaVisitante } from "@/lib/geo";
+import { enviarCorreo, enviarCorreoRecuperacion } from "@/lib/correos/enviar";
 
 export type AuthActionState = { error: string } | null;
 
@@ -115,6 +116,9 @@ export async function signUp(
   const supabase = await createClient();
   await supabase.auth.signInWithPassword({ email, password });
 
+  const urlBase = await siteUrl();
+  await enviarCorreo("bienvenida", email, { nombre, empresa: nombre, email, app_url: urlBase });
+
   if (planTarifaDeseada === "pago") {
     const config = await obtenerConfigPlanes();
     const priceId = tipoPlan === "inmobiliaria" ? config.inmobiliariaProStripePriceId : config.asesorProStripePriceId;
@@ -215,11 +219,16 @@ export async function solicitarRecuperacion(
   const email = String(formData.get("email") ?? "").trim();
   if (!email || !email.includes("@")) return { error: "Pon un email válido." };
 
-  const supabase = await createClient();
-  const url = await siteUrl();
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${url}/auth/callback?next=/restablecer-contrasena`,
-  });
+  const admin = createAdminClient();
+  const { data: usuario } = await admin
+    .from("usuarios")
+    .select("nombre_completo")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (usuario) {
+    await enviarCorreoRecuperacion(email, usuario.nombre_completo);
+  }
 
   // Siempre se responde con éxito, exista o no esa cuenta, para no revelar
   // qué emails están registrados.
@@ -249,6 +258,20 @@ export async function restablecerContrasena(
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: "No se pudo actualizar la contraseña. Inténtalo de nuevo." };
+
+  if (user.email) {
+    const admin = createAdminClient();
+    const { data: usuario } = await admin
+      .from("usuarios")
+      .select("nombre_completo")
+      .eq("id", user.id)
+      .maybeSingle();
+    await enviarCorreo("password_cambiada", user.email, {
+      nombre: usuario?.nombre_completo ?? "",
+      email: user.email,
+      fecha: new Date().toLocaleDateString("es-ES"),
+    });
+  }
 
   redirect("/login");
 }

@@ -11,6 +11,7 @@ import {
   CreditCard,
   Headset,
   Globe,
+  Mail,
   Settings,
   Menu,
   X,
@@ -25,6 +26,7 @@ const ENLACES = [
   { href: "/superadmin/suscripciones", label: "Suscripciones", icon: CreditCard },
   { href: "/superadmin/landing", label: "Landing", icon: Globe },
   { href: "/superadmin/soporte", label: "Soporte", icon: Headset },
+  { href: "/superadmin/correos", label: "Correos", icon: Mail },
   { href: "/superadmin/configuracion", label: "Configuración", icon: Settings },
 ];
 
