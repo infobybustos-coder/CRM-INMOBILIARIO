@@ -36,21 +36,39 @@ export default async function ClientesPage({
     { count: nuevosMes },
     { data: todosPaises },
   ] = await Promise.all([
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("plan_tarifa", "gratis"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("plan_tarifa", "pago"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "suspendido"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "cancelado"),
+    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo").eq("es_demo", false),
     admin
       .from("tenants")
       .select("id", { count: "exact", head: true })
+      .eq("plan_tarifa", "gratis")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("plan_tarifa", "pago")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("estado", "suspendido")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("estado", "cancelado")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("es_demo", false)
       .gte("creado_en", inicioMes.toISOString()),
-    admin.from("tenants").select("pais"),
+    admin.from("tenants").select("pais").eq("es_demo", false),
   ]);
 
   let query = admin
     .from("tenants")
     .select("id, nombre, tipo_plan, plan_tarifa, pais, estado, creado_en")
+    .eq("es_demo", false)
     .order("creado_en", { ascending: false });
 
   if (params.plan === "gratis" || params.plan === "pago") query = query.eq("plan_tarifa", params.plan);

@@ -20,6 +20,7 @@ export default async function SuscripcionesPage() {
   const { data: tenants } = await admin
     .from("tenants")
     .select("id, nombre, tipo_plan, plan_tarifa, estado, admins_extra, agentes_extra, creado_en")
+    .eq("es_demo", false)
     .order("creado_en", { ascending: false });
 
   const todos = tenants ?? [];

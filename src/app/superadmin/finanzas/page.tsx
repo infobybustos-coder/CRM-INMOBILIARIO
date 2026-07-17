@@ -120,7 +120,8 @@ export default async function FinanzasPage({
 
   const { data: tenantsData } = await admin
     .from("tenants")
-    .select("id, tipo_plan, plan_tarifa, pais, moneda, admins_extra, agentes_extra");
+    .select("id, tipo_plan, plan_tarifa, pais, moneda, admins_extra, agentes_extra")
+    .eq("es_demo", false);
   const tenants = (tenantsData ?? []) as Tenant[];
   const dePago = tenants.filter((t) => t.plan_tarifa === "pago");
 
