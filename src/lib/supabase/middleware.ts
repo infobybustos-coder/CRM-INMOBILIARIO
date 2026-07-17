@@ -41,7 +41,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/terminos") ||
     request.nextUrl.pathname.startsWith("/privacidad") ||
     request.nextUrl.pathname.startsWith("/recuperar-contrasena") ||
-    request.nextUrl.pathname.startsWith("/restablecer-contrasena");
+    request.nextUrl.pathname.startsWith("/restablecer-contrasena") ||
+    // El enlace de recuperación/invitación llega aquí sin sesión todavía
+    // (la crea esta misma ruta al verificar el código/token) — si no está
+    // en la lista, el middleware lo manda a /login antes de procesarlo.
+    request.nextUrl.pathname.startsWith("/auth/callback");
 
   if (!user && !isAuthRoute && request.nextUrl.pathname !== "/") {
     const url = request.nextUrl.clone();
