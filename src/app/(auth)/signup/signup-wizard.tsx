@@ -75,6 +75,7 @@ export function SignupWizard({
         `Hasta ${config.inmobiliariaProAsesoresIncluidos} asesores`,
         `Administrador adicional → ${euros(config.precioAdminExtra)}/mes`,
         `Asesor adicional → ${euros(config.precioAsesorExtra)}/mes`,
+        "Mensajería interna del equipo",
       ],
     },
   };

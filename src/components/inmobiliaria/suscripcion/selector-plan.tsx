@@ -48,6 +48,7 @@ export function SelectorPlan({
         `${config.inmobiliariaProAsesoresIncluidos} asesores incluidos`,
         `Administrador adicional: ${formatearPrecio(config.precioAdminExtra, moneda)}/mes`,
         `Asesor adicional: ${formatearPrecio(config.precioAsesorExtra, moneda)}/mes`,
+        "Mensajería interna del equipo",
       ],
     },
   ];
