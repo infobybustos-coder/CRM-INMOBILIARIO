@@ -9,6 +9,7 @@ import { Tareas } from "@/components/asesor/tareas";
 import { Documentos } from "@/components/asesor/documentos";
 import { SiguientePaso } from "@/components/asesor/propietarios/siguiente-paso";
 import { GuionCaptacion } from "@/components/asesor/propietarios/guion-captacion";
+import { CompartirEnMensajesBoton } from "@/components/inmobiliaria/mensajes/compartir-en-mensajes-boton";
 import {
   crearNota,
   crearTarea,
@@ -90,24 +91,27 @@ export default async function PropietarioPage({
         Volver a Propietarios
       </Link>
 
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{propietario.nombre}</h1>
-        {(() => {
-          const prioridad = calcularPrioridad(propietario);
-          return prioridad ? (
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
-                COLOR_PRIORIDAD[prioridad]
-              )}
-            >
-              Prioridad {prioridad}
-            </span>
-          ) : null;
-        })()}
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          Score: {calcularCaptacionScore(propietario)}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">{propietario.nombre}</h1>
+          {(() => {
+            const prioridad = calcularPrioridad(propietario);
+            return prioridad ? (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
+                  COLOR_PRIORIDAD[prioridad]
+                )}
+              >
+                Prioridad {prioridad}
+              </span>
+            ) : null;
+          })()}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            Score: {calcularCaptacionScore(propietario)}
+          </span>
+        </div>
+        <CompartirEnMensajesBoton entidadTipo="propietario" entidadId={id} />
       </div>
 
       <SiguientePaso

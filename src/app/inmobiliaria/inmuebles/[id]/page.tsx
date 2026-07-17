@@ -8,6 +8,7 @@ import { Fotos } from "@/components/asesor/inmuebles/fotos";
 import { Documentos } from "@/components/asesor/documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
+import { CompartirEnMensajesBoton } from "@/components/inmobiliaria/mensajes/compartir-en-mensajes-boton";
 import {
   crearNota,
   crearTarea,
@@ -103,13 +104,16 @@ export default async function InmueblePage({
         Volver a Inmuebles
       </Link>
 
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-semibold">{inmueble.direccion}</h1>
-        {inmueble.referencia && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Ref. {inmueble.referencia}
-          </span>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">{inmueble.direccion}</h1>
+          {inmueble.referencia && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              Ref. {inmueble.referencia}
+            </span>
+          )}
+        </div>
+        <CompartirEnMensajesBoton entidadTipo="inmueble" entidadId={id} />
       </div>
 
       <FormularioInmueble
