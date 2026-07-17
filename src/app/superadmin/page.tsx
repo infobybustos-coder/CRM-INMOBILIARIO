@@ -230,6 +230,9 @@ export default async function SuperadminPage({
   const umbralConectado = new Date();
   umbralConectado.setMinutes(umbralConectado.getMinutes() - MINUTOS_CONECTADO);
 
+  const { data: tenantsDemo } = await admin.from("tenants").select("id").eq("es_demo", true);
+  const idsTenantsDemo = (tenantsDemo ?? []).map((t) => t.id);
+
   const [
     { count: clientesActivos },
     { count: inmobiliarias },
@@ -242,25 +245,39 @@ export default async function SuperadminPage({
     { data: visitasData },
     { count: usuariosConectados },
   ] = await Promise.all([
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "inmobiliaria"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("tipo_plan", "asesor"),
+    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "activo").eq("es_demo", false),
     admin
       .from("tenants")
       .select("id", { count: "exact", head: true })
+      .eq("tipo_plan", "inmobiliaria")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("tipo_plan", "asesor")
+      .eq("es_demo", false),
+    admin
+      .from("tenants")
+      .select("id", { count: "exact", head: true })
+      .eq("es_demo", false)
       .gte("creado_en", inicioMes.toISOString()),
     admin
       .from("tenants")
       .select("tipo_plan, plan_tarifa, admins_extra, agentes_extra")
-      .eq("plan_tarifa", "pago"),
-    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "cancelado"),
+      .eq("plan_tarifa", "pago")
+      .eq("es_demo", false),
+    admin.from("tenants").select("id", { count: "exact", head: true }).eq("estado", "cancelado").eq("es_demo", false),
     admin.from("pedidos").select("id", { count: "exact", head: true }).eq("estado", "iniciado"),
     admin
       .from("tenants")
       .select("id, nombre, tipo_plan, plan_tarifa, pais, creado_en")
+      .eq("es_demo", false)
       .order("creado_en", { ascending: false }),
     admin.from("landing_visitas").select("fecha, dominio, visitas").order("fecha", { ascending: true }),
-    admin.from("usuarios").select("id", { count: "exact", head: true }).gte("ultima_actividad", umbralConectado.toISOString()),
+    (idsTenantsDemo.length > 0
+      ? admin.from("usuarios").select("id", { count: "exact", head: true }).not("tenant_id", "in", `(${idsTenantsDemo.join(",")})`)
+      : admin.from("usuarios").select("id", { count: "exact", head: true })
+    ).gte("ultima_actividad", umbralConectado.toISOString()),
   ]);
 
   const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);

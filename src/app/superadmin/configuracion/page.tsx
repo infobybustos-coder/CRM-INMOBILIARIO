@@ -26,9 +26,8 @@ export default async function ConfiguracionPage() {
       <div className="max-w-lg space-y-2">
         <h2 className="text-sm font-semibold">Vista previa de interfaz</h2>
         <p className="text-xs text-muted-foreground">
-          Entra directamente a cada tipo de vista (usando una cuenta real existente de ese tipo)
-          para comprobar cómo se ve, igual que &quot;Acceder como usuario&quot; en la ficha de un
-          cliente.
+          Entra a una cuenta de demostración propia de Ambraio (nunca a la cuenta de un cliente
+          real) para comprobar cómo se ve cada combinación de rol y plan, Gratis o PRO.
         </p>
         <VistaPreviaBotones />
       </div>

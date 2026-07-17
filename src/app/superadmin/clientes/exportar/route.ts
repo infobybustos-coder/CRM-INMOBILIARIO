@@ -18,6 +18,7 @@ export async function GET(request: Request) {
   let query = admin
     .from("tenants")
     .select("id, nombre, tipo_plan, plan_tarifa, pais, estado, creado_en")
+    .eq("es_demo", false)
     .order("creado_en", { ascending: false });
 
   const plan = searchParams.get("plan");
