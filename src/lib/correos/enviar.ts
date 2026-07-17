@@ -116,3 +116,35 @@ export async function enviarCorreoRecuperacion(email: string, nombre: string | n
     return { error: "No se pudo enviar el correo de recuperación." };
   }
 }
+
+// Alta de colaborador: mismo mecanismo que la recuperación de contraseña
+// (generateLink + token_hash por nuestra propia /auth/callback, sin pasar
+// por el hosted action_link de Supabase) para que pueda poner su
+// contraseña y entrar a su panel por primera vez.
+export async function enviarCorreoBienvenidaColaborador(
+  email: string,
+  nombre: string,
+  codigo: string
+): Promise<ResultadoEnvio> {
+  try {
+    const admin = createAdminClient();
+    const url = await siteUrl();
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${url}/auth/callback?next=/restablecer-contrasena` },
+    });
+
+    if (error || !data?.properties?.hashed_token) {
+      console.error("enviarCorreoBienvenidaColaborador: no se pudo generar el enlace", error);
+      return { error: "No se pudo generar el enlace de acceso." };
+    }
+
+    const enlace = `${url}/auth/callback?token_hash=${data.properties.hashed_token}&type=recovery&next=/restablecer-contrasena`;
+
+    return enviarCorreo("bienvenida_colaborador", email, { nombre, codigo, enlace });
+  } catch (err) {
+    console.error("enviarCorreoBienvenidaColaborador: excepción", err);
+    return { error: "No se pudo enviar el correo de bienvenida." };
+  }
+}

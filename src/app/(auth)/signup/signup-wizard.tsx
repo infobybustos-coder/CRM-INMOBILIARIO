@@ -15,9 +15,11 @@ const euros = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 export function SignupWizard({
   config,
   tipoInicial,
+  codigoReferidoInicial,
 }: {
   config: ConfigPlanes;
   tipoInicial?: TipoPlan | null;
+  codigoReferidoInicial?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(signUp, null);
   const [, startTransition] = useTransition();
@@ -33,6 +35,7 @@ export function SignupWizard({
   const [telefono, setTelefono] = useState("");
   const [terminos, setTerminos] = useState(false);
   const [tipoPlan, setTipoPlan] = useState<TipoPlan>(tipoInicial ?? "asesor");
+  const [codigoReferido, setCodigoReferido] = useState(codigoReferidoInicial ?? "");
 
   const errorPassword = useMemo(
     () => (password ? validarPassword(password) : null),
@@ -132,6 +135,7 @@ export function SignupWizard({
     fd.set("tipo_plan", tipoPlan);
     fd.set("plan_tarifa", planTarifa);
     fd.set("metodo_pago", "Otro");
+    fd.set("codigo_referido", codigoReferido.trim());
     startTransition(() => {
       formAction(fd);
     });
@@ -245,6 +249,20 @@ export function SignupWizard({
                     className="w-full rounded-md border px-3 py-2 text-sm"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="codigo_referido" className="text-sm font-medium">
+                  Código de referido (opcional)
+                </label>
+                <input
+                  id="codigo_referido"
+                  value={codigoReferido}
+                  onChange={(e) => setCodigoReferido(e.target.value)}
+                  type="text"
+                  placeholder="¿Te ha recomendado alguien?"
+                  className="w-full rounded-md border px-3 py-2 text-sm uppercase placeholder:normal-case"
+                />
               </div>
 
               <label className="flex items-start gap-2 text-xs text-muted-foreground">

@@ -13,6 +13,7 @@ import { siteUrl } from "@/lib/site-url";
 import { lineItemMultimoneda } from "@/lib/stripe-checkout";
 import { monedaVisitante } from "@/lib/geo";
 import { enviarCorreo, enviarCorreoRecuperacion } from "@/lib/correos/enviar";
+import { obtenerColaboradorPorCodigo, registrarReferido } from "@/lib/colaboraciones/db";
 
 export type AuthActionState = { error: string } | null;
 
@@ -30,6 +31,7 @@ export async function signUp(
   const tipoPlan = String(formData.get("tipo_plan") ?? "asesor") as "asesor" | "inmobiliaria";
   const planTarifaDeseada = String(formData.get("plan_tarifa") ?? "gratis") as "gratis" | "pago";
   const metodoPago = String(formData.get("metodo_pago") ?? METODOS_PAGO[0]);
+  const codigoReferido = String(formData.get("codigo_referido") ?? "").trim();
 
   if (!nombre || !email || !telefonoInput || !password) {
     return { error: "Rellena todos los campos obligatorios." };
@@ -48,6 +50,13 @@ export async function signUp(
 
   const telefono = normalizarTelefono(pais, telefonoInput);
   const admin = createAdminClient();
+
+  // Se valida antes de crear nada: si el código no existe hay que poder
+  // avisar y dejar que lo corrija, no descubrirlo después de crear la cuenta.
+  const colaborador = codigoReferido ? await obtenerColaboradorPorCodigo(admin, codigoReferido) : null;
+  if (codigoReferido && !colaborador) {
+    return { error: "El código de referido introducido no es válido." };
+  }
 
   const { count: telefonoExiste } = await admin
     .from("usuarios")
@@ -111,6 +120,10 @@ export async function signUp(
           ? "Ya existe una cuenta con ese teléfono."
           : "No se pudo crear el perfil de usuario.",
     };
+  }
+
+  if (colaborador) {
+    await registrarReferido(admin, { colaboradorId: colaborador.id, tenantId: tenant.id, codigoUsado: codigoReferido });
   }
 
   const supabase = await createClient();
