@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { History } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listarPlantillas, obtenerConfigCorreos } from "@/lib/correos/db";
 import { ListaPlantillas } from "@/components/superadmin/correos/lista-plantillas";
@@ -9,12 +11,20 @@ export default async function CorreosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Correos</h1>
-        <p className="text-sm text-muted-foreground">
-          Plantillas de los correos que envía Ambraio automáticamente. Los cambios se aplican al instante,
-          sin necesidad de tocar código.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Correos</h1>
+          <p className="text-sm text-muted-foreground">
+            Plantillas de los correos que envía Ambraio automáticamente. Los cambios se aplican al instante,
+            sin necesidad de tocar código.
+          </p>
+        </div>
+        <Link
+          href="/superadmin/correos/registro"
+          className="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+        >
+          <History className="size-3.5" /> Registro de envíos
+        </Link>
       </div>
 
       <div className="space-y-2">

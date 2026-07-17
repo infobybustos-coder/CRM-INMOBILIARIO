@@ -2,31 +2,54 @@ import "server-only";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
-import { obtenerConfigCorreos, obtenerPlantilla } from "./db";
+import { obtenerConfigCorreos, obtenerPlantilla, registrarEnvioCorreo } from "./db";
 import { construirHtmlCorreo, sustituirVariables, urlPublicaLogo } from "./render";
 import type { ClavePlantilla, ResultadoEnvio, VariablesCorreo } from "./tipos";
 
 // Nunca lanza: un fallo de envío no debe romper el flujo que lo dispara
-// (alta de usuario, cambio de plan...). Siempre devuelve un resultado.
+// (alta de usuario, cambio de plan...). Siempre devuelve un resultado, y
+// siempre deja constancia en correos_enviados (para el registro de
+// /superadmin/correos/registro), tanto si sale bien como si falla.
 export async function enviarCorreo(
   clave: ClavePlantilla,
   destinatario: string,
-  variables: VariablesCorreo
+  variables: VariablesCorreo,
+  contexto?: { esReenvio?: boolean; reenviadoPor?: string }
 ): Promise<ResultadoEnvio> {
+  const admin = createAdminClient();
+  const registrar = (asunto: string, estado: "enviado" | "fallido" | "omitido", error?: string) =>
+    registrarEnvioCorreo(admin, {
+      plantillaClave: clave,
+      destinatario,
+      asunto,
+      variables,
+      estado,
+      error,
+      esReenvio: contexto?.esReenvio,
+      reenviadoPor: contexto?.reenviadoPor,
+    });
+
   try {
-    const admin = createAdminClient();
     const [plantilla, config] = await Promise.all([obtenerPlantilla(admin, clave), obtenerConfigCorreos(admin)]);
 
-    if (!plantilla) return { error: `Plantilla "${clave}" no encontrada.` };
-    if (!plantilla.activo) return { ok: true, omitido: true };
+    if (!plantilla) {
+      await registrar(`(plantilla "${clave}")`, "fallido", "Plantilla no encontrada.");
+      return { error: `Plantilla "${clave}" no encontrada.` };
+    }
+    if (!plantilla.activo) {
+      await registrar(plantilla.asunto, "omitido");
+      return { ok: true, omitido: true };
+    }
+
+    const asunto = sustituirVariables(plantilla.asunto, variables);
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error(`enviarCorreo(${clave}): falta RESEND_API_KEY, correo no enviado.`);
+      await registrar(asunto, "fallido", "Falta configurar RESEND_API_KEY.");
       return { error: "El envío de correos no está configurado todavía." };
     }
 
-    const asunto = sustituirVariables(plantilla.asunto, variables);
     const html = construirHtmlCorreo({
       contenidoHtml: sustituirVariables(plantilla.contenidoHtml, variables),
       botonTexto: plantilla.botonTexto ? sustituirVariables(plantilla.botonTexto, variables) : null,
@@ -46,11 +69,14 @@ export async function enviarCorreo(
 
     if (error) {
       console.error(`enviarCorreo(${clave}):`, error);
+      await registrar(asunto, "fallido", error.message ?? "Error desconocido de Resend.");
       return { error: "No se pudo enviar el correo." };
     }
+    await registrar(asunto, "enviado");
     return { ok: true };
   } catch (err) {
     console.error(`enviarCorreo(${clave}): excepción`, err);
+    await registrar(clave, "fallido", err instanceof Error ? err.message : "Excepción desconocida.");
     return { error: "No se pudo enviar el correo." };
   }
 }

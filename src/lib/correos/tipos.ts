@@ -40,3 +40,18 @@ export type ConfigCorreos = {
 export type VariablesCorreo = Record<string, string>;
 
 export type ResultadoEnvio = { ok: true; omitido?: true } | { error: string };
+
+export type EstadoEnvioCorreo = "enviado" | "fallido" | "omitido";
+
+export type RegistroCorreo = {
+  id: string;
+  plantillaClave: string;
+  destinatario: string;
+  asunto: string;
+  variables: VariablesCorreo;
+  estado: EstadoEnvioCorreo;
+  error: string | null;
+  esReenvio: boolean;
+  reenviadoPor: string | null;
+  creadoEn: string;
+};

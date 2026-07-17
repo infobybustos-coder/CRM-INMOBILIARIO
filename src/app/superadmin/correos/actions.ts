@@ -5,6 +5,7 @@ import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
 import { enviarCorreo } from "@/lib/correos/enviar";
+import { obtenerRegistroCorreo } from "@/lib/correos/db";
 import { esClavePlantilla } from "@/lib/correos/tipos";
 import type { ClavePlantilla } from "@/lib/correos/tipos";
 
@@ -138,4 +139,24 @@ export async function enviarPlantillaPrueba(
   };
 
   return enviarCorreo(clave, email, variablesEjemplo);
+}
+
+export async function reenviarCorreoRegistro(id: string): Promise<{ ok: true } | { error: string }> {
+  const superadmin = await requireSuperadmin();
+  const admin = createAdminClient();
+
+  const registro = await obtenerRegistroCorreo(admin, id);
+  if (!registro) return { error: "No se encontró ese envío en el registro." };
+  if (!esClavePlantilla(registro.plantillaClave)) {
+    return { error: "Esa plantilla ya no existe, no se puede reenviar." };
+  }
+
+  const resultado = await enviarCorreo(registro.plantillaClave, registro.destinatario, registro.variables, {
+    esReenvio: true,
+    reenviadoPor: superadmin.email,
+  });
+
+  revalidatePath("/superadmin/correos/registro");
+  if ("error" in resultado) return { error: resultado.error };
+  return { ok: true };
 }

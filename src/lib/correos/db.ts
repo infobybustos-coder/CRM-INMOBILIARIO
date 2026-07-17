@@ -1,7 +1,14 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esClavePlantilla } from "./tipos";
-import type { ClavePlantilla, ConfigCorreos, PlantillaEmail } from "./tipos";
+import type {
+  ClavePlantilla,
+  ConfigCorreos,
+  EstadoEnvioCorreo,
+  PlantillaEmail,
+  RegistroCorreo,
+  VariablesCorreo,
+} from "./tipos";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -66,4 +73,75 @@ export async function obtenerConfigCorreos(admin: AdminClient): Promise<ConfigCo
     remitenteNombre: data.remitente_nombre,
     remitenteEmail: data.remitente_email,
   };
+}
+
+function mapRegistro(fila: {
+  id: string;
+  plantilla_clave: string;
+  destinatario: string;
+  asunto: string;
+  variables: VariablesCorreo;
+  estado: string;
+  error: string | null;
+  es_reenvio: boolean;
+  reenviado_por: string | null;
+  creado_en: string;
+}): RegistroCorreo {
+  return {
+    id: fila.id,
+    plantillaClave: fila.plantilla_clave,
+    destinatario: fila.destinatario,
+    asunto: fila.asunto,
+    variables: fila.variables ?? {},
+    estado: fila.estado as EstadoEnvioCorreo,
+    error: fila.error,
+    esReenvio: fila.es_reenvio,
+    reenviadoPor: fila.reenviado_por,
+    creadoEn: fila.creado_en,
+  };
+}
+
+export async function registrarEnvioCorreo(
+  admin: AdminClient,
+  datos: {
+    plantillaClave: string;
+    destinatario: string;
+    asunto: string;
+    variables: VariablesCorreo;
+    estado: EstadoEnvioCorreo;
+    error?: string | null;
+    esReenvio?: boolean;
+    reenviadoPor?: string | null;
+  }
+): Promise<void> {
+  const { error } = await admin.from("correos_enviados").insert({
+    plantilla_clave: datos.plantillaClave,
+    destinatario: datos.destinatario,
+    asunto: datos.asunto,
+    variables: datos.variables,
+    estado: datos.estado,
+    error: datos.error ?? null,
+    es_reenvio: datos.esReenvio ?? false,
+    reenviado_por: datos.reenviadoPor ?? null,
+  });
+  if (error) console.error("registrarEnvioCorreo:", error);
+}
+
+export async function listarRegistroCorreos(
+  admin: AdminClient,
+  opciones?: { limite?: number; destinatario?: string }
+): Promise<RegistroCorreo[]> {
+  let query = admin
+    .from("correos_enviados")
+    .select("*")
+    .order("creado_en", { ascending: false })
+    .limit(opciones?.limite ?? 100);
+  if (opciones?.destinatario) query = query.ilike("destinatario", `%${opciones.destinatario}%`);
+  const { data } = await query;
+  return (data ?? []).map(mapRegistro);
+}
+
+export async function obtenerRegistroCorreo(admin: AdminClient, id: string): Promise<RegistroCorreo | null> {
+  const { data } = await admin.from("correos_enviados").select("*").eq("id", id).maybeSingle();
+  return data ? mapRegistro(data) : null;
 }
