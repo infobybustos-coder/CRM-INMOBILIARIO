@@ -1,51 +1,31 @@
-"use client";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { RestablecerContrasenaForm } from "@/components/auth/restablecer-contrasena-form";
 
-import { useActionState } from "react";
-import { restablecerContrasena } from "../actions";
-import { Button } from "@/components/ui/button";
-
-export default function RestablecerContrasenaPage() {
-  const [state, formAction, pending] = useActionState(restablecerContrasena, null);
+export default async function RestablecerContrasenaPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <form
-        action={formAction}
-        className="w-full max-w-sm space-y-4 rounded-lg border p-6"
-      >
-        <h1 className="text-xl font-semibold">Pon una contraseña nueva</h1>
-        <div className="space-y-2">
-          <label htmlFor="password" className="text-sm font-medium">
-            Contraseña nueva
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            Mínimo 8 caracteres, con mayúscula, minúscula y número.
+      {user ? (
+        <RestablecerContrasenaForm />
+      ) : (
+        <div className="w-full max-w-sm space-y-4 rounded-lg border p-6">
+          <h1 className="text-xl font-semibold">Enlace no válido</h1>
+          <p className="text-sm text-muted-foreground">
+            Este enlace de recuperación ha caducado o ya se usó. Solicita uno nuevo.
           </p>
+          <Link
+            href="/recuperar-contrasena"
+            className="block w-full rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Pedir un enlace nuevo
+          </Link>
         </div>
-        <div className="space-y-2">
-          <label htmlFor="password_confirmacion" className="text-sm font-medium">
-            Repite la contraseña
-          </label>
-          <input
-            id="password_confirmacion"
-            name="password_confirmacion"
-            type="password"
-            required
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          />
-        </div>
-        {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Guardando..." : "Guardar contraseña"}
-        </Button>
-      </form>
+      )}
     </div>
   );
 }

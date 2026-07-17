@@ -69,15 +69,21 @@ export async function enviarCorreoRecuperacion(email: string, nombre: string | n
       options: { redirectTo: `${url}/auth/callback?next=/restablecer-contrasena` },
     });
 
-    if (error || !data?.properties?.action_link) {
+    if (error || !data?.properties?.hashed_token) {
       console.error("enviarCorreoRecuperacion: no se pudo generar el enlace", error);
       return { error: "No se pudo generar el enlace de recuperación." };
     }
 
+    // Usamos nuestro propio /auth/callback con el token_hash en la query en
+    // vez del action_link que da Supabase: ese pasa primero por su dominio
+    // hosted y termina devolviendo la sesión en el fragmento (#access_token=…)
+    // de la URL, que nunca llega al servidor y por tanto no la podíamos leer.
+    const enlace = `${url}/auth/callback?token_hash=${data.properties.hashed_token}&type=recovery&next=/restablecer-contrasena`;
+
     return enviarCorreo("recuperar_password", email, {
       nombre: nombre ?? "",
       email,
-      enlace: data.properties.action_link,
+      enlace,
     });
   } catch (err) {
     console.error("enviarCorreoRecuperacion: excepción", err);
