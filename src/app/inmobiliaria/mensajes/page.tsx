@@ -7,6 +7,7 @@ import { HiloMensajes } from "@/components/inmobiliaria/mensajes/hilo-mensajes";
 import { FormularioMensaje } from "@/components/inmobiliaria/mensajes/formulario-mensaje";
 import { TarjetaEntidad } from "@/components/inmobiliaria/mensajes/tarjeta-entidad";
 import { NuevaConversacionBoton } from "@/components/inmobiliaria/mensajes/nueva-conversacion";
+import { MensajesBloqueado } from "@/components/inmobiliaria/mensajes/mensajes-bloqueado";
 import { MarcarLeido } from "@/components/soporte/marcar-leido";
 
 export default async function MensajesPage({
@@ -16,6 +17,12 @@ export default async function MensajesPage({
 }) {
   const { c: conversacionId } = await searchParams;
   const usuario = await requireInmobiliariaEfectivo();
+
+  // Mensajes es una función exclusiva del Plan PRO de inmobiliaria.
+  if (usuario.tenant?.plan_tarifa !== "pago") {
+    return <MensajesBloqueado esAdmin={usuario.rol === "admin"} />;
+  }
+
   const admin = createAdminClient();
 
   const conversaciones = await listarConversaciones(admin, usuario.id);

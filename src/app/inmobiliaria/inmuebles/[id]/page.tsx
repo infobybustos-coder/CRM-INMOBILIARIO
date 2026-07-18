@@ -113,7 +113,9 @@ export default async function InmueblePage({
             </span>
           )}
         </div>
-        <CompartirEnMensajesBoton entidadTipo="inmueble" entidadId={id} />
+        {usuario.tenant?.plan_tarifa === "pago" && (
+          <CompartirEnMensajesBoton entidadTipo="inmueble" entidadId={id} />
+        )}
       </div>
 
       <FormularioInmueble

@@ -30,6 +30,7 @@ type Enlace = {
   label: string;
   icon: typeof LayoutDashboard;
   bloqueado?: boolean;
+  soloPro?: boolean;
   activoTambien?: string[];
 };
 
@@ -62,7 +63,7 @@ const GRUPOS_ADMIN: Grupo[] = [
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
       { href: "/inmobiliaria/administradores", label: "Administradores", icon: ShieldCheck },
-      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare },
+      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, soloPro: true },
     ],
   },
   {
@@ -106,7 +107,7 @@ const GRUPOS_EMPLEADO: Grupo[] = [
   },
   {
     titulo: "Equipo",
-    enlaces: [{ href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare }],
+    enlaces: [{ href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, soloPro: true }],
   },
   {
     titulo: "Mi Perfil",
@@ -136,12 +137,14 @@ function EnlaceItem({
   activo,
   colapsado,
   aviso,
+  esPro,
   onClick,
 }: {
   enlace: Enlace;
   activo: boolean;
   colapsado: boolean;
   aviso?: boolean;
+  esPro: boolean;
   onClick?: () => void;
 }) {
   const Icon = enlace.icon;
@@ -175,6 +178,16 @@ function EnlaceItem({
           <Lock className="size-2.5" /> Próximamente
         </span>
       )}
+      {enlace.soloPro && !esPro && (
+        <span
+          className={cn(
+            "flex shrink-0 items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary",
+            colapsado && "md:hidden"
+          )}
+        >
+          PRO
+        </span>
+      )}
     </Link>
   );
 }
@@ -184,12 +197,14 @@ function ListaGrupos({
   pathname,
   colapsado,
   avisos,
+  esPro,
   onNavegar,
 }: {
   grupos: Grupo[];
   pathname: string | null;
   colapsado: boolean;
   avisos?: Record<string, boolean>;
+  esPro: boolean;
   onNavegar?: () => void;
 }) {
   return (
@@ -219,6 +234,7 @@ function ListaGrupos({
                 activo={activo}
                 colapsado={colapsado}
                 aviso={avisos?.[enlace.href]}
+                esPro={esPro}
                 onClick={onNavegar}
               />
             );
@@ -231,9 +247,11 @@ function ListaGrupos({
 
 export function InmobiliariaNav({
   esAdmin,
+  esPro,
   avisos = {},
 }: {
   esAdmin: boolean;
+  esPro: boolean;
   avisos?: Record<string, boolean>;
 }) {
   const pathname = usePathname();
@@ -297,6 +315,7 @@ export function InmobiliariaNav({
               pathname={pathname}
               colapsado={false}
               avisos={avisos}
+              esPro={esPro}
               onNavegar={() => setMenuMovilAbierto(false)}
             />
           </div>
@@ -318,7 +337,7 @@ export function InmobiliariaNav({
         >
           {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
         </button>
-        <ListaGrupos grupos={grupos} pathname={pathname} colapsado={colapsado} avisos={avisos} />
+        <ListaGrupos grupos={grupos} pathname={pathname} colapsado={colapsado} avisos={avisos} esPro={esPro} />
       </nav>
     </>
   );
