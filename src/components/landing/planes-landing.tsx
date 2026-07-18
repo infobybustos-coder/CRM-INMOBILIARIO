@@ -39,6 +39,7 @@ export function PlanesLanding({ config, moneda }: { config: ConfigPlanes; moneda
         `${config.inmobiliariaProAdminsIncluidos} administradores y ${config.inmobiliariaProAsesoresIncluidos} asesores incluidos`,
         `Asesor adicional: ${formatearPrecio(config.precioAsesorExtra)}/mes`,
         `Administrador adicional: ${formatearPrecio(config.precioAdminExtra)}/mes`,
+        "Mensajería interna del equipo",
       ],
       precioPago: config.inmobiliariaProPrecio,
     },
