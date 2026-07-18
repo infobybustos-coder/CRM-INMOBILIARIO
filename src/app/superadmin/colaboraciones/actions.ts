@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
@@ -85,4 +86,24 @@ export async function alternarEstadoColaborador(id: string, estado: EstadoColabo
     .eq("id", id);
   revalidatePath("/superadmin/colaboraciones");
   revalidatePath(`/superadmin/colaboraciones/${id}`);
+}
+
+// Se borra el usuario de auth (no la fila de colaboradores directamente):
+// colaboradores.id referencia auth.users(id) ON DELETE CASCADE, así que
+// esto se lleva por delante también sus colaborador_referidos, sin dejar
+// una cuenta de acceso huérfana que ya no aparece en ningún sitio.
+export async function eliminarColaborador(id: string, confirmacionNombre: string) {
+  await requireSuperadmin();
+  const admin = createAdminClient();
+  const { data: colaborador } = await admin
+    .from("colaboradores")
+    .select("nombre_completo")
+    .eq("id", id)
+    .maybeSingle();
+  if (!colaborador || colaborador.nombre_completo !== confirmacionNombre) return;
+
+  await admin.auth.admin.deleteUser(id);
+
+  revalidatePath("/superadmin/colaboraciones");
+  redirect("/superadmin/colaboraciones");
 }
