@@ -54,6 +54,42 @@ export async function esSuperadmin(): Promise<boolean> {
   return !!data;
 }
 
+// Un colaborador es también una cuenta de plataforma, como superadmin: no
+// vive en "usuarios" (que exige tenant_id), solo en "colaboradores". No
+// tiene ningún acceso al CRM, solo a su propio panel.
+export async function requireColaborador() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: colaborador } = await supabase
+    .from("colaboradores")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!colaborador) redirect("/login");
+  return colaborador;
+}
+
+export async function esColaborador(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("colaboradores")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return !!data;
+}
+
 export async function getUsuarioConTenant() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

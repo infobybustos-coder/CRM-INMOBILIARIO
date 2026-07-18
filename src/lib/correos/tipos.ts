@@ -1,5 +1,6 @@
 export const CLAVES_PLANTILLA = [
   "bienvenida",
+  "bienvenida_colaborador",
   "limite_aviso",
   "limite_alcanzado",
   "recuperar_password",
