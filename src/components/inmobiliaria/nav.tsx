@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   User,
   Lock,
+  Headset,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -65,6 +66,10 @@ const GRUPOS_ADMIN: Grupo[] = [
     ],
   },
   {
+    titulo: "Centro de ayuda",
+    enlaces: [{ href: "/inmobiliaria/soporte", label: "Soporte", icon: Headset }],
+  },
+  {
     enlaces: [
       {
         href: "/inmobiliaria/empresa",
@@ -102,6 +107,10 @@ const GRUPOS_EMPLEADO: Grupo[] = [
   {
     titulo: "Mi Perfil",
     enlaces: [{ href: "/inmobiliaria/perfil", label: "Mi perfil", icon: User }],
+  },
+  {
+    titulo: "Centro de ayuda",
+    enlaces: [{ href: "/inmobiliaria/soporte", label: "Soporte", icon: Headset }],
   },
 ];
 

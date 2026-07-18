@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Target, ArrowRight, ShieldAlert } from "lucide-react";
 import { getUsuarioConTenant, enImpersonacionSuperadmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { tieneRespuestaSinLeer } from "@/lib/soporte/db";
 import { calcularCaptacionScore, calcularCompraScore, calcularPrioridad, calcularPrioridadComprador } from "@/lib/prioridad";
 import { signOut } from "../(auth)/actions";
 import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
@@ -113,8 +115,11 @@ export default async function AsesorLayout({
     focoHref = `/asesor/compradores/${top.id}`;
   }
 
+  const avisoSoporte = await tieneRespuestaSinLeer(createAdminClient(), usuario.id);
+
   const avisos = {
     "/asesor/seguimiento": (tareasHoy ?? 0) > 0 || (eventosHoy ?? 0) > 0,
+    "/asesor/soporte": avisoSoporte,
   };
 
   return (

@@ -1,7 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireSuperadmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { insertarMensaje } from "@/lib/soporte/db";
+import type { AdjuntoNuevo, EstadoConversacion } from "@/lib/soporte/tipos";
 
 export type ResultadoBusqueda = {
   usuarioId: string;
@@ -61,4 +64,63 @@ export async function buscarUsuario(
       planTarifa: tenant?.plan_tarifa ?? "",
     };
   });
+}
+
+function revalidarSoporte() {
+  revalidatePath("/superadmin/soporte");
+  revalidatePath("/asesor/soporte");
+  revalidatePath("/inmobiliaria/soporte");
+}
+
+export type EnviarMensajeState = { error: string } | { ok: true };
+
+export async function responderComoSoporte(
+  conversacionId: string,
+  contenido: string,
+  adjuntos: AdjuntoNuevo[]
+): Promise<EnviarMensajeState> {
+  const superadmin = await requireSuperadmin();
+
+  const contenidoLimpio = contenido.trim();
+  if (!contenidoLimpio && adjuntos.length === 0) return { error: "Escribe un mensaje o adjunta un archivo." };
+
+  const admin = createAdminClient();
+  try {
+    await insertarMensaje(admin, {
+      conversacionId,
+      autorId: superadmin.id,
+      autorTipo: "soporte",
+      contenido: contenidoLimpio,
+      adjuntos,
+    });
+  } catch {
+    return { error: "No se pudo enviar la respuesta. Inténtalo de nuevo." };
+  }
+
+  await admin
+    .from("conversaciones")
+    .update({ ultima_lectura_soporte: new Date().toISOString() })
+    .eq("id", conversacionId);
+
+  revalidarSoporte();
+  return { ok: true };
+}
+
+export async function cambiarEstadoConversacion(conversacionId: string, nuevoEstado: EstadoConversacion) {
+  await requireSuperadmin();
+
+  const admin = createAdminClient();
+  await admin.from("conversaciones").update({ estado: nuevoEstado }).eq("id", conversacionId);
+
+  revalidarSoporte();
+}
+
+export async function marcarLeidoSoporte(conversacionId: string) {
+  await requireSuperadmin();
+
+  const admin = createAdminClient();
+  await admin
+    .from("conversaciones")
+    .update({ ultima_lectura_soporte: new Date().toISOString() })
+    .eq("id", conversacionId);
 }

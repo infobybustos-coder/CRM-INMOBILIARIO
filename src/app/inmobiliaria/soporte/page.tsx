@@ -12,7 +12,7 @@ import { NuevaConversacion } from "@/components/soporte/nueva-conversacion";
 import { BadgeEstado } from "@/components/soporte/badge-estado";
 import { MarcarLeido } from "@/components/soporte/marcar-leido";
 
-const BASE_HREF = "/asesor/soporte";
+const BASE_HREF = "/inmobiliaria/soporte";
 
 export default async function SoportePage({
   searchParams,
@@ -21,6 +21,7 @@ export default async function SoportePage({
 }) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
+  if (usuario.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
 
   const { c: conversacionId } = await searchParams;
   const admin = createAdminClient();
