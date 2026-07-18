@@ -230,6 +230,9 @@ export default async function SuperadminPage({
   const umbralConectado = new Date();
   umbralConectado.setMinutes(umbralConectado.getMinutes() - MINUTOS_CONECTADO);
 
+  const { data: tenantsDemo } = await admin.from("tenants").select("id").eq("es_demo", true);
+  const idsTenantsDemo = (tenantsDemo ?? []).map((t) => t.id);
+
   const [
     { count: clientesActivos },
     { count: inmobiliarias },
@@ -271,7 +274,10 @@ export default async function SuperadminPage({
       .eq("es_demo", false)
       .order("creado_en", { ascending: false }),
     admin.from("landing_visitas").select("fecha, dominio, visitas").order("fecha", { ascending: true }),
-    admin.from("usuarios").select("id", { count: "exact", head: true }).gte("ultima_actividad", umbralConectado.toISOString()),
+    (idsTenantsDemo.length > 0
+      ? admin.from("usuarios").select("id", { count: "exact", head: true }).not("tenant_id", "in", `(${idsTenantsDemo.join(",")})`)
+      : admin.from("usuarios").select("id", { count: "exact", head: true })
+    ).gte("ultima_actividad", umbralConectado.toISOString()),
   ]);
 
   const mrr = (tenantsPago ?? []).reduce((suma, t) => suma + precioMensualTotal(config, t), 0);

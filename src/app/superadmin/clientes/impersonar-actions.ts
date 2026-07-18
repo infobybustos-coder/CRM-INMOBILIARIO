@@ -59,36 +59,126 @@ export async function entrarComoUsuario(usuarioId: string) {
   await iniciarSesionComo(usuarioId);
 }
 
-export type TipoVista = "asesor" | "inmobiliaria_admin" | "inmobiliaria_empleado";
+export type TipoVista =
+  | "asesor_gratis"
+  | "asesor_pro"
+  | "inmobiliaria_admin_gratis"
+  | "inmobiliaria_admin_pro"
+  | "inmobiliaria_empleado_gratis"
+  | "inmobiliaria_empleado_pro";
 
 const ETIQUETA_VISTA: Record<TipoVista, string> = {
-  asesor: "Asesor independiente",
-  inmobiliaria_admin: "Administrador de Inmobiliaria",
-  inmobiliaria_empleado: "Empleado de Inmobiliaria",
+  asesor_gratis: "Asesor independiente · Gratis",
+  asesor_pro: "Asesor independiente · PRO",
+  inmobiliaria_admin_gratis: "Administrador de Inmobiliaria · Gratis",
+  inmobiliaria_admin_pro: "Administrador de Inmobiliaria · PRO",
+  inmobiliaria_empleado_gratis: "Empleado de Inmobiliaria · Gratis",
+  inmobiliaria_empleado_pro: "Empleado de Inmobiliaria · PRO",
 };
+
+const CONFIG_VISTA: Record<
+  TipoVista,
+  { tipoPlan: "asesor" | "inmobiliaria"; planTarifa: "gratis" | "pago"; rol: "admin" | "empleado" }
+> = {
+  asesor_gratis: { tipoPlan: "asesor", planTarifa: "gratis", rol: "empleado" },
+  asesor_pro: { tipoPlan: "asesor", planTarifa: "pago", rol: "empleado" },
+  inmobiliaria_admin_gratis: { tipoPlan: "inmobiliaria", planTarifa: "gratis", rol: "admin" },
+  inmobiliaria_admin_pro: { tipoPlan: "inmobiliaria", planTarifa: "pago", rol: "admin" },
+  inmobiliaria_empleado_gratis: { tipoPlan: "inmobiliaria", planTarifa: "gratis", rol: "empleado" },
+  inmobiliaria_empleado_pro: { tipoPlan: "inmobiliaria", planTarifa: "pago", rol: "empleado" },
+};
+
+// Tenants ficticios propios de Ambraio (tenants.es_demo = true), nunca cuentas
+// de clientes reales. Se crean una sola vez (get-or-create) y se reutilizan en
+// cada vista previa; por eso quedan excluidos de las métricas de negocio.
+async function obtenerOCrearTenantDemo(
+  admin: ReturnType<typeof createAdminClient>,
+  tipoPlan: "asesor" | "inmobiliaria",
+  planTarifa: "gratis" | "pago"
+): Promise<string> {
+  const slug = `demo-${tipoPlan}-${planTarifa}`;
+  const { data: existente } = await admin.from("tenants").select("id").eq("slug", slug).maybeSingle();
+  if (existente) return existente.id;
+
+  const nombre = `Demo ${tipoPlan === "asesor" ? "Asesor" : "Inmobiliaria"} ${
+    planTarifa === "pago" ? "PRO" : "Gratis"
+  }`;
+  const { data: tenant, error } = await admin
+    .from("tenants")
+    .insert({
+      nombre,
+      slug,
+      tipo_plan: tipoPlan,
+      pais: "ES",
+      moneda: "EUR",
+      plan_tarifa: planTarifa,
+      es_demo: true,
+    })
+    .select("id")
+    .single();
+  if (error || !tenant) throw new Error("No se pudo crear el tenant de demostración.");
+  return tenant.id;
+}
+
+async function obtenerOCrearUsuarioDemo(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  rol: "admin" | "empleado",
+  nombreCompleto: string,
+  email: string
+): Promise<string> {
+  const { data: existente } = await admin
+    .from("usuarios")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("email", email)
+    .maybeSingle();
+  if (existente) return existente.id;
+
+  const { data: creado, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password: crypto.randomUUID(),
+    email_confirm: true,
+  });
+  if (createError || !creado.user) throw new Error("No se pudo crear el usuario de demostración.");
+
+  const { error: usuarioError } = await admin.from("usuarios").insert({
+    id: creado.user.id,
+    tenant_id: tenantId,
+    nombre_completo: nombreCompleto,
+    email,
+    rol,
+  });
+  if (usuarioError) {
+    await admin.auth.admin.deleteUser(creado.user.id);
+    throw new Error("No se pudo crear el perfil de demostración.");
+  }
+  return creado.user.id;
+}
 
 export async function entrarComoVista(tipo: TipoVista): Promise<{ error: string } | void> {
   await requireSuperadmin();
   const admin = createAdminClient();
+  const { tipoPlan, planTarifa, rol } = CONFIG_VISTA[tipo];
 
-  const tipoPlan = tipo === "asesor" ? "asesor" : "inmobiliaria";
-  const { data: tenants } = await admin.from("tenants").select("id").eq("tipo_plan", tipoPlan);
-  const tenantIds = (tenants ?? []).map((t) => t.id);
-  if (tenantIds.length === 0) {
-    return { error: `Todavía no hay ninguna cuenta de tipo "${ETIQUETA_VISTA[tipo]}".` };
+  let usuarioId: string;
+  try {
+    const tenantId = await obtenerOCrearTenantDemo(admin, tipoPlan, planTarifa);
+    const sufijoPlan = planTarifa === "pago" ? "pro" : "gratis";
+    const email =
+      tipoPlan === "asesor"
+        ? `demo-asesor-${sufijoPlan}@ambraio.demo`
+        : `demo-inmobiliaria-${sufijoPlan}-${rol}@ambraio.demo`;
+    const nombreCompleto =
+      tipoPlan === "asesor"
+        ? `Demo Asesor ${planTarifa === "pago" ? "PRO" : "Gratis"}`
+        : `Demo ${rol === "admin" ? "Administrador" : "Empleado"} ${planTarifa === "pago" ? "PRO" : "Gratis"}`;
+    usuarioId = await obtenerOCrearUsuarioDemo(admin, tenantId, rol, nombreCompleto, email);
+  } catch {
+    return { error: `No se pudo preparar la vista de "${ETIQUETA_VISTA[tipo]}".` };
   }
 
-  let query = admin.from("usuarios").select("id").in("tenant_id", tenantIds);
-  if (tipo === "inmobiliaria_admin") query = query.eq("rol", "admin");
-  if (tipo === "inmobiliaria_empleado") query = query.eq("rol", "empleado");
-  const { data: usuarios } = await query.order("creado_en", { ascending: false }).limit(1);
-
-  const usuario = usuarios?.[0];
-  if (!usuario) {
-    return { error: `Todavía no hay ninguna cuenta de tipo "${ETIQUETA_VISTA[tipo]}".` };
-  }
-
-  await iniciarSesionComo(usuario.id);
+  await iniciarSesionComo(usuarioId);
 }
 
 export async function salirDeImpersonacion() {
