@@ -11,6 +11,7 @@ import { siteUrl } from "@/lib/site-url";
 import { cn } from "@/lib/utils";
 import { CopiarEnlace } from "@/components/inmobiliaria/equipo/copiar-enlace";
 import { ColaboradorEstadoBoton } from "@/components/superadmin/colaboraciones/colaborador-estado-boton";
+import { EliminarColaboradorBoton } from "@/components/superadmin/colaboraciones/eliminar-colaborador-boton";
 
 const ETIQUETA_ESTADO_TENANT: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
@@ -115,7 +116,10 @@ export default async function ColaboradorFichaPage({
 
       <div className="space-y-2">
         <h2 className="text-sm font-semibold">Gestionar</h2>
-        <ColaboradorEstadoBoton id={colaborador.id} estado={colaborador.estado} />
+        <div className="flex flex-wrap gap-2">
+          <ColaboradorEstadoBoton id={colaborador.id} estado={colaborador.estado} />
+          <EliminarColaboradorBoton colaboradorId={colaborador.id} nombreColaborador={colaborador.nombreCompleto} />
+        </div>
       </div>
 
       <div className="space-y-2">
