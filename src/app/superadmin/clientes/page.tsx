@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
 import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
 import { EliminarTenantBoton } from "@/components/superadmin/eliminar-tenant-boton";
+import { FilaClienteClickable, CeldaSinNavegar } from "@/components/superadmin/clientes-fila";
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
@@ -80,7 +81,7 @@ export default async function ClientesPage({
 
   const { data: usuarios } = await admin
     .from("usuarios")
-    .select("id, tenant_id, nombre_completo, email, telefono, rol, ultima_actividad")
+    .select("id, tenant_id, nombre_completo, email, telefono, rol, ultima_actividad, ultimo_acceso")
     .in("tenant_id", (tenants ?? []).map((t) => t.id));
 
   const contactoPorTenant = new Map<string, NonNullable<typeof usuarios>[number]>();
@@ -154,6 +155,7 @@ export default async function ClientesPage({
               <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Estado</th>
               <th className="px-3 py-2 font-medium">Actividad</th>
+              <th className="px-3 py-2 font-medium">Último acceso</th>
               <th className="px-3 py-2 font-medium">Registro</th>
               <th className="px-3 py-2 font-medium">Acciones</th>
             </tr>
@@ -161,7 +163,7 @@ export default async function ClientesPage({
           <tbody className="divide-y">
             {(tenants ?? []).length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={12} className="px-3 py-6 text-center text-muted-foreground">
                   No hay tenants con esos filtros.
                 </td>
               </tr>
@@ -172,15 +174,8 @@ export default async function ClientesPage({
                 const ultimaActividad = actividadPorTenant.get(t.id) ?? null;
                 const conectado = estaConectado(ultimaActividad);
                 return (
-                  <tr key={t.id} className="hover:bg-accent/50">
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/superadmin/clientes/${t.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {contacto?.nombre_completo ?? "—"}
-                      </Link>
-                    </td>
+                  <FilaClienteClickable key={t.id} tenantId={t.id}>
+                    <td className="px-3 py-2 font-medium text-primary">{contacto?.nombre_completo ?? "—"}</td>
                     <td className="px-3 py-2">{t.nombre}</td>
                     <td className="px-3 py-2 text-muted-foreground capitalize">{t.tipo_plan}</td>
                     <td className="px-3 py-2">
@@ -197,7 +192,9 @@ export default async function ClientesPage({
                     <td className="px-3 py-2 text-muted-foreground">
                       <div className="flex items-center gap-2">
                         {contacto?.telefono ?? "—"}
-                        <WhatsAppBoton telefono={contacto?.telefono} nombre={contacto?.nombre_completo} />
+                        <CeldaSinNavegar>
+                          <WhatsAppBoton telefono={contacto?.telefono} nombre={contacto?.nombre_completo} />
+                        </CeldaSinNavegar>
                       </div>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">{contacto?.email ?? "—"}</td>
@@ -218,6 +215,15 @@ export default async function ClientesPage({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
+                      {contacto?.ultimo_acceso
+                        ? new Date(contacto.ultimo_acceso).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
                       {new Date(t.creado_en).toLocaleDateString("es-ES", {
                         day: "numeric",
                         month: "short",
@@ -225,9 +231,11 @@ export default async function ClientesPage({
                       })}
                     </td>
                     <td className="px-3 py-2">
-                      <EliminarTenantBoton tenantId={t.id} nombreTenant={t.nombre} />
+                      <CeldaSinNavegar>
+                        <EliminarTenantBoton tenantId={t.id} nombreTenant={t.nombre} />
+                      </CeldaSinNavegar>
                     </td>
-                  </tr>
+                  </FilaClienteClickable>
                 );
               })
             )}

@@ -4,7 +4,8 @@ import { estadisticasGlobalesColaboraciones, listarColaboradoresConStats } from 
 import { siteUrl } from "@/lib/site-url";
 import { cn } from "@/lib/utils";
 import { BotonCopiar } from "@/components/ui/boton-copiar";
-import { CeldaSinNavegar, FilaColaboradorClickable } from "@/components/superadmin/colaboraciones/colaborador-fila";
+import { CeldaSinNavegar } from "@/components/superadmin/clientes-fila";
+import { FilaColaboradorClickable } from "@/components/superadmin/colaboraciones/colaborador-fila";
 
 function fecha(valor: string | null) {
   if (!valor) return "—";

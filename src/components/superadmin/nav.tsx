@@ -37,12 +37,14 @@ function EnlaceItem({
   label,
   Icon,
   activo,
+  aviso,
   onClick,
 }: {
   href: string;
   label: string;
   Icon: typeof LayoutDashboard;
   activo: boolean;
+  aviso?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -56,13 +58,16 @@ function EnlaceItem({
           : "text-muted-foreground hover:bg-accent hover:text-foreground"
       )}
     >
-      <Icon className="size-4 shrink-0" />
+      <span className="relative shrink-0">
+        <Icon className="size-4" />
+        {aviso && <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />}
+      </span>
       {label}
     </Link>
   );
 }
 
-export function SuperadminNav() {
+export function SuperadminNav({ avisos = {} }: { avisos?: Record<string, boolean> }) {
   const pathname = usePathname();
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
@@ -104,6 +109,7 @@ export function SuperadminNav() {
                   label={enlace.label}
                   Icon={enlace.icon}
                   activo={esActivo(enlace.href)}
+                  aviso={avisos[enlace.href]}
                   onClick={() => setMenuMovilAbierto(false)}
                 />
               ))}
@@ -121,6 +127,7 @@ export function SuperadminNav() {
             label={enlace.label}
             Icon={enlace.icon}
             activo={esActivo(enlace.href)}
+            aviso={avisos[enlace.href]}
           />
         ))}
       </nav>

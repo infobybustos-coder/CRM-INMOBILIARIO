@@ -128,6 +128,26 @@ export async function tieneRespuestaSinLeer(admin: AdminClient, usuarioId: strin
   return false;
 }
 
+// Para el aviso del nav de superadmin: ¿hay algún mensaje de un cliente
+// más reciente que la última vez que soporte revisó esa conversación?
+export async function tieneMensajeClienteSinLeer(admin: AdminClient): Promise<boolean> {
+  const { data } = await admin
+    .from("conversaciones")
+    .select("id, ultima_lectura_soporte, mensajes_conversacion(autor_tipo, creado_en)")
+    .neq("estado", "resuelta");
+
+  for (const conversacion of data ?? []) {
+    const mensajesCliente = (conversacion.mensajes_conversacion ?? []).filter(
+      (m) => m.autor_tipo === "cliente"
+    );
+    if (mensajesCliente.length === 0) continue;
+    const ultimo = mensajesCliente.reduce((max, m) => (m.creado_en > max ? m.creado_en : max), mensajesCliente[0].creado_en);
+    const leidoHasta = conversacion.ultima_lectura_soporte;
+    if (!leidoHasta || ultimo > leidoHasta) return true;
+  }
+  return false;
+}
+
 export async function listarConversacionesTenant(admin: AdminClient, tenantId: string): Promise<Conversacion[]> {
   const { data } = await admin
     .from("conversaciones")
