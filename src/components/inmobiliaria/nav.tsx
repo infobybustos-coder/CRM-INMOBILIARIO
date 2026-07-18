@@ -62,7 +62,7 @@ const GRUPOS_ADMIN: Grupo[] = [
     enlaces: [
       { href: "/inmobiliaria/agentes", label: "Agentes", icon: UserCog },
       { href: "/inmobiliaria/administradores", label: "Administradores", icon: ShieldCheck },
-      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare, bloqueado: true },
+      { href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare },
     ],
   },
   {
@@ -103,6 +103,10 @@ const GRUPOS_EMPLEADO: Grupo[] = [
       { href: "/inmobiliaria/mi-agenda", label: "Agenda", icon: CalendarDays },
       { href: "/inmobiliaria/mis-tareas", label: "Tareas", icon: CheckSquare },
     ],
+  },
+  {
+    titulo: "Equipo",
+    enlaces: [{ href: "/inmobiliaria/mensajes", label: "Mensajes", icon: MessageSquare }],
   },
   {
     titulo: "Mi Perfil",

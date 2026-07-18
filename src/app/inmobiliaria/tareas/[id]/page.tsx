@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FormularioTarea } from "@/components/inmobiliaria/tareas/formulario-tarea";
 import { Notas } from "@/components/asesor/notas";
 import { Historial } from "@/components/inmobiliaria/tareas/historial";
+import { CompartirEnMensajesBoton } from "@/components/inmobiliaria/mensajes/compartir-en-mensajes-boton";
 import { actualizarTarea, crearComentarioTarea } from "../actions";
 
 const RUTA_ENTIDAD: Record<string, string> = {
@@ -78,16 +79,19 @@ export default async function TareaPage({
         <ArrowLeft className="size-4" /> {gestor ? "Volver a seguimiento" : "Volver a tareas"}
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">{tarea.titulo}</h1>
-        {nombreRelacionado && tarea.entidad_tipo && (
-          <Link
-            href={`${RUTA_ENTIDAD[tarea.entidad_tipo]}/${tarea.entidad_id}`}
-            className="mt-1 flex items-center gap-1.5 text-sm text-primary hover:underline"
-          >
-            <Link2 className="size-3.5" /> {nombreRelacionado}
-          </Link>
-        )}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">{tarea.titulo}</h1>
+          {nombreRelacionado && tarea.entidad_tipo && (
+            <Link
+              href={`${RUTA_ENTIDAD[tarea.entidad_tipo]}/${tarea.entidad_id}`}
+              className="mt-1 flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              <Link2 className="size-3.5" /> {nombreRelacionado}
+            </Link>
+          )}
+        </div>
+        <CompartirEnMensajesBoton entidadTipo="tarea" entidadId={id} />
       </div>
 
       <FormularioTarea

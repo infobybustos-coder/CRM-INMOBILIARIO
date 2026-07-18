@@ -4,6 +4,7 @@ import { obtenerImpersonacion, enImpersonacionSuperadmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { tieneRespuestaSinLeer } from "@/lib/soporte/db";
+import { tieneMensajeSinLeer } from "@/lib/mensajes/db";
 import { signOut } from "../(auth)/actions";
 import { salirVistaComo } from "./equipo/actions";
 import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
@@ -45,8 +46,15 @@ export default async function InmobiliariaLayout({
     hayTareasHoy = (count ?? 0) > 0;
   }
 
-  const avisoSoporte = await tieneRespuestaSinLeer(createAdminClient(), usuario.id);
-  const avisos: Record<string, boolean> = { "/inmobiliaria/soporte": avisoSoporte };
+  const admin = createAdminClient();
+  const [avisoSoporte, avisoMensajes] = await Promise.all([
+    tieneRespuestaSinLeer(admin, usuario.id),
+    tieneMensajeSinLeer(admin, usuario.id),
+  ]);
+  const avisos: Record<string, boolean> = {
+    "/inmobiliaria/soporte": avisoSoporte,
+    "/inmobiliaria/mensajes": avisoMensajes,
+  };
   if (hayTareasHoy) avisos["/inmobiliaria/seguimiento"] = true;
 
   return (

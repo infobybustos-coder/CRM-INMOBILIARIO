@@ -7,6 +7,7 @@ import { FormularioComprador } from "@/components/asesor/compradores/formulario-
 import { Documentos } from "@/components/asesor/documentos";
 import { Notas } from "@/components/asesor/notas";
 import { Tareas } from "@/components/asesor/tareas";
+import { CompartirEnMensajesBoton } from "@/components/inmobiliaria/mensajes/compartir-en-mensajes-boton";
 import {
   crearNota,
   crearTarea,
@@ -91,24 +92,27 @@ export default async function CompradorPage({
         Volver a Compradores
       </Link>
 
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{comprador.nombre}</h1>
-        {(() => {
-          const prioridad = calcularPrioridadComprador(comprador);
-          return prioridad ? (
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
-                COLOR_PRIORIDAD[prioridad]
-              )}
-            >
-              Prioridad {prioridad}
-            </span>
-          ) : null;
-        })()}
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          Score: {calcularCompraScore(comprador)}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">{comprador.nombre}</h1>
+          {(() => {
+            const prioridad = calcularPrioridadComprador(comprador);
+            return prioridad ? (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-semibold uppercase",
+                  COLOR_PRIORIDAD[prioridad]
+                )}
+              >
+                Prioridad {prioridad}
+              </span>
+            ) : null;
+          })()}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            Score: {calcularCompraScore(comprador)}
+          </span>
+        </div>
+        <CompartirEnMensajesBoton entidadTipo="comprador" entidadId={id} />
       </div>
 
       <FormularioComprador
