@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
-import { estaConectado, tiempoDesde } from "@/lib/actividad";
+import { estaConectado, tiempoDesde } from "@/lib/actividad-tiempo";
 import { cn } from "@/lib/utils";
 import { ClientesFiltros } from "@/components/superadmin/clientes-filtros";
 import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
