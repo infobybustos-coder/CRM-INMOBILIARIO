@@ -202,7 +202,12 @@ export async function crearZona(_prevState: ZonaState, formData: FormData): Prom
   return { ok: true, zona: data };
 }
 
-export async function registrarFoto(inmuebleId: string, nombreArchivo: string, urlStorage: string) {
+export async function registrarFoto(
+  inmuebleId: string,
+  nombreArchivo: string,
+  urlStorage: string,
+  tamanoBytes?: number
+) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
 
@@ -214,6 +219,7 @@ export async function registrarFoto(inmuebleId: string, nombreArchivo: string, u
     nombre_archivo: nombreArchivo,
     url_storage: urlStorage,
     subido_por: usuario.id,
+    tamano_bytes: tamanoBytes ?? null,
   });
 
   if (error) throw new Error("No se pudo registrar la foto");
@@ -235,7 +241,8 @@ export async function registrarDocumento(
   inmuebleId: string,
   nombreArchivo: string,
   urlStorage: string,
-  tipoDocumento: string | null
+  tipoDocumento: string | null,
+  tamanoBytes?: number
 ) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
@@ -248,6 +255,7 @@ export async function registrarDocumento(
     nombre_archivo: nombreArchivo,
     url_storage: urlStorage,
     subido_por: usuario.id,
+    tamano_bytes: tamanoBytes ?? null,
   });
 
   if (error) throw new Error("No se pudo registrar el documento");

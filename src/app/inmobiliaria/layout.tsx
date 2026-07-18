@@ -10,6 +10,7 @@ import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions"
 import { InmobiliariaNav } from "@/components/inmobiliaria/nav";
 import { ThemeToggle } from "@/components/inmobiliaria/theme-toggle";
 import { UserMenu } from "@/components/inmobiliaria/user-menu";
+import { HeartbeatActividad } from "@/components/heartbeat-actividad";
 
 export default async function InmobiliariaLayout({
   children,
@@ -88,6 +89,7 @@ export default async function InmobiliariaLayout({
       )}
       <main className="p-4 pb-24 md:pb-6">{children}</main>
       <InmobiliariaNav esAdmin={esAdmin} avisos={avisos} />
+      <HeartbeatActividad />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { signOut } from "../(auth)/actions";
 import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
 import { AsesorNav } from "@/components/asesor/nav";
 import { QuickAdd } from "@/components/asesor/quick-add";
+import { HeartbeatActividad } from "@/components/heartbeat-actividad";
 import { ThemeToggle } from "@/components/asesor/theme-toggle";
 import { UserMenu } from "@/components/asesor/user-menu";
 import { PreferenciasProvider } from "@/lib/preferencias";
@@ -166,6 +167,7 @@ export default async function AsesorLayout({
         <main className="p-4 pb-24 md:pb-6">{children}</main>
         <AsesorNav avisos={avisos} />
         <QuickAdd />
+        <HeartbeatActividad />
       </div>
     </PreferenciasProvider>
   );

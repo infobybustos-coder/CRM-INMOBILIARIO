@@ -4,15 +4,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nombrePais, banderaPais } from "@/lib/paises";
 import { precioPlan, limiteRecurso, limiteAdmins, limiteEmpleados } from "@/lib/planes";
 import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { estaConectado, tiempoDesde } from "@/lib/actividad";
+import { listarConversacionesTenant } from "@/lib/soporte/db";
 import { cn } from "@/lib/utils";
 import { EstadoTenantAcciones } from "@/components/superadmin/estado-tenant-acciones";
 import { EditarEmpresaBoton } from "@/components/superadmin/editar-empresa-boton";
 import { CambiarPlanBoton } from "@/components/superadmin/cambiar-plan-boton";
 import { EliminarTenantBoton } from "@/components/superadmin/eliminar-tenant-boton";
 import { AccederComoBoton } from "@/components/superadmin/acceder-como-boton";
+import { RestablecerPasswordBoton } from "@/components/superadmin/restablecer-password-boton";
 import { NotasInternas } from "@/components/superadmin/notas-internas";
 import { WhatsAppBoton } from "@/components/superadmin/whatsapp-boton";
+import { BadgeEstado } from "@/components/soporte/badge-estado";
 import type { EstadoTenant } from "../actions";
+
+function formatearBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   activo: { texto: "Activo", clase: "bg-emerald-500/10 text-emerald-600" },
@@ -70,10 +81,14 @@ export default async function ClienteFichaPage({
     { count: numPropietarios },
     { count: numInmuebles },
     { count: numCompradores },
+    { count: numVisitas },
+    { count: numTareas },
+    { data: documentos },
+    conversaciones,
   ] = await Promise.all([
     admin
       .from("usuarios")
-      .select("id, nombre_completo, email, telefono, rol, ultimo_acceso")
+      .select("id, nombre_completo, email, telefono, rol, ultimo_acceso, ultima_actividad")
       .eq("tenant_id", id),
     admin
       .from("tenant_eventos")
@@ -93,7 +108,22 @@ export default async function ClienteFichaPage({
     admin.from("propietarios").select("id", { count: "exact", head: true }).eq("tenant_id", id),
     admin.from("inmuebles").select("id", { count: "exact", head: true }).eq("tenant_id", id),
     admin.from("compradores").select("id", { count: "exact", head: true }).eq("tenant_id", id),
+    admin
+      .from("eventos_agenda")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", id)
+      .eq("tipo", "visita"),
+    admin.from("tareas").select("id", { count: "exact", head: true }).eq("tenant_id", id),
+    admin.from("documentos").select("tamano_bytes").eq("tenant_id", id),
+    listarConversacionesTenant(admin, id),
   ]);
+
+  const espacioUtilizado = (documentos ?? []).reduce((total, d) => total + (d.tamano_bytes ?? 0), 0);
+  const ultimaActividadTenant = (usuarios ?? []).reduce<string | null>((max, u) => {
+    if (!u.ultima_actividad) return max;
+    return !max || u.ultima_actividad > max ? u.ultima_actividad : max;
+  }, null);
+  const conectadoAhora = estaConectado(ultimaActividadTenant);
 
   const contacto = (usuarios ?? []).find((u) => u.rol === "admin") ?? (usuarios ?? [])[0] ?? null;
   const estado = ETIQUETA_ESTADO[tenant.estado] ?? ETIQUETA_ESTADO.activo;
@@ -109,12 +139,15 @@ export default async function ClienteFichaPage({
     { label: "Propietarios", valor: conLimite(numPropietarios ?? 0, limiteRecurso(config, tenant, "propietarios")) },
     { label: "Inmuebles", valor: conLimite(numInmuebles ?? 0, limiteRecurso(config, tenant, "inmuebles")) },
     { label: "Compradores", valor: conLimite(numCompradores ?? 0, limiteRecurso(config, tenant, "compradores")) },
+    { label: "Visitas", valor: String(numVisitas ?? 0) },
+    { label: "Tareas", valor: String(numTareas ?? 0) },
     ...(tenant.tipo_plan === "inmobiliaria"
       ? [
           { label: "Administradores", valor: conLimite(numAdmins, limiteAdmins(config, tenant)) },
           { label: "Asesores", valor: conLimite(numEmpleados, limiteEmpleados(config, tenant)) },
         ]
       : []),
+    { label: "Espacio usado", valor: formatearBytes(espacioUtilizado) },
   ];
 
   const campos = [
@@ -142,7 +175,15 @@ export default async function ClienteFichaPage({
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{tenant.nombre}</h1>
-        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", estado.clase)}>{estado.texto}</span>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span
+              className={cn("size-2 rounded-full", conectadoAhora ? "bg-emerald-500" : "bg-muted-foreground/30")}
+            />
+            {conectadoAhora ? "Conectado ahora" : `Actividad: ${tiempoDesde(ultimaActividadTenant)}`}
+          </span>
+          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", estado.clase)}>{estado.texto}</span>
+        </div>
       </div>
 
       <div className="divide-y rounded-lg border">
@@ -177,17 +218,32 @@ export default async function ClienteFichaPage({
           <p className="text-sm text-muted-foreground">Sin usuarios.</p>
         ) : (
           <div className="divide-y rounded-lg border">
-            {(usuarios ?? []).map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                <div>
-                  <p className="font-medium">{u.nombre_completo}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {u.email} · {u.rol === "admin" ? "Administrador/a" : "Empleado/a"}
-                  </p>
+            {(usuarios ?? []).map((u) => {
+              const usuarioConectado = estaConectado(u.ultima_actividad);
+              return (
+                <div key={u.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                  <div>
+                    <p className="font-medium">{u.nombre_completo}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.email} · {u.rol === "admin" ? "Administrador/a" : "Empleado/a"}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span
+                        className={cn(
+                          "size-1.5 rounded-full",
+                          usuarioConectado ? "bg-emerald-500" : "bg-muted-foreground/30"
+                        )}
+                      />
+                      {usuarioConectado ? "Conectado" : tiempoDesde(u.ultima_actividad)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RestablecerPasswordBoton usuarioId={u.id} tenantId={tenant.id} />
+                    <AccederComoBoton usuarioId={u.id} nombre={u.nombre_completo ?? u.email} />
+                  </div>
                 </div>
-                <AccederComoBoton usuarioId={u.id} nombre={u.nombre_completo ?? u.email} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -274,15 +330,27 @@ export default async function ClienteFichaPage({
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {["Incidencias", "Tickets"].map((seccion) => (
-          <div key={seccion} className="space-y-1 rounded-lg border border-dashed p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground">{seccion}</h2>
-            <p className="text-xs text-muted-foreground">
-              Próximamente — necesita un sistema de tickets dedicado.
-            </p>
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold">Conversaciones de soporte</h2>
+        {conversaciones.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sin conversaciones de soporte todavía.</p>
+        ) : (
+          <div className="divide-y rounded-lg border">
+            {conversaciones.map((c) => (
+              <Link
+                key={c.id}
+                href={`/superadmin/soporte?c=${c.id}`}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-accent/50"
+              >
+                <div>
+                  <p className="font-medium">{c.asunto}</p>
+                  <p className="text-xs text-muted-foreground">{fechaHora(c.actualizadoEn)}</p>
+                </div>
+                <BadgeEstado estado={c.estado} />
+              </Link>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
