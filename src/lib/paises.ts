@@ -248,3 +248,13 @@ export type CodigoPais = (typeof PAISES)[number]["codigo"];
 export function prefijoPais(codigo: string) {
   return PAISES.find((p) => p.codigo === codigo)?.prefijo ?? "+34";
 }
+
+export function nombrePais(codigo: string) {
+  return PAISES.find((p) => p.codigo === codigo)?.nombre ?? codigo;
+}
+
+export function banderaPais(codigo: string) {
+  if (!/^[A-Z]{2}$/.test(codigo)) return "🏳️";
+  const puntos = [...codigo].map((letra) => 127397 + letra.charCodeAt(0));
+  return String.fromCodePoint(...puntos);
+}

@@ -1,10 +1,16 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { actualizarPerfil, actualizarAvatar, type PerfilState } from "@/app/asesor/perfil/actions";
+import {
+  actualizarPerfil,
+  actualizarAvatar,
+  actualizarContrasena,
+  type PerfilState,
+  type ContrasenaState,
+} from "@/app/asesor/perfil/actions";
 
 function iniciales(nombre: string) {
   return nombre
@@ -22,6 +28,7 @@ export function PerfilForm({
   telefono,
   bio,
   avatarUrl,
+  cerrarSesionAction,
 }: {
   usuarioId: string;
   nombreCompleto: string;
@@ -29,11 +36,16 @@ export function PerfilForm({
   telefono: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  cerrarSesionAction?: () => Promise<void>;
 }) {
   const [state, formAction, pending] = useActionState<PerfilState, FormData>(
     actualizarPerfil,
     null
   );
+  const [contrasenaState, contrasenaAction, contrasenaPending] = useActionState<
+    ContrasenaState,
+    FormData
+  >(actualizarContrasena, null);
   const [avatar, setAvatar] = useState(avatarUrl);
   const [subiendo, setSubiendo] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +157,62 @@ export function PerfilForm({
           {pending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </form>
+
+      <form action={contrasenaAction} className="space-y-4 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">Cambiar contraseña</h2>
+
+        <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-medium">
+            Nueva contraseña
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minLength={6}
+            required
+            autoComplete="new-password"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="confirmar_password" className="text-sm font-medium">
+            Repite la contraseña
+          </label>
+          <input
+            id="confirmar_password"
+            name="confirmar_password"
+            type="password"
+            minLength={6}
+            required
+            autoComplete="new-password"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        {contrasenaState && "error" in contrasenaState && (
+          <p className="text-sm text-destructive">{contrasenaState.error}</p>
+        )}
+        {contrasenaState && "ok" in contrasenaState && (
+          <p className="text-sm text-emerald-600">Contraseña actualizada.</p>
+        )}
+
+        <Button type="submit" variant="outline" disabled={contrasenaPending}>
+          {contrasenaPending ? "Guardando..." : "Cambiar contraseña"}
+        </Button>
+      </form>
+
+      {cerrarSesionAction && (
+        <form action={cerrarSesionAction}>
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="size-4" /> Cerrar sesión
+          </button>
+        </form>
+      )}
     </div>
   );
 }

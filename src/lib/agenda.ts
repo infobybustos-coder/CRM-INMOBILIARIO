@@ -5,6 +5,7 @@ export type AgendaItem = {
   fecha: string;
   estado: string;
   tipo?: string;
+  href?: string;
 };
 
 export function claveDia(fecha: string | Date): string {

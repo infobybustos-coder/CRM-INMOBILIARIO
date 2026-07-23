@@ -1,0 +1,190 @@
+import { requireAdminInmobiliaria } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SelectorPlan } from "@/components/inmobiliaria/suscripcion/selector-plan";
+import { ConfiguracionTabs } from "@/components/inmobiliaria/configuracion-tabs";
+import { limiteAdmins, limiteEmpleados, etiquetaPlan, type PlanTarifa } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { formatearPrecio } from "@/lib/precio";
+import { monedaVisitante } from "@/lib/geo";
+import { cn } from "@/lib/utils";
+
+const ETIQUETA_ESTADO_SUSCRIPCION: Record<string, string> = {
+  trial: "Periodo de prueba",
+  activa: "Activa",
+  pausada: "Pausada",
+  cancelada: "Cancelada",
+  impago: "Impago",
+};
+
+export default async function SuscripcionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pago?: string }>;
+}) {
+  const usuario = await requireAdminInmobiliaria();
+  const { pago } = await searchParams;
+  const supabase = await createClient();
+  const config = await obtenerConfigPlanes();
+  const moneda = await monedaVisitante();
+
+  const { data: suscripcion } = await supabase
+    .from("suscripciones")
+    .select("plan, estado, fecha_renovacion")
+    .eq("tenant_id", usuario.tenant_id)
+    .maybeSingle();
+
+  const tenant = usuario.tenant ?? {};
+
+  const admin = createAdminClient();
+  const { count: pedidosPendientes } = await admin
+    .from("pedidos")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", usuario.tenant_id)
+    .eq("estado", "iniciado");
+
+  const [{ count: adminsActivos }, { count: empleadosActivos }] = await Promise.all([
+    supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "admin")
+      .eq("activo", true),
+    supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .eq("rol", "empleado")
+      .eq("activo", true),
+  ]);
+
+  const limiteAdminsTenant = limiteAdmins(config, tenant);
+  const limiteEmpleadosTenant = limiteEmpleados(config, tenant);
+  const adminsExtra = tenant.plan_tarifa === "pago" ? (tenant.admins_extra ?? 0) : 0;
+  const agentesExtra = tenant.plan_tarifa === "pago" ? (tenant.agentes_extra ?? 0) : 0;
+  const costeExtra = agentesExtra * config.precioAsesorExtra + adminsExtra * config.precioAdminExtra;
+
+  return (
+    <div className="max-w-lg space-y-5">
+      <h1 className="text-2xl font-semibold">Configuración</h1>
+      <ConfiguracionTabs />
+
+      <h2 className="text-lg font-semibold">Suscripción</h2>
+
+      {pago === "exito" && (
+        <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-500">
+          Pago confirmado — tu plan ya es PRO.
+        </p>
+      )}
+      {pago === "cancelado" && tenant.plan_tarifa !== "pago" && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
+          Pago cancelado. Puedes intentarlo de nuevo cuando quieras.
+        </p>
+      )}
+      {pago === "error" && tenant.plan_tarifa !== "pago" && (
+        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          No se pudo iniciar el pago. Tu cuenta se ha creado en el plan Gratis — elige el plan PRO
+          abajo para intentarlo de nuevo.
+        </p>
+      )}
+
+      <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Plan actual</p>
+          <p className="font-medium">{etiquetaPlan(tenant)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Estado</p>
+          <p className="font-medium">
+            {ETIQUETA_ESTADO_SUSCRIPCION[suscripcion?.estado ?? ""] ?? "Sin suscripción activa"}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Administradores</p>
+          <p
+            className={cn(
+              "font-medium",
+              (adminsActivos ?? 0) > limiteAdminsTenant && "text-destructive"
+            )}
+          >
+            {adminsActivos ?? 0} de {limiteAdminsTenant}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Asesores</p>
+          <p
+            className={cn(
+              "font-medium",
+              (empleadosActivos ?? 0) > limiteEmpleadosTenant && "text-destructive"
+            )}
+          >
+            {empleadosActivos ?? 0} de {limiteEmpleadosTenant}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Próxima renovación</p>
+          <p className="font-medium">
+            {suscripcion?.fecha_renovacion
+              ? new Date(suscripcion.fecha_renovacion).toLocaleDateString("es-ES", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "—"}
+          </p>
+        </div>
+        {costeExtra > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground">Asientos extra</p>
+            <p className="font-medium">
+              {agentesExtra > 0 && `${agentesExtra} agente(s)`}
+              {agentesExtra > 0 && adminsExtra > 0 && " · "}
+              {adminsExtra > 0 && `${adminsExtra} admin(es)`} (+{formatearPrecio(costeExtra, moneda)}/mes)
+            </p>
+          </div>
+        )}
+      </div>
+
+      {((adminsActivos ?? 0) > limiteAdminsTenant || (empleadosActivos ?? 0) > limiteEmpleadosTenant) && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          Tienes más administradores o asesores activos de los que incluye tu plan actual. Elimina o
+          desactiva usuarios desde Administradores/Agentes, o pasa al plan PRO para ampliar.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold">Elige tu plan</h2>
+        <SelectorPlan
+          planActual={(tenant.plan_tarifa as PlanTarifa) ?? "gratis"}
+          config={config}
+          pedidoPendiente={(pedidosPendientes ?? 0) > 0}
+          moneda={moneda}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled
+          className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground opacity-50"
+          title="Próximamente"
+        >
+          Gestionar pago
+        </button>
+        <button
+          type="button"
+          disabled
+          className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground opacity-50"
+          title="Próximamente"
+        >
+          Descargar facturas
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {config.inmobiliariaProStripePriceId
+          ? "El pago se procesa de forma segura con Stripe y tu plan se activa automáticamente al confirmarse. La gestión de pago y las facturas estarán disponibles próximamente."
+          : "No hay pasarela de pago automática conectada: al solicitar el cambio a PRO, un administrador confirma el pago manualmente antes de activar el plan. La gestión de pago y las facturas estarán disponibles próximamente."}
+      </p>
+    </div>
+  );
+}

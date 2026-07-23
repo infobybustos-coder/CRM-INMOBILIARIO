@@ -45,6 +45,11 @@ export default function LoginPage() {
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Entrando..." : "Entrar"}
         </Button>
+        <p className="text-center text-sm">
+          <Link href="/recuperar-contrasena" className="text-muted-foreground underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
         <p className="text-center text-sm text-muted-foreground">
           ¿No tienes cuenta?{" "}
           <Link href="/signup" className="underline">

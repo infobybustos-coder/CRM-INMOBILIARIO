@@ -28,15 +28,17 @@ const ETIQUETAS_TIPO_ACTIVIDAD: Record<string, string> = {
 export function Notas({
   actividades,
   crearNotaAction,
+  titulo = "Notas",
 }: {
   actividades: Actividad[];
   crearNotaAction: (prevState: NotaState, formData: FormData) => Promise<NotaState>;
+  titulo?: string;
 }) {
   const [state, formAction, pending] = useActionState(crearNotaAction, null);
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      <h2 className="font-semibold">Notas</h2>
+      <h2 className="font-semibold">{titulo}</h2>
 
       <form action={formAction} className="space-y-2">
         <textarea

@@ -1,13 +1,34 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUsuarioConTenant, esGestor } from "@/lib/auth";
+import { getUsuarioEfectivo, esGestor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { limiteRecurso } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
+import { verificarUmbralesLimite } from "@/lib/limite-aviso";
 
 async function requireUsuario() {
-  const usuario = await getUsuarioConTenant();
+  const usuario = await getUsuarioEfectivo();
   if (!usuario) throw new Error("No autenticado");
   return usuario;
+}
+
+// Este módulo lo usan tanto /asesor/propietarios como /inmobiliaria/propietarios
+// (el panel de equipo), así que hay que revalidar las dos rutas.
+const BASES_PROPIETARIOS = ["/asesor/propietarios", "/inmobiliaria/propietarios"];
+
+function revalidarPropietario(id?: string) {
+  for (const base of BASES_PROPIETARIOS) {
+    revalidatePath(base);
+    if (id) revalidatePath(`${base}/${id}`);
+  }
+}
+
+function revalidarAgendaYPanel() {
+  revalidatePath("/asesor", "layout");
+  revalidatePath("/asesor/agenda");
+  revalidatePath("/inmobiliaria");
+  revalidatePath("/inmobiliaria/agenda");
 }
 
 export async function actualizarEstadoPropietario(id: string, estado: string) {
@@ -32,7 +53,7 @@ export async function actualizarEstadoPropietario(id: string, estado: string) {
     contenido: `Cambió el estado a "${estado}"`,
   });
 
-  revalidatePath("/asesor/propietarios");
+  revalidarPropietario();
 }
 
 export type GuardarPropietarioState = { error: string } | { ok: true } | null;
@@ -82,8 +103,7 @@ export async function actualizarPropietario(
 
   if (error) return { error: "No se pudo guardar." };
 
-  revalidatePath(`/asesor/propietarios/${id}`);
-  revalidatePath("/asesor/propietarios");
+  revalidarPropietario(id);
   return { ok: true };
 }
 
@@ -110,7 +130,7 @@ export async function crearNota(
 
   if (error) return { error: "No se pudo guardar la nota." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
   return null;
 }
 
@@ -139,9 +159,8 @@ export async function crearTarea(
 
   if (error) return { error: "No se pudo crear la tarea." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
   return null;
 }
 
@@ -161,17 +180,16 @@ export async function alternarTarea(
     })
     .eq("id", tareaId);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor/agenda");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
 }
 
 export async function registrarDocumento(
   propietarioId: string,
   nombreArchivo: string,
   urlStorage: string,
-  tipoDocumento: string | null
+  tipoDocumento: string | null,
+  tamanoBytes?: number
 ) {
   const usuario = await requireUsuario();
   const supabase = await createClient();
@@ -184,11 +202,12 @@ export async function registrarDocumento(
     nombre_archivo: nombreArchivo,
     url_storage: urlStorage,
     subido_por: usuario.id,
+    tamano_bytes: tamanoBytes ?? null,
   });
 
   if (error) throw new Error("No se pudo registrar el documento");
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
 }
 
 const SIGUIENTE_PASO: Record<
@@ -253,9 +272,8 @@ export async function crearSiguientePaso(
     }),
   ]);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor");
+  revalidarPropietario(propietarioId);
+  revalidarAgendaYPanel();
 }
 
 export type GuionState = { error: string } | { ok: true } | null;
@@ -276,15 +294,16 @@ export async function actualizarGuionCaptacion(
     acepta_exclusiva: String(formData.get("acepta_exclusiva") ?? "").trim(),
   };
 
+  const gestor = esGestor(usuario.rol);
   const { error } = await supabase
     .from("propietarios")
     .update({ guion_captacion: respuestas })
     .eq("id", propietarioId)
-    .eq("agente_id", usuario.id);
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
 
   if (error) return { error: "No se pudo guardar el guion." };
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
   return { ok: true };
 }
 
@@ -295,5 +314,73 @@ export async function eliminarDocumento(documentoId: string, propietarioId: stri
   await supabase.storage.from("documentos").remove([urlStorage]);
   await supabase.from("documentos").delete().eq("id", documentoId).eq("tenant_id", usuario.tenant_id);
 
-  revalidatePath(`/asesor/propietarios/${propietarioId}`);
+  revalidarPropietario(propietarioId);
+}
+
+export type CrearPropietarioRapidoState = { error: string; limite?: true } | { ok: true } | null;
+
+export async function crearPropietarioRapido(
+  _prevState: CrearPropietarioRapidoState,
+  formData: FormData
+): Promise<CrearPropietarioRapidoState> {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const telefono = String(formData.get("telefono") ?? "").trim();
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
+
+  if (!nombre || !telefono) {
+    return { error: "Pon al menos el nombre y el teléfono." };
+  }
+
+  const config = await obtenerConfigPlanes();
+  const limite = limiteRecurso(config, usuario.tenant ?? {}, "propietarios");
+  let conteoActual = 0;
+  if (limite !== null) {
+    const { count } = await supabase
+      .from("propietarios")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id);
+    conteoActual = count ?? 0;
+    if (conteoActual >= limite) {
+      return {
+        error: `Has llegado al límite de ${limite} captaciones del plan Gratis.`,
+        limite: true,
+      };
+    }
+  }
+
+  const { error } = await supabase.from("propietarios").insert({
+    tenant_id: usuario.tenant_id,
+    agente_id: usuario.id,
+    nombre,
+    telefono,
+    direccion,
+  });
+
+  if (error) return { error: "No se pudo guardar el propietario." };
+
+  if (limite !== null) {
+    // Se espera (no fire-and-forget) porque en un entorno serverless una
+    // promesa sin await puede quedar cortada al terminar la función.
+    await verificarUmbralesLimite(usuario, "propietarios", config, conteoActual + 1);
+  }
+
+  revalidarPropietario();
+  return { ok: true };
+}
+
+export async function eliminarPropietario(id: string) {
+  const usuario = await requireUsuario();
+  const supabase = await createClient();
+  const gestor = esGestor(usuario.rol);
+
+  await supabase
+    .from("propietarios")
+    .delete()
+    .eq("id", id)
+    .eq(gestor ? "tenant_id" : "agente_id", gestor ? usuario.tenant_id : usuario.id);
+
+  revalidarPropietario();
 }

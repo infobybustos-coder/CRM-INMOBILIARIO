@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
+import { Home, Sparkles, Award, BookmarkCheck, ImageOff, FileWarning } from "lucide-react";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Filtros } from "@/components/asesor/inmuebles/filtros";
-import { Tabla } from "@/components/asesor/inmuebles/tabla";
+import { Tabla } from "@/components/inmobiliaria/inmuebles/tabla";
+import { NuevoInmueble } from "@/components/inmobiliaria/inmuebles/nuevo-inmueble";
 import type { Inmueble } from "./constantes";
+
+type InmuebleConAgente = Inmueble & { agente_id: string | null };
 
 export default async function InmueblesPage({
   searchParams,
@@ -12,14 +16,16 @@ export default async function InmueblesPage({
 }) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) redirect("/login");
+  if (usuario.tenant?.tipo_plan !== "asesor") redirect("/inmobiliaria");
 
   const supabase = await createClient();
+
   let query = supabase
     .from("inmuebles")
     .select(
-      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en, zonas(nombre, ciudad)"
+      "id, referencia, direccion, zona_id, propietario_id, precio, metros_cuadrados, habitaciones, banos, tipo, estado, certificado_energetico, descripcion, fecha_publicacion, creado_en, agente_id, zonas(nombre, ciudad)"
     )
-    .eq("agente_id", usuario.id);
+    .eq("tenant_id", usuario.tenant_id);
 
   const params = await searchParams;
   if (params.estado) query = query.eq("estado", params.estado);
@@ -31,13 +37,12 @@ export default async function InmueblesPage({
   const base = data ?? [];
   const ids = base.map((i) => i.id);
 
-  const [{ data: fotos }, { data: visitas }] = await Promise.all([
+  const [{ data: documentos }, { data: visitas }] = await Promise.all([
     ids.length
       ? supabase
           .from("documentos")
-          .select("entidad_id, url_storage, creado_en")
+          .select("entidad_id, tipo_documento, url_storage, creado_en")
           .eq("entidad_tipo", "inmueble")
-          .eq("tipo_documento", "foto")
           .in("entidad_id", ids)
           .order("creado_en", { ascending: false })
       : Promise.resolve({ data: [] }),
@@ -52,14 +57,20 @@ export default async function InmueblesPage({
   ]);
 
   const fotoPorInmueble = new Map<string, string>();
-  for (const f of fotos ?? []) {
-    if (!fotoPorInmueble.has(f.entidad_id)) fotoPorInmueble.set(f.entidad_id, f.url_storage);
+  const tieneDocumentoPorInmueble = new Set<string>();
+  for (const d of documentos ?? []) {
+    tieneDocumentoPorInmueble.add(d.entidad_id);
+    if (d.tipo_documento === "foto" && !fotoPorInmueble.has(d.entidad_id)) {
+      fotoPorInmueble.set(d.entidad_id, d.url_storage);
+    }
   }
 
   const visitasPorInmueble = new Map<string, number>();
   for (const v of visitas ?? []) {
     visitasPorInmueble.set(v.entidad_id, (visitasPorInmueble.get(v.entidad_id) ?? 0) + 1);
   }
+
+  const agentesPorId = new Map([[usuario.id, usuario.nombre_completo as string]]);
 
   const inmuebles = base.map((i) => {
     const zona = Array.isArray(i.zonas) ? i.zonas[0] : i.zonas;
@@ -69,20 +80,76 @@ export default async function InmueblesPage({
       visitas: visitasPorInmueble.get(i.id) ?? 0,
       poblacion: zona?.ciudad ?? zona?.nombre ?? null,
     };
-  }) as Inmueble[];
+  }) as InmuebleConAgente[];
+
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
+
+  const kpis = [
+    {
+      label: "Activos",
+      valor: inmuebles.filter((i) => i.estado !== "vendido").length,
+      icono: Home,
+      color: "bg-sky-500/10 text-sky-600",
+    },
+    {
+      label: "Nuevos",
+      valor: inmuebles.filter((i) => new Date(i.creado_en) >= inicioMes).length,
+      icono: Sparkles,
+      color: "bg-violet-500/10 text-violet-600",
+    },
+    {
+      label: "Vendidos",
+      valor: inmuebles.filter((i) => i.estado === "vendido").length,
+      icono: Award,
+      color: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+      label: "Reservados",
+      valor: inmuebles.filter((i) => i.estado === "reservado").length,
+      icono: BookmarkCheck,
+      color: "bg-amber-500/10 text-amber-600",
+    },
+    {
+      label: "Sin fotos",
+      valor: inmuebles.filter((i) => !fotoPorInmueble.has(i.id)).length,
+      icono: ImageOff,
+      color: "bg-rose-500/10 text-rose-600",
+    },
+    {
+      label: "Sin documentación",
+      valor: inmuebles.filter((i) => !tieneDocumentoPorInmueble.has(i.id)).length,
+      icono: FileWarning,
+      color: "bg-orange-500/10 text-orange-600",
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inmuebles</h1>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Inmuebles</h1>
+        <NuevoInmueble />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
+        {kpis.map(({ label, valor, icono: Icono, color }) => (
+          <div key={label} className="flex flex-col gap-2 rounded-xl border p-3">
+            <span className={`flex size-8 items-center justify-center rounded-lg ${color}`}>
+              <Icono className="size-4" />
+            </span>
+            <span className="text-xl font-semibold">{valor}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
 
       <Filtros />
 
       {inmuebles.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Todavía no tienes inmuebles registrados. Usa el botón + para añadir uno.
-        </p>
+        <p className="text-sm text-muted-foreground">Todavía no hay inmuebles registrados.</p>
       ) : (
-        <Tabla inmuebles={inmuebles} />
+        <Tabla inmuebles={inmuebles} agentesPorId={agentesPorId} basePath="/asesor/inmuebles" gestor />
       )}
     </div>
   );

@@ -4,16 +4,18 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { limiteRecurso } from "@/lib/planes";
+import { obtenerConfigPlanes } from "@/lib/planes-config";
 
-export type CrearClienteState = { error: string } | { ok: true } | null;
+export type CrearClienteState = { error: string; limite?: true } | { ok: true } | null;
 
 async function limiteAlcanzado(
   supabase: Awaited<ReturnType<typeof createClient>>,
   usuario: NonNullable<Awaited<ReturnType<typeof getUsuarioConTenant>>>,
   tabla: "propietarios" | "inmuebles" | "compradores",
   etiqueta: string
-) {
-  const limite = limiteRecurso(usuario.tenant ?? {}, tabla);
+): Promise<{ error: string; limite: true } | null> {
+  const config = await obtenerConfigPlanes();
+  const limite = limiteRecurso(config, usuario.tenant ?? {}, tabla);
   if (limite === null) return null;
 
   const { count } = await supabase
@@ -24,6 +26,7 @@ async function limiteAlcanzado(
   if ((count ?? 0) >= limite) {
     return {
       error: `Has llegado al límite de ${limite} ${etiqueta} del plan Gratis. Mejora tu plan para añadir más.`,
+      limite: true,
     };
   }
   return null;

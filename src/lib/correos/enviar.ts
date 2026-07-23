@@ -1,0 +1,150 @@
+import "server-only";
+import { Resend } from "resend";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
+import { obtenerConfigCorreos, obtenerPlantilla, registrarEnvioCorreo } from "./db";
+import { construirHtmlCorreo, sustituirVariables, urlPublicaLogo } from "./render";
+import type { ClavePlantilla, ResultadoEnvio, VariablesCorreo } from "./tipos";
+
+// Nunca lanza: un fallo de envío no debe romper el flujo que lo dispara
+// (alta de usuario, cambio de plan...). Siempre devuelve un resultado, y
+// siempre deja constancia en correos_enviados (para el registro de
+// /superadmin/correos/registro), tanto si sale bien como si falla.
+export async function enviarCorreo(
+  clave: ClavePlantilla,
+  destinatario: string,
+  variables: VariablesCorreo,
+  contexto?: { esReenvio?: boolean; reenviadoPor?: string }
+): Promise<ResultadoEnvio> {
+  const admin = createAdminClient();
+  const registrar = (asunto: string, estado: "enviado" | "fallido" | "omitido", error?: string) =>
+    registrarEnvioCorreo(admin, {
+      plantillaClave: clave,
+      destinatario,
+      asunto,
+      variables,
+      estado,
+      error,
+      esReenvio: contexto?.esReenvio,
+      reenviadoPor: contexto?.reenviadoPor,
+    });
+
+  try {
+    const [plantilla, config] = await Promise.all([obtenerPlantilla(admin, clave), obtenerConfigCorreos(admin)]);
+
+    if (!plantilla) {
+      await registrar(`(plantilla "${clave}")`, "fallido", "Plantilla no encontrada.");
+      return { error: `Plantilla "${clave}" no encontrada.` };
+    }
+    if (!plantilla.activo) {
+      await registrar(plantilla.asunto, "omitido");
+      return { ok: true, omitido: true };
+    }
+
+    const asunto = sustituirVariables(plantilla.asunto, variables);
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error(`enviarCorreo(${clave}): falta RESEND_API_KEY, correo no enviado.`);
+      await registrar(asunto, "fallido", "Falta configurar RESEND_API_KEY.");
+      return { error: "El envío de correos no está configurado todavía." };
+    }
+
+    const html = construirHtmlCorreo({
+      contenidoHtml: sustituirVariables(plantilla.contenidoHtml, variables),
+      botonTexto: plantilla.botonTexto ? sustituirVariables(plantilla.botonTexto, variables) : null,
+      botonUrl: plantilla.botonUrl ? sustituirVariables(plantilla.botonUrl, variables) : null,
+      colorPrincipal: config.colorPrincipal,
+      logoUrl: urlPublicaLogo(config.logoUrl),
+      firma: config.firma,
+    });
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: `${config.remitenteNombre} <${config.remitenteEmail}>`,
+      to: destinatario,
+      subject: asunto,
+      html,
+    });
+
+    if (error) {
+      console.error(`enviarCorreo(${clave}):`, error);
+      await registrar(asunto, "fallido", error.message ?? "Error desconocido de Resend.");
+      return { error: "No se pudo enviar el correo." };
+    }
+    await registrar(asunto, "enviado");
+    return { ok: true };
+  } catch (err) {
+    console.error(`enviarCorreo(${clave}): excepción`, err);
+    await registrar(clave, "fallido", err instanceof Error ? err.message : "Excepción desconocida.");
+    return { error: "No se pudo enviar el correo." };
+  }
+}
+
+// Recuperación de contraseña: pide el enlace de acción real a Supabase sin
+// que Supabase llegue a enviar ningún correo (así evitamos su límite de
+// envíos, pensado solo para pruebas) y lo mandamos nosotros con nuestra
+// propia plantilla editable.
+export async function enviarCorreoRecuperacion(email: string, nombre: string | null): Promise<ResultadoEnvio> {
+  try {
+    const admin = createAdminClient();
+    const url = await siteUrl();
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${url}/auth/callback?next=/restablecer-contrasena` },
+    });
+
+    if (error || !data?.properties?.hashed_token) {
+      console.error("enviarCorreoRecuperacion: no se pudo generar el enlace", error);
+      return { error: "No se pudo generar el enlace de recuperación." };
+    }
+
+    // Usamos nuestro propio /auth/callback con el token_hash en la query en
+    // vez del action_link que da Supabase: ese pasa primero por su dominio
+    // hosted y termina devolviendo la sesión en el fragmento (#access_token=…)
+    // de la URL, que nunca llega al servidor y por tanto no la podíamos leer.
+    const enlace = `${url}/auth/callback?token_hash=${data.properties.hashed_token}&type=recovery&next=/restablecer-contrasena`;
+
+    return enviarCorreo("recuperar_password", email, {
+      nombre: nombre ?? "",
+      email,
+      enlace,
+    });
+  } catch (err) {
+    console.error("enviarCorreoRecuperacion: excepción", err);
+    return { error: "No se pudo enviar el correo de recuperación." };
+  }
+}
+
+// Alta de colaborador: mismo mecanismo que la recuperación de contraseña
+// (generateLink + token_hash por nuestra propia /auth/callback, sin pasar
+// por el hosted action_link de Supabase) para que pueda poner su
+// contraseña y entrar a su panel por primera vez.
+export async function enviarCorreoBienvenidaColaborador(
+  email: string,
+  nombre: string,
+  codigo: string
+): Promise<ResultadoEnvio> {
+  try {
+    const admin = createAdminClient();
+    const url = await siteUrl();
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${url}/auth/callback?next=/restablecer-contrasena` },
+    });
+
+    if (error || !data?.properties?.hashed_token) {
+      console.error("enviarCorreoBienvenidaColaborador: no se pudo generar el enlace", error);
+      return { error: "No se pudo generar el enlace de acceso." };
+    }
+
+    const enlace = `${url}/auth/callback?token_hash=${data.properties.hashed_token}&type=recovery&next=/restablecer-contrasena`;
+
+    return enviarCorreo("bienvenida_colaborador", email, { nombre, codigo, enlace });
+  } catch (err) {
+    console.error("enviarCorreoBienvenidaColaborador: excepción", err);
+    return { error: "No se pudo enviar el correo de bienvenida." };
+  }
+}

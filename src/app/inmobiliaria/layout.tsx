@@ -1,0 +1,105 @@
+import { redirect } from "next/navigation";
+import { Glasses, ShieldAlert } from "lucide-react";
+import { obtenerImpersonacion, enImpersonacionSuperadmin } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { tieneRespuestaSinLeer } from "@/lib/soporte/db";
+import { tieneMensajeSinLeer } from "@/lib/mensajes/db";
+import { signOut } from "../(auth)/actions";
+import { salirVistaComo } from "./equipo/actions";
+import { salirDeImpersonacion } from "../superadmin/clientes/impersonar-actions";
+import { InmobiliariaNav } from "@/components/inmobiliaria/nav";
+import { ThemeToggle } from "@/components/inmobiliaria/theme-toggle";
+import { UserMenu } from "@/components/inmobiliaria/user-menu";
+import { HeartbeatActividad } from "@/components/heartbeat-actividad";
+
+export default async function InmobiliariaLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { real, objetivo } = await obtenerImpersonacion();
+  const soporteActivo = await enImpersonacionSuperadmin();
+
+  if (!real) redirect("/login");
+  if (real.tenant?.tipo_plan !== "inmobiliaria") redirect("/asesor");
+
+  const usuario = objetivo ?? real;
+  const esAdmin = usuario.rol === "admin";
+  const esPro = usuario.tenant?.plan_tarifa === "pago";
+
+  let hayTareasHoy = false;
+  if (esAdmin) {
+    const inicioHoy = new Date();
+    inicioHoy.setHours(0, 0, 0, 0);
+    const finHoy = new Date();
+    finHoy.setHours(23, 59, 59, 999);
+
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("tareas")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", usuario.tenant_id)
+      .in("estado", ["pendiente", "en_progreso"])
+      .gte("fecha_vencimiento", inicioHoy.toISOString())
+      .lte("fecha_vencimiento", finHoy.toISOString());
+
+    hayTareasHoy = (count ?? 0) > 0;
+  }
+
+  const admin = createAdminClient();
+  const [avisoSoporte, avisoMensajes] = await Promise.all([
+    tieneRespuestaSinLeer(admin, usuario.id),
+    // Mensajes es una función PRO: en Gratis no hay nada que avisar.
+    esPro ? tieneMensajeSinLeer(admin, usuario.id) : Promise.resolve(false),
+  ]);
+  const avisos: Record<string, boolean> = {
+    "/inmobiliaria/soporte": avisoSoporte,
+    "/inmobiliaria/mensajes": avisoMensajes,
+  };
+  if (hayTareasHoy) avisos["/inmobiliaria/seguimiento"] = true;
+
+  return (
+    <div className="tema-inmobiliaria min-h-screen bg-background text-foreground md:pl-(--nav-ancho)">
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <span className="font-semibold">{usuario.tenant?.nombre}</span>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <UserMenu
+            nombre={usuario.nombre_completo ?? usuario.email}
+            rolLabel={esAdmin ? "Administrador/a" : "Empleado/a"}
+            cerrarSesionAction={signOut}
+          />
+        </div>
+      </header>
+      {objetivo && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <span className="flex items-center gap-1.5">
+            <Glasses className="size-4" /> Viendo como {objetivo.nombre_completo ?? objetivo.email}
+          </span>
+          <form action={salirVistaComo}>
+            <button type="submit" className="font-medium underline underline-offset-2">
+              Volver a mi vista
+            </button>
+          </form>
+        </div>
+      )}
+      {soporteActivo && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <span className="flex items-center gap-1.5">
+            <ShieldAlert className="size-4" /> Sesión de soporte: has accedido como{" "}
+            {usuario.nombre_completo ?? usuario.email}
+          </span>
+          <form action={salirDeImpersonacion}>
+            <button type="submit" className="font-medium underline underline-offset-2">
+              Salir y volver a Superadmin
+            </button>
+          </form>
+        </div>
+      )}
+      <main className="p-4 pb-24 md:pb-6">{children}</main>
+      <InmobiliariaNav esAdmin={esAdmin} esPro={esPro} avisos={avisos} />
+      <HeartbeatActividad />
+    </div>
+  );
+}

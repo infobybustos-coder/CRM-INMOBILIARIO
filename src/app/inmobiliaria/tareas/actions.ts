@@ -1,0 +1,139 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireInmobiliariaEfectivo, esGestor } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+function revalidarTareas(id?: string) {
+  revalidatePath("/inmobiliaria/tareas");
+  if (id) revalidatePath(`/inmobiliaria/tareas/${id}`);
+  revalidatePath("/inmobiliaria/seguimiento");
+  revalidatePath("/inmobiliaria/mis-tareas");
+  revalidatePath("/inmobiliaria");
+}
+
+export async function completarTarea(id: string) {
+  const usuario = await requireInmobiliariaEfectivo();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("tareas")
+    .update({ estado: "completada", completada_en: new Date().toISOString() })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+  if (!esGestor(usuario.rol)) query = query.eq("asignado_a", usuario.id);
+  await query;
+
+  await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "tarea",
+    entidad_id: id,
+    usuario_id: usuario.id,
+    tipo: "sistema",
+    contenido: "Marcada como completada.",
+  });
+
+  revalidarTareas(id);
+}
+
+export async function reprogramarTarea(id: string, nuevaFecha: string) {
+  const usuario = await requireInmobiliariaEfectivo();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("tareas")
+    .update({ fecha_vencimiento: nuevaFecha })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+  if (!esGestor(usuario.rol)) query = query.eq("asignado_a", usuario.id);
+  await query;
+
+  await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "tarea",
+    entidad_id: id,
+    usuario_id: usuario.id,
+    tipo: "sistema",
+    contenido: "Fecha límite cambiada.",
+  });
+
+  revalidarTareas(id);
+}
+
+export async function eliminarTarea(id: string) {
+  const usuario = await requireInmobiliariaEfectivo();
+  const supabase = await createClient();
+
+  let query = supabase.from("tareas").delete().eq("id", id).eq("tenant_id", usuario.tenant_id);
+  if (!esGestor(usuario.rol)) query = query.eq("asignado_a", usuario.id);
+  await query;
+
+  revalidarTareas();
+}
+
+export type ActualizarTareaState = { error: string } | { ok: true } | null;
+
+export async function actualizarTarea(
+  id: string,
+  _prevState: ActualizarTareaState,
+  formData: FormData
+): Promise<ActualizarTareaState> {
+  const usuario = await requireInmobiliariaEfectivo();
+  const gestor = esGestor(usuario.rol);
+
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  if (!titulo) return { error: "Pon un título a la tarea." };
+
+  const fecha_vencimiento = String(formData.get("fecha_vencimiento") ?? "").trim() || null;
+  const prioridad = String(formData.get("prioridad") ?? "media");
+  const descripcion = String(formData.get("descripcion") ?? "").trim() || null;
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("tareas")
+    .update({
+      titulo,
+      fecha_vencimiento,
+      prioridad,
+      descripcion,
+      // Solo un gestor puede reasignar una tarea a otra persona; un empleado
+      // no puede tocar su propio "asignado_a" desde este formulario.
+      ...(gestor ? { asignado_a: String(formData.get("asignado_a") ?? "").trim() || null } : {}),
+    })
+    .eq("id", id)
+    .eq("tenant_id", usuario.tenant_id);
+  if (!gestor) query = query.eq("asignado_a", usuario.id);
+  const { error } = await query;
+
+  if (error) return { error: "No se pudo guardar la tarea." };
+
+  revalidarTareas(id);
+  return { ok: true };
+}
+
+export type ComentarioState = { error: string } | null;
+
+export async function crearComentarioTarea(
+  tareaId: string,
+  _prevState: ComentarioState,
+  formData: FormData
+): Promise<ComentarioState> {
+  const usuario = await requireInmobiliariaEfectivo();
+  const contenido = String(formData.get("contenido") ?? "").trim();
+  if (!contenido) return null;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("actividades").insert({
+    tenant_id: usuario.tenant_id,
+    entidad_tipo: "tarea",
+    entidad_id: tareaId,
+    usuario_id: usuario.id,
+    tipo: "nota",
+    contenido,
+  });
+
+  if (error) return { error: "No se pudo guardar el comentario." };
+
+  revalidarTareas(tareaId);
+  return null;
+}

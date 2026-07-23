@@ -66,7 +66,7 @@ export function Fotos({
     }
 
     try {
-      await registrarFoto(inmuebleId, file.name, ruta);
+      await registrarFoto(inmuebleId, file.name, ruta, file.size);
       setLista((prev) => [
         { id: ruta, nombre_archivo: file.name, url_storage: ruta, creado_en: new Date().toISOString() },
         ...prev,

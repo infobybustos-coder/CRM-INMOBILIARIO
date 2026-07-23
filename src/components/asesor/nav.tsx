@@ -6,20 +6,57 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
-  UserSearch,
   Home,
+  UserSearch,
+  CalendarClock,
   CalendarDays,
+  BarChart3,
+  Settings,
+  Headset,
   ChevronLeft,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ENLACES = [
-  { href: "/asesor", label: "Vista General", icon: LayoutDashboard },
-  { href: "/asesor/inmuebles", label: "Inmuebles", icon: Home },
-  { href: "/asesor/propietarios", label: "Captaciones", icon: Users },
-  { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
-  { href: "/asesor/agenda", label: "Agenda y tareas", icon: CalendarDays },
+type Enlace = { href: string; label: string; icon: typeof LayoutDashboard; activoTambien?: string[] };
+type Grupo = { titulo?: string; enlaces: Enlace[] };
+
+const GRUPOS_ASESOR: Grupo[] = [
+  { enlaces: [{ href: "/asesor", label: "Centro de Control", icon: LayoutDashboard }] },
+  {
+    titulo: "Captación",
+    enlaces: [
+      { href: "/asesor/propietarios", label: "Propietarios", icon: Users },
+      { href: "/asesor/inmuebles", label: "Inmuebles", icon: Home },
+      { href: "/asesor/compradores", label: "Compradores", icon: UserSearch },
+      { href: "/asesor/visitas", label: "Visitas", icon: CalendarClock },
+    ],
+  },
+  {
+    titulo: "Seguimiento",
+    enlaces: [
+      {
+        href: "/asesor/seguimiento",
+        label: "Agenda y Tareas",
+        icon: CalendarDays,
+        activoTambien: ["/asesor/agenda", "/asesor/tareas"],
+      },
+    ],
+  },
+  {
+    titulo: "Rendimiento",
+    enlaces: [{ href: "/asesor/rendimiento", label: "Rendimiento", icon: BarChart3 }],
+  },
+  {
+    titulo: "Centro de ayuda",
+    enlaces: [{ href: "/asesor/soporte", label: "Soporte", icon: Headset }],
+  },
+  {
+    titulo: "Configuración",
+    enlaces: [{ href: "/asesor/ajustes", label: "Configuración", icon: Settings }],
+  },
 ];
 
 function aplicarColapso(colapsado: boolean) {
@@ -35,9 +72,95 @@ function colapsadoInicial() {
   return guardado;
 }
 
-export function AsesorNav({ tareasNotificacion = 0 }: { tareasNotificacion?: number }) {
+function EnlaceItem({
+  enlace,
+  activo,
+  colapsado,
+  aviso,
+  onClick,
+}: {
+  enlace: Enlace;
+  activo: boolean;
+  colapsado: boolean;
+  aviso?: boolean;
+  onClick?: () => void;
+}) {
+  const Icon = enlace.icon;
+  return (
+    <Link
+      href={enlace.href}
+      onClick={onClick}
+      title={colapsado ? enlace.label : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+        colapsado && "md:justify-center",
+        activo
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+      )}
+    >
+      <span className="relative shrink-0">
+        <Icon className="size-4" />
+        {aviso && <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />}
+      </span>
+      <span className={cn("flex-1", colapsado && "md:hidden")}>{enlace.label}</span>
+    </Link>
+  );
+}
+
+function ListaGrupos({
+  pathname,
+  colapsado,
+  avisos,
+  onNavegar,
+}: {
+  pathname: string | null;
+  colapsado: boolean;
+  avisos?: Record<string, boolean>;
+  onNavegar?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {GRUPOS_ASESOR.map((grupo, i) => (
+        <div key={grupo.titulo ?? i} className="flex flex-col gap-1">
+          {grupo.titulo && (
+            <span
+              className={cn(
+                "px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+                colapsado && "md:hidden"
+              )}
+            >
+              {grupo.titulo}
+            </span>
+          )}
+          {grupo.enlaces.map((enlace) => {
+            const activo =
+              enlace.href === "/asesor"
+                ? pathname === "/asesor"
+                : (pathname?.startsWith(enlace.href) ?? false) ||
+                  (enlace.activoTambien?.some((p) => pathname?.startsWith(p)) ?? false);
+            return (
+              <EnlaceItem
+                key={enlace.href}
+                enlace={enlace}
+                activo={activo}
+                colapsado={colapsado}
+                aviso={avisos?.[enlace.href]}
+                onClick={onNavegar}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AsesorNav({ avisos = {} }: { avisos?: Record<string, boolean> }) {
   const pathname = usePathname();
   const [colapsado, setColapsado] = useState(colapsadoInicial);
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+  const hayAvisos = Object.values(avisos).some(Boolean);
 
   function alternar() {
     const nuevo = !colapsado;
@@ -47,52 +170,73 @@ export function AsesorNav({ tareasNotificacion = 0 }: { tareasNotificacion?: num
   }
 
   return (
-    <nav
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex border-t bg-card/95 backdrop-blur-sm",
-        "md:inset-y-0 md:right-auto md:bottom-0 md:flex-col md:gap-1 md:border-t-0 md:border-r md:p-2",
-        colapsado ? "md:w-16" : "md:w-56"
+    <>
+      {/* Barra fija móvil */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between border-t bg-card/95 px-4 py-2 backdrop-blur-sm md:hidden">
+        <Link
+          href="/asesor"
+          className={cn(
+            "flex flex-col items-center gap-1 px-3 py-1 text-xs",
+            pathname === "/asesor" ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <LayoutDashboard className="size-5" />
+          Control
+        </Link>
+        <button
+          type="button"
+          onClick={() => setMenuMovilAbierto(true)}
+          className="flex flex-col items-center gap-1 px-3 py-1 text-xs text-muted-foreground"
+        >
+          <span className="relative">
+            <Menu className="size-5" />
+            {hayAvisos && <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-red-500" />}
+          </span>
+          Menú
+        </button>
+      </div>
+
+      {menuMovilAbierto && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm md:hidden">
+          <div className="max-h-[80vh] w-full overflow-y-auto rounded-t-2xl border bg-card p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold">Menú</span>
+              <button
+                type="button"
+                onClick={() => setMenuMovilAbierto(false)}
+                aria-label="Cerrar menú"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <ListaGrupos
+              pathname={pathname}
+              colapsado={false}
+              avisos={avisos}
+              onNavegar={() => setMenuMovilAbierto(false)}
+            />
+          </div>
+        </div>
       )}
-    >
-      <button
-        type="button"
-        onClick={alternar}
-        aria-label={colapsado ? "Expandir menú" : "Contraer menú"}
-        className="hidden items-center justify-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground md:flex"
+
+      {/* Sidebar fijo desktop */}
+      <nav
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden flex-col gap-2 overflow-y-auto border-r bg-card/95 p-2 backdrop-blur-sm md:flex",
+          colapsado ? "md:w-16" : "md:w-56"
+        )}
       >
-        {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
-      </button>
-
-      {ENLACES.map(({ href, label, icon: Icon }) => {
-        const activo =
-          href === "/asesor" ? pathname === "/asesor" : pathname.startsWith(href);
-
-        return (
-          <Link
-            key={href}
-            href={href}
-            title={colapsado ? label : undefined}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground transition-colors",
-              "md:flex-row md:flex-none md:gap-3 md:rounded-md md:px-3 md:py-2 md:text-sm",
-              colapsado && "md:justify-center",
-              activo
-                ? "text-primary md:bg-primary/10 md:text-primary"
-                : "hover:text-foreground"
-            )}
-          >
-            <span className="relative">
-              <Icon className="size-5 md:size-5" />
-              {href === "/asesor/agenda" && tareasNotificacion > 0 && (
-                <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-4 text-white">
-                  {tareasNotificacion > 99 ? "99+" : tareasNotificacion}
-                </span>
-              )}
-            </span>
-            <span className={cn(colapsado && "md:hidden")}>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+        <button
+          type="button"
+          onClick={alternar}
+          aria-label={colapsado ? "Expandir menú" : "Contraer menú"}
+          className="flex items-center justify-center rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        >
+          {colapsado ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
+        </button>
+        <ListaGrupos pathname={pathname} colapsado={colapsado} avisos={avisos} />
+      </nav>
+    </>
   );
 }

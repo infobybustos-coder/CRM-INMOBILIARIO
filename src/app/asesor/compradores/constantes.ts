@@ -55,6 +55,7 @@ export type Comprador = {
   financiacion: string | null;
   tipo_inmueble: string | null;
   zona_buscada_id: string | null;
+  habitaciones: number | null;
   urgencia: string;
   estado: string;
   fecha_ultimo_contacto: string | null;

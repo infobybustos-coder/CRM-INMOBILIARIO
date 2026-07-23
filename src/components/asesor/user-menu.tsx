@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { User, Headset, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function iniciales(nombre: string) {
@@ -65,14 +65,6 @@ export function UserMenu({
             >
               <User className="size-4" />
               Mi perfil
-            </Link>
-            <Link
-              href="/asesor/soporte"
-              onClick={() => setAbierto(false)}
-              className="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-accent hover:text-accent-foreground"
-            >
-              <Headset className="size-4" />
-              Soporte técnico
             </Link>
             <Link
               href="/asesor/ajustes"

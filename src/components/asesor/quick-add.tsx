@@ -6,6 +6,7 @@ import { Plus, X, User, Phone, MapPin, Mail, Home, Tag } from "lucide-react";
 import { crearClienteRapido } from "@/app/asesor/clientes/actions";
 import { crearTareaGeneral } from "@/app/asesor/tareas/actions";
 import { Button } from "@/components/ui/button";
+import { LimitePlanAviso } from "@/components/limite-plan-aviso";
 import { cn } from "@/lib/utils";
 
 type Tipo = "propietario" | "comprador" | "inmueble";
@@ -347,7 +348,11 @@ function QuickAddCliente({ pathname }: { pathname: string | null }) {
               )}
 
               {state && "error" in state && (
-                <p className="text-sm text-destructive">{state.error}</p>
+                state.limite ? (
+                  <LimitePlanAviso mensaje={state.error} />
+                ) : (
+                  <p className="text-sm text-destructive">{state.error}</p>
+                )
               )}
 
               <Button type="submit" className="w-full" disabled={pending}>

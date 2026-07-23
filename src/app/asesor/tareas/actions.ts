@@ -4,45 +4,6 @@ import { revalidatePath } from "next/cache";
 import { getUsuarioConTenant } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export type OrigenItem = "tarea" | "evento";
-
-function revalidarTodo() {
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor", "layout");
-  revalidatePath("/asesor/agenda");
-  revalidatePath("/asesor");
-}
-
-export async function alternarTareaGeneral(
-  id: string,
-  completada: boolean,
-  origen: OrigenItem = "tarea"
-) {
-  const usuario = await getUsuarioConTenant();
-  if (!usuario) throw new Error("No autenticado");
-
-  const supabase = await createClient();
-
-  if (origen === "evento") {
-    await supabase
-      .from("eventos_agenda")
-      .update({ estado: completada ? "completado" : "pendiente" })
-      .eq("id", id)
-      .eq("usuario_id", usuario.id);
-  } else {
-    await supabase
-      .from("tareas")
-      .update({
-        estado: completada ? "completada" : "pendiente",
-        completada_en: completada ? new Date().toISOString() : null,
-      })
-      .eq("id", id)
-      .eq("asignado_a", usuario.id);
-  }
-
-  revalidarTodo();
-}
-
 export type CrearTareaState = { error: string } | { ok: true } | null;
 
 export async function crearTareaGeneral(
@@ -67,69 +28,51 @@ export async function crearTareaGeneral(
 
   if (error) return { error: "No se pudo crear la tarea." };
 
-  revalidarTodo();
+  revalidatePath("/asesor/seguimiento");
+  revalidatePath("/asesor", "layout");
   return { ok: true };
 }
 
-export async function cancelarTareaGeneral(id: string, origen: OrigenItem = "tarea") {
+function revalidarSeguimiento(id?: string) {
+  revalidatePath("/asesor/seguimiento");
+  if (id) revalidatePath(`/asesor/seguimiento/${id}`);
+  revalidatePath("/asesor", "layout");
+}
+
+export async function completarTarea(id: string) {
   const usuario = await getUsuarioConTenant();
   if (!usuario) throw new Error("No autenticado");
-
   const supabase = await createClient();
 
-  if (origen === "evento") {
-    await supabase
-      .from("eventos_agenda")
-      .update({ estado: "cancelado" })
-      .eq("id", id)
-      .eq("usuario_id", usuario.id);
-  } else {
-    await supabase
-      .from("tareas")
-      .update({ estado: "cancelada" })
-      .eq("id", id)
-      .eq("asignado_a", usuario.id);
-  }
+  await supabase
+    .from("tareas")
+    .update({ estado: "completada", completada_en: new Date().toISOString() })
+    .eq("id", id)
+    .eq("asignado_a", usuario.id);
 
-  revalidarTodo();
+  revalidarSeguimiento(id);
 }
 
-export type EditarTareaState = { error: string } | { ok: true } | null;
-
-export async function editarTareaGeneral(
-  id: string,
-  titulo: string,
-  fechaVencimiento: string | null,
-  origen: OrigenItem = "tarea"
-): Promise<EditarTareaState> {
+export async function reprogramarTarea(id: string, nuevaFecha: string) {
   const usuario = await getUsuarioConTenant();
-  if (!usuario) return { error: "Sesión expirada, vuelve a iniciar sesión." };
-
-  const tituloLimpio = titulo.trim();
-  if (!tituloLimpio) return { error: "Pon un título a la tarea." };
-
+  if (!usuario) throw new Error("No autenticado");
   const supabase = await createClient();
 
-  if (origen === "evento") {
-    if (!fechaVencimiento) return { error: "Pon una fecha." };
-    const { error } = await supabase
-      .from("eventos_agenda")
-      .update({ titulo: tituloLimpio, fecha_hora: fechaVencimiento })
-      .eq("id", id)
-      .eq("usuario_id", usuario.id);
-    if (error) return { error: "No se pudo guardar el evento." };
-  } else {
-    const { error } = await supabase
-      .from("tareas")
-      .update({
-        titulo: tituloLimpio,
-        fecha_vencimiento: fechaVencimiento || null,
-      })
-      .eq("id", id)
-      .eq("asignado_a", usuario.id);
-    if (error) return { error: "No se pudo guardar la tarea." };
-  }
+  await supabase
+    .from("tareas")
+    .update({ fecha_vencimiento: nuevaFecha })
+    .eq("id", id)
+    .eq("asignado_a", usuario.id);
 
-  revalidarTodo();
-  return { ok: true };
+  revalidarSeguimiento(id);
+}
+
+export async function eliminarTarea(id: string) {
+  const usuario = await getUsuarioConTenant();
+  if (!usuario) throw new Error("No autenticado");
+  const supabase = await createClient();
+
+  await supabase.from("tareas").delete().eq("id", id).eq("asignado_a", usuario.id);
+
+  revalidarSeguimiento();
 }

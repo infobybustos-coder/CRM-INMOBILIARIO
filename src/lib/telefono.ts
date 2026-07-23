@@ -1,13 +1,40 @@
+import {
+  isValidPhoneNumber,
+  isSupportedCountry,
+  parsePhoneNumberFromString,
+  AsYouType,
+  type CountryCode,
+} from "libphonenumber-js";
 import { prefijoPais } from "@/lib/paises";
 
-export function normalizarTelefono(pais: string, numero: string) {
-  const digitos = numero.replace(/\D/g, "");
-  return `${prefijoPais(pais)}${digitos}`;
+function comoCountryCode(pais: string): CountryCode | undefined {
+  return isSupportedCountry(pais) ? (pais as CountryCode) : undefined;
 }
 
-export function emailSinteticoDeTelefono(telefonoCompleto: string) {
-  const digitos = telefonoCompleto.replace(/\D/g, "");
-  return `wsp-${digitos}@crm.local`;
+export function telefonoValido(pais: string, numero: string) {
+  const country = comoCountryCode(pais);
+  if (!country || !numero.trim()) return false;
+  try {
+    return isValidPhoneNumber(numero, country);
+  } catch {
+    return false;
+  }
+}
+
+export function formatearMientrasEscribe(pais: string, numero: string) {
+  const country = comoCountryCode(pais);
+  if (!country) return numero;
+  return new AsYouType(country).input(numero);
+}
+
+export function normalizarTelefono(pais: string, numero: string) {
+  const country = comoCountryCode(pais);
+  if (country) {
+    const parsed = parsePhoneNumberFromString(numero, country);
+    if (parsed) return parsed.number;
+  }
+  const digitos = numero.replace(/\D/g, "");
+  return `${prefijoPais(pais)}${digitos}`;
 }
 
 export function emailSinteticoDesdeIdentificador(identificador: string) {

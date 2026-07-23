@@ -93,11 +93,82 @@
   --ring: oklch(0.55 0.075 250);
 }
 
+/* Tema "inmobiliaria": mismo patrón que asesor, con acento verde para diferenciar el modo equipo. */
+.tema-inmobiliaria[data-nav-colapsado="true"] {
+  --nav-ancho: 4rem;
+}
+.tema-inmobiliaria {
+  --nav-ancho: 14rem;
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.2 0.02 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 160);
+  --primary: oklch(0.4 0.09 160);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.005 160);
+  --secondary-foreground: oklch(0.4 0.09 160);
+  --muted: oklch(0.97 0.005 160);
+  --muted-foreground: oklch(0.5 0.02 160);
+  --accent: oklch(0.85 0.09 95);
+  --accent-foreground: oklch(0.3 0.05 95);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.01 160);
+  --input: oklch(0.92 0.01 160);
+  --ring: oklch(0.4 0.09 160);
+}
+
+.tema-inmobiliaria[data-tema="oscuro"] {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.6 0.1 160);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.72 0.1 95);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.6 0.1 160);
+}
+
+/* Tema "landing": paleta premium en tonos burdeos/mármol y crema para la
+   página pública de venta, con tipografía serif para los titulares. */
+.tema-landing {
+  --background: #fbf6ef;
+  --foreground: #2a2019;
+  --card: #ffffff;
+  --card-foreground: #2a2019;
+  --popover: #ffffff;
+  --popover-foreground: #2a2019;
+  --primary: #5c1f2e;
+  --primary-foreground: #fbf6ef;
+  --secondary: #f1e6d9;
+  --secondary-foreground: #5c1f2e;
+  --muted: #f1e6d9;
+  --muted-foreground: #8a7364;
+  --accent: #e4cab3;
+  --accent-foreground: #4a2318;
+  --destructive: #a5433a;
+  --border: #e7dac8;
+  --input: #e7dac8;
+  --ring: #5c1f2e;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
