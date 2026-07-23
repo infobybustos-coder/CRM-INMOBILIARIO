@@ -179,7 +179,7 @@ export async function signUp(
     }
   }
 
-  redirect(tipoPlan === "asesor" ? "/asesor" : "/inmobiliaria");
+  redirect(tipoPlan === "asesor" ? "/asesor?bienvenida=1" : "/inmobiliaria?bienvenida=1");
 }
 
 export async function signIn(
